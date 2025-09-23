@@ -290,7 +290,7 @@ def roleta():
 
 
 # -------------------- Caça-níquel --------------------
-@app.route("/caca", methods=["GET", "POST"])
+@app.route("/caca", methods=["GET", "POST"], endpoint="caca_page")
 def caca_slot():
     if "usuario" not in session or session["usuario"] == "admin":
         return redirect(url_for("login"))
@@ -450,6 +450,7 @@ def caca_slot():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
