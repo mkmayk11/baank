@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="card p-4">
+    <h2>Alterar Senha</h2>
+    <form method="POST">
+        <div class="mb-3">
+            <label>Nova senha</label>
+            <input type="password" name="senha" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-info w-100">Alterar senha</button>
+    </form>
+</div>
+{% endblock %}

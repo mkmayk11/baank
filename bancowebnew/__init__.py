@@ -1,0 +1,1 @@
+from .bancoweb import app

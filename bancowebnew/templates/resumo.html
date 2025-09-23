@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block conteudo %}
+
+<h2>Resumo da Conta</h2>
+<div class="card">
+    <p><strong>Usuário:</strong> {{ usuario }}</p>
+    <p><strong>Saldo:</strong> R$ {{ saldo|round(2) }}</p>
+</div>
+
+<a href="{{ url_for('dashboard') }}" class="btn btn-primary">Voltar</a>
+
+{% endblock %}

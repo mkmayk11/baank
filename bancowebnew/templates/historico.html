@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="card p-4">
+    <h2>Histórico de transações</h2>
+    {% if historico %}
+        <table class="table table-striped mt-3">
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Ação</th>
+                    <th>Valor</th>
+                    <th>Destino</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for h in historico %}
+                    <tr>
+                        <td>{{ h.data }}</td>
+                        <td>{{ h.acao }}</td>
+                        <td>{{ h.valor|round(2) }}</td>
+                        <td>{{ h.destino or "-" }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Nenhuma transação registrada.</p>
+    {% endif %}
+</div>
+{% endblock %}

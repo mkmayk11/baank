@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block conteudo %}
+
+<h2>Cadastrar Cliente</h2>
+
+<form method="POST" action="{{ url_for('cadastro_cliente') }}">
+    <label for="nome">Nome do Cliente:</label>
+    <input type="text" name="nome" required>
+
+    <label for="senha">Senha Inicial:</label>
+    <input type="password" name="senha" required>
+
+    <label for="saldo">Saldo Inicial (opcional):</label>
+    <input type="number" name="saldo" step="0.01">
+
+    <button type="submit" class="btn btn-success">Cadastrar Cliente</button>
+</form>
+
+<a href="{{ url_for('dashboard') }}" class="btn btn-secondary">← Voltar</a>
+
+{% endblock %}

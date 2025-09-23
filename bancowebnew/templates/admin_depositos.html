@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Admin - Depósitos{% endblock %}
+{% block conteudo %}
+<div class="card p-4">
+    <h2>Depósitos e Saques Pendentes</h2>
+    <table class="table table-dark table-striped mt-3">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Usuário</th>
+                <th>Valor</th>
+                <th>Data</th>
+                <th>Status</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for dep in depositos %}
+            <tr>
+                <td>{{ dep.id }}</td>
+                <td>{{ dep.usuario }}</td>
+                <td>R$ {{ dep.valor }}</td>
+                <td>{{ dep.data }}</td>
+                <td>
+                    {% if dep.aprovado==0 %}Pendente
+                    {% elif dep.aprovado==1 %}Aprovado
+                    {% elif dep.aprovado==2 %}Recusado
+                    {% elif dep.aprovado==-1 %}Saque
+                    {% endif %}
+                </td>
+                <td>
+                    {% if dep.aprovado==0 %}
+                        <a href="{{ url_for('aprovar_deposito', id=dep.id) }}" class="btn btn-success btn-sm">Aprovar</a>
+                        <a href="{{ url_for('recusar_deposito', id=dep.id) }}" class="btn btn-danger btn-sm">Recusar</a>
+                    {% elif dep.aprovado==-1 %}
+                        <span class="badge bg-warning text-dark">Saque</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

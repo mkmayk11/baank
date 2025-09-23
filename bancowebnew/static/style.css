@@ -1,0 +1,174 @@
+/* Reset básico */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Background e cores principais */
+body {
+    background-color: #121212;
+    color: #e6e6e6;
+    line-height: 1.6;
+}
+
+/* Navbar moderna */
+.navbar {
+    background-color: #1f1f1f !important;
+    border-bottom: 2px solid #2e7d32;
+}
+.navbar-brand, .nav-link {
+    color: #e6e6e6 !important;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+.nav-link:hover {
+    color: #2e7d32 !important;
+}
+
+/* Container geral */
+.container {
+    max-width: 960px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #1e1e1e;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+/* Cabeçalhos */
+h2 {
+    color: #2e7d32;
+    margin-bottom: 20px;
+}
+
+/* Botões modernos */
+.btn {
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 10px 20px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+.btn-success {
+    background-color: #2e7d32;
+    border: none;
+}
+.btn-success:hover {
+    background-color: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+}
+.btn-warning {
+    background-color: #c62828;
+    border: none;
+}
+.btn-warning:hover {
+    background-color: #e53935;
+    transform: translateY(-2px);
+}
+.btn-primary {
+    background-color: #1565c0;
+    border: none;
+}
+.btn-primary:hover {
+    background-color: #1976d2;
+    transform: translateY(-2px);
+}
+.btn-info {
+    background-color: #00acc1;
+    border: none;
+}
+.btn-info:hover {
+    background-color: #26c6da;
+    transform: translateY(-2px);
+}
+.btn-secondary {
+    background-color: #424242;
+    border: none;
+}
+.btn-secondary:hover {
+    background-color: #616161;
+    transform: translateY(-2px);
+}
+
+/* Inputs e selects */
+input, select {
+    background-color: #2a2a2a;
+    color: #e6e6e6;
+    border: 1px solid #2e7d32;
+    border-radius: 6px;
+    padding: 8px;
+    width: 100%;
+    transition: border 0.3s;
+}
+input:focus, select:focus {
+    border-color: #45a049;
+    outline: none;
+}
+
+/* Tabelas */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    background-color: #1e1e1e;
+    border-radius: 8px;
+    overflow: hidden;
+}
+table th {
+    background-color: #2e7d32;
+    color: #fff;
+    text-align: left;
+    padding: 12px;
+}
+table td {
+    padding: 10px;
+    border-bottom: 1px solid #2a2a2a;
+}
+table tr:hover {
+    background-color: #263238;
+}
+
+/* Alerts */
+.alert {
+    border-radius: 8px;
+    padding: 12px 20px;
+    margin-bottom: 15px;
+}
+
+/* Links */
+a {
+    color: #2e7d32;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+a:hover {
+    color: #45a049;
+}
+
+/* Roleta / Gamification */
+.roleta-box {
+    text-align: center;
+    margin-top: 20px;
+    padding: 20px;
+    border: 2px solid #2e7d32;
+    border-radius: 12px;
+    background-color: #1a1a1a;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+.roleta-box h3 {
+    color: #2e7d32;
+    margin-bottom: 15px;
+    font-size: 1.4rem;
+}
+
+/* Footer se quiser */
+footer {
+    text-align: center;
+    margin-top: 40px;
+    padding: 12px;
+    font-size: 0.9rem;
+    color: #888;
+}
