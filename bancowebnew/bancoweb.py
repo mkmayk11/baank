@@ -253,118 +253,63 @@ def exportar_csv():
 # -------------------- Roleta --------------------
 # -------------------- Roleta --------------------
 # -------------------- ROLETA --------------------
-@app.route("/roleta", methods=["GET", "POST"])
-def roleta():
+@app.route("/jogos", methods=["GET", "POST"])
+def jogos():
     if "usuario" not in session or session["usuario"] == "admin":
         return redirect(url_for("login"))
 
     usuario = session["usuario"]
     dados = carregar_dados()
-    saldo_atual = dados["clientes"][usuario]["saldo"]
+    saldo = dados["clientes"][usuario]["saldo"]
+
     resultado_roleta = None
     resultado_caca = None
     rolos = []
 
-    if request.method == "POST":
-        try:
-            aposta = float(request.form["aposta"])
-            numero_escolhido = int(request.form["numero_escolhido"])
-            numero_sorteado = int(request.form["numero_sorteado"])
-        except (KeyError, ValueError):
-            flash("Dados inválidos enviados!", "danger")
-            return redirect(url_for("dashboard"))
-
-        if aposta <= 0:
-            resultado_roleta = "Digite um valor válido de aposta!"
-        elif aposta > saldo_atual:
-            resultado_roleta = "Saldo insuficiente!"
-        else:
-            saldo_atual -= aposta
-            if numero_escolhido == numero_sorteado:
-                ganho = aposta * 10
-                saldo_atual += ganho
-                resultado_roleta = f"🎉 Número sorteado: {numero_sorteado}. Você ganhou R$ {ganho:.2f}!"
-                registrar_historico(usuario, f"Roleta (Acertou {numero_sorteado})", ganho)
-            else:
-                resultado_roleta = f"❌ Número sorteado: {numero_sorteado}. Você perdeu R$ {aposta:.2f}."
-                registrar_historico(usuario, f"Roleta (Errou {numero_escolhido}, saiu {numero_sorteado})", -aposta)
-
-            salvar_cliente(usuario, saldo=saldo_atual)
-
-    return render_template("jogos.html",
-                           saldo=saldo_atual,
-                           resultado_roleta=resultado_roleta,
-                           resultado_caca=resultado_caca,
-                           rolos=rolos)
-
-
-
-
-
-
-# -------------------- Caça-níquel --------------------
-# -------------------- CAÇA-NÍQUEL (corrigido) --------------------
-@app.route("/caca", methods=["GET", "POST"])
-def caca():
-    if "usuario" not in session or session["usuario"] == "admin":
-        return redirect(url_for("login"))
-
-    usuario = session["usuario"]
-    dados = carregar_dados()
-    saldo_atual = dados["clientes"][usuario]["saldo"]
-    resultado_roleta = None
-    resultado_caca = None
-    rolos = []
-
+    # símbolos do caça-níquel
     simbolos = [
         "🍒", "🍋", "🔔", "⭐", "💎", "🍀", "🍉", "🥭",
         "🍇", "🍌", "🍓", "🍑", "🍍", "🥝", "🥥", "🍈", "🌈", "🎲"
     ]
 
     if request.method == "POST":
-        try:
-            aposta = float(request.form["aposta"])
-        except (KeyError, ValueError):
-            flash("Dados inválidos enviados!", "danger")
-            return redirect(url_for("dashboard"))
+        if "aposta_caca" in request.form:
+            # PROCESSA CAÇA-NÍQUEL
+            try:
+                aposta = float(request.form["aposta_caca"])
+            except ValueError:
+                flash("Aposta inválida!", "danger")
+                return redirect(url_for("jogos"))
 
-        if aposta <= 0:
-            resultado_caca = "Digite um valor válido de aposta!"
-        elif aposta > saldo_atual:
-            resultado_caca = "Saldo insuficiente!"
-        else:
-            # sorteio dos rolos
-            rolos = [random.choice(simbolos) for _ in range(3)]
-
-            # cálculo do ganho/perda
-            if rolos[0] == rolos[1] == rolos[2]:
-                ganho = aposta * 30
-                saldo_atual += ganho
-                resultado_caca = f"🎉 Jackpot! {rolos} Você ganhou R$ {ganho:.2f}!"
-                registrar_historico(usuario, f"Caça-níquel (Jackpot {rolos})", ganho)
-
-            elif rolos[0] == rolos[1] or rolos[1] == rolos[2] or rolos[0] == rolos[2]:
-                ganho = aposta * 6
-                saldo_atual += ganho
-                resultado_caca = f"✨ Quase lá! {rolos} Você ganhou R$ {ganho:.2f}!"
-                registrar_historico(usuario, f"Caça-níquel (Par {rolos})", ganho)
-
+            if aposta <= 0:
+                resultado_caca = "Digite um valor válido de aposta!"
+            elif aposta > saldo:
+                resultado_caca = "Saldo insuficiente!"
             else:
-                saldo_atual -= aposta
-                resultado_caca = f"❌ {rolos} Você perdeu R$ {aposta:.2f}."
-                registrar_historico(usuario, f"Caça-níquel (Derrota {rolos})", -aposta)
+                rolos = [random.choice(simbolos) for _ in range(3)]
+                if rolos[0] == rolos[1] == rolos[2]:
+                    ganho = aposta * 30
+                    saldo += ganho
+                    resultado_caca = f"🎉 Jackpot! {rolos} Você ganhou R$ {ganho:.2f}!"
+                elif rolos[0] == rolos[1] or rolos[1] == rolos[2] or rolos[0] == rolos[2]:
+                    ganho = aposta * 6
+                    saldo += ganho
+                    resultado_caca = f"✨ Quase lá! {rolos} Você ganhou R$ {ganho:.2f}!"
+                else:
+                    saldo -= aposta
+                    resultado_caca = f"❌ {rolos} Você perdeu R$ {aposta:.2f}."
 
-            # salva o saldo depois do processamento
-            salvar_cliente(usuario, saldo=saldo_atual)
+                salvar_cliente(usuario, saldo=saldo)
+        elif "aposta_roleta" in request.form:
+            # PROCESSA ROLETA (igual a que você já tem)
+            pass
 
-    # renderiza a mesma página de jogos com contexto para ambos os jogos
-    return render_template(
-        "jogos.html",
-        saldo=saldo_atual,
-        resultado_roleta=resultado_roleta,
-        resultado_caca=resultado_caca,
-        rolos=rolos
-    )
+    return render_template("jogos.html",
+                           saldo=saldo,
+                           resultado_caca=resultado_caca,
+                           resultado_roleta=resultado_roleta,
+                           rolos=rolos)
+
 
 
 
@@ -430,6 +375,7 @@ def recusar_deposito(id):
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
