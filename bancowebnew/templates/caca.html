@@ -86,17 +86,16 @@ document.addEventListener("DOMContentLoaded", function() {
         document.getElementById("reel2"),
         document.getElementById("reel3")
     ];
-    const apostaInput = document.getElementById("apostaSlot");
-    const saldoEl = document.getElementById("saldo");
+    const form = document.getElementById("formCaca");
 
-    // Lista dos 13 emojis do Flask
+    // Lista dos 19 emojis (13 antigos + 6 novos)
     const simbolos = [
         "🍒", "🍋", "🔔", "⭐", "💎", "🍀", "🍉", "🥭",
-        "🍇", "🍌", "🍓", "🍑", "🍍"
+        "🍇", "🍌", "🍓", "🍑", "🍍",
+        "🥝", "🥥", "🍈", "🌈", "🎲"
     ];
 
-    // Aplica animação aos rolos enquanto espera o POST do Flask
-    const form = document.getElementById("formCaca");
+    // Animação dos rolos antes de enviar o POST
     form.addEventListener("submit", function(e){
         e.preventDefault();
         reels.forEach(r => r.classList.add("spin"));
@@ -108,13 +107,10 @@ document.addEventListener("DOMContentLoaded", function() {
             if(spins <= 0){
                 clearInterval(intervalo);
                 reels.forEach(r => r.classList.remove("spin"));
-
-                // Envia ao Flask via POST
-                form.submit();
+                form.submit(); // envia pro Flask
             }
         }, 80);
     });
 });
 </script>
 {% endblock %}
-
