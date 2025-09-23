@@ -340,8 +340,9 @@ def recusar_deposito(id):
     return redirect(url_for("admin_depositos"))
     @app.route("/roleta", methods=["GET", "POST"])
 def roleta():
-    if "usuario" not in session or session["usuario"] == "admin":
-        return redirect(url_for("login"))
+    # lógica aqui
+    return render_template("roleta.html")
+
     
     usuario = session["usuario"]
     dados = carregar_dados()
@@ -374,6 +375,7 @@ def roleta():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
