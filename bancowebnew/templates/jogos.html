@@ -8,7 +8,7 @@
       <div class="col-md-6">
         <div class="card p-4 text-center shadow-lg slot-card">
           <h2 class="mb-3">🎰 Caça-Níquel</h2>
-          <form method="POST" action="{{ url_for('jogar_caca') }}">
+          <form method="POST" action="{{ url_for('jogos') }}">
             <input type="number" name="aposta_caca" id="apostaCaca" step="0.01"
               value="{{ last_aposta_caca }}" placeholder="Valor da aposta" required class="form-control mb-2">
             <input type="number" name="lote" id="lote" value="{{ last_lote }}"
@@ -209,3 +209,4 @@
   drawRoulette();
 </script>
 {% endblock %}
+
