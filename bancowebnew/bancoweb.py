@@ -251,36 +251,94 @@ def exportar_csv():
     return send_file(filename, as_attachment=True)
 
 # -------------------- Roleta --------------------
+# -------------------- Roleta --------------------
 @app.route("/roleta", methods=["GET", "POST"])
 def roleta():
     if "usuario" not in session or session["usuario"] == "admin":
         return redirect(url_for("login"))
     usuario = session["usuario"]
     dados = carregar_dados()
-    resultado = None
+    saldo_atual = dados["clientes"][usuario]["saldo"]
+    resultado_roleta = None  # variável separada da caça
 
     if request.method == "POST":
-        aposta = float(request.form["aposta"])
-        numero_escolhido = int(request.form["numero_escolhido"])
-        numero_sorteado = int(request.form["numero_sorteado"])
+        try:
+            aposta = float(request.form["aposta"])
+            numero_escolhido = int(request.form["numero_escolhido"])
+            numero_sorteado = int(request.form["numero_sorteado"])
+        except (KeyError, ValueError):
+            flash("Dados inválidos enviados!", "danger")
+            return redirect(url_for("dashboard"))
 
-        if aposta > dados["clientes"][usuario]["saldo"]:
-            resultado = "Saldo insuficiente!"
+        if aposta > saldo_atual:
+            resultado_roleta = "Saldo insuficiente!"
         else:
-            saldo_atual = dados["clientes"][usuario]["saldo"] - aposta
+            saldo_atual -= aposta
             salvar_cliente(usuario, saldo=saldo_atual)
 
             if numero_escolhido == numero_sorteado:
                 ganho = aposta * 12
                 saldo_atual += ganho
                 salvar_cliente(usuario, saldo=saldo_atual)
-                resultado = f"Parabéns! Número sorteado: {numero_sorteado}. Você ganhou R$ {ganho:.2f}!"
+                resultado_roleta = f"Parabéns! Número sorteado: {numero_sorteado}. Você ganhou R$ {ganho:.2f}!"
                 registrar_historico(usuario, f"Roleta (Vitória no {numero_sorteado})", ganho)
             else:
-                resultado = f"Número sorteado: {numero_sorteado}. Você perdeu R$ {aposta:.2f}."
-                registrar_historico(usuario, f"Roleta (Derrota no {numero_sorteado})", aposta)
+                resultado_roleta = f"Número sorteado: {numero_sorteado}. Você perdeu R$ {aposta:.2f}."
+                registrar_historico(usuario, f"Roleta (Derrota no {numero_sorteado})", -aposta)
 
-    return render_template("roleta.html", resultado=resultado)
+    return render_template("jogos.html", saldo=saldo_atual, resultado_roleta=resultado_roleta, resultado_caca=None, rolos=[])
+
+
+# -------------------- Caça-níquel --------------------
+@app.route("/caca", methods=["GET", "POST"])
+def caca_slot():
+    if "usuario" not in session or session["usuario"] == "admin":
+        return redirect(url_for("login"))
+
+    usuario = session["usuario"]
+    dados = carregar_dados()
+    saldo_atual = dados["clientes"][usuario]["saldo"]
+    resultado_caca = None  # variável separada da roleta
+    rolos = []
+
+    simbolos = [
+        "🍒", "🍋", "🔔", "⭐", "💎", "🍀", "🍉", "🥭",
+        "🍇", "🍌", "🍓", "🍑", "🍍", "🥝", "🥥", "🍈", "🌈", "🎲"
+    ]
+
+    if request.method == "POST":
+        try:
+            aposta = float(request.form["aposta"])
+        except (KeyError, ValueError):
+            flash("Dados inválidos enviados!", "danger")
+            return redirect(url_for("dashboard"))
+
+        if aposta <= 0:
+            resultado_caca = "Digite um valor válido de aposta!"
+        elif aposta > saldo_atual:
+            resultado_caca = "Saldo insuficiente!"
+        else:
+            rolos = [random.choice(simbolos) for _ in range(3)]
+
+            if rolos[0] == rolos[1] == rolos[2]:
+                ganho = aposta * 30
+                saldo_atual += ganho
+                resultado_caca = f"🎉 Jackpot! {rolos} Você ganhou R$ {ganho:.2f}!"
+                registrar_historico(usuario, f"Caça-níquel (Jackpot {rolos})", ganho)
+            elif rolos[0] == rolos[1] or rolos[1] == rolos[2] or rolos[0] == rolos[2]:
+                ganho = aposta * 6
+                saldo_atual += ganho
+                resultado_caca = f"✨ Quase lá! {rolos} Você ganhou R$ {ganho:.2f}!"
+                registrar_historico(usuario, f"Caça-níquel (Par {rolos})", ganho)
+            else:
+                saldo_atual -= aposta
+                resultado_caca = f"❌ {rolos} Você perdeu R$ {aposta:.2f}."
+                registrar_historico(usuario, f"Caça-níquel (Derrota {rolos})", -aposta)
+
+            salvar_cliente(usuario, saldo=saldo_atual)
+
+    return render_template("jogos.html", saldo=saldo_atual, resultado_caca=resultado_caca, resultado_roleta=None, rolos=rolos)
+
 
 # -------------------- Logout --------------------
 @app.route("/logout")
@@ -392,6 +450,7 @@ def caca_slot():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
