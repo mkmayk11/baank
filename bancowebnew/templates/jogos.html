@@ -1,133 +1,127 @@
 {% extends "base.html" %}
 {% block conteudo %}
-<div class="casino-background py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
-
-            <!-- Saldo -->
-            <div class="card p-4 text-center shadow-lg mb-4" style="background:#1a1a1a; border-radius:20px; border:3px solid #ffdd00;">
-                <h2 class="casino-title mb-3">🎲 Saldo</h2>
-                <p class="text-warning fw-bold">Saldo atual:</p>
-                <h3 class="text-light">{{ saldo|round(2) }}</h3>
-            </div>
-
-            <!-- Caça-níquel -->
-            <div class="card p-4 text-center shadow-lg mb-4" style="background: radial-gradient(circle, #1a1a1a, #0d0d0d); border-radius:20px; border:3px solid #ffdd00;">
-                <h2 class="casino-title mb-3">🎰 Caça-níquel Vegas</h2>
-                
-                <form method="POST" id="formCaca">
-                    <div class="mb-3">
-                        <input type="number" name="aposta_caca" id="apostaSlot" step="0.01" class="form-control form-control-lg text-center" placeholder="Valor da aposta" required style="font-size:1.2rem; border:2px solid #ffdd00; background:#222; color:#fff;">
-                    </div>
-
-                    <div class="slot-machine d-flex justify-content-center mb-3" style="gap:15px;">
-                        <div class="reel" id="reel1">{{ rolos[0] if rolos|length>0 else "🍒" }}</div>
-                        <div class="reel" id="reel2">{{ rolos[1] if rolos|length>1 else "🍋" }}</div>
-                        <div class="reel" id="reel3">{{ rolos[2] if rolos|length>2 else "🔔" }}</div>
-                    </div>
-
-                    <div id="resultadoCaca" class="alert alert-dark mt-3" style="border:2px solid #ffdd00; color:#fff; font-weight:bold;">
-                        {% if resultado_caca %}{{ resultado_caca }}{% endif %}
-                    </div>
-
-                    <button type="submit" class="btn btn-warning fw-bold mt-3" style="font-size:1.2rem; padding:10px 25px; border-radius:10px; box-shadow:0 0 10px #ffdd00;">Girar 🎲</button>
-                </form>
-            </div>
-
-            <!-- Roleta -->
-            <div class="card p-4 text-center shadow-lg mb-4" style="background: radial-gradient(circle, #1a1a1a, #0d0d0d); border-radius:20px; border:3px solid #ffdd00;">
-                <h2 class="casino-title mb-3">🎡 Roleta</h2>
-
-                <form method="POST" id="formRoleta">
-                    <div class="mb-3">
-                        <input type="number" name="aposta_roleta" id="apostaRoleta" step="0.01" class="form-control form-control-lg text-center" placeholder="Valor da aposta" required style="font-size:1.2rem; border:2px solid #ffdd00; background:#222; color:#fff;">
-                    </div>
-
-                    <div class="mb-3">
-                        <select name="numero_roleta" class="form-select form-select-lg text-center" required style="font-size:1.2rem; border:2px solid #ffdd00; background:#222; color:#fff;">
-                            {% for i in range(0,37) %}
-                                <option value="{{ i }}">{{ i }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div id="resultadoRoleta" class="alert alert-dark mt-3" style="border:2px solid #ffdd00; color:#fff; font-weight:bold;">
-                        {% if resultado_roleta %}{{ resultado_roleta }}{% endif %}
-                    </div>
-
-                    <button type="submit" class="btn btn-warning fw-bold mt-3" style="font-size:1.2rem; padding:10px 25px; border-radius:10px; box-shadow:0 0 10px #ffdd00;">Girar 🎡</button>
-                </form>
-            </div>
-
-        </div>
+<div class="container py-5">
+  <div class="row">
+    <!-- ROLETINHA -->
+    <div class="col-md-6 text-center">
+      <div class="card shadow-lg p-4">
+        <h2>🎡 Roleta Realista</h2>
+        <canvas id="roletaCanvas" width="300" height="300"></canvas>
+        <form method="POST" class="mt-3">
+          <input type="number" step="0.01" name="aposta_roleta" placeholder="Valor da aposta" required>
+          <select name="cor_roleta">
+            <option value="vermelho">Vermelho</option>
+            <option value="preto">Preto</option>
+          </select>
+          <button type="submit" class="btn btn-danger">Girar</button>
+        </form>
+        {% if resultado_roleta %}
+          <div class="alert alert-info mt-3">{{ resultado_roleta }}</div>
+        {% endif %}
+      </div>
     </div>
+
+    <!-- CAÇA-NÍQUEL -->
+    <div class="col-md-6 text-center">
+      <div class="card shadow-lg p-4">
+        <h2>🎰 Caça-Níquel Premium</h2>
+        <div id="rolos" class="d-flex justify-content-center mb-3 fs-1">
+          {% for r in rolos %}
+            <div class="mx-2">{{ r }}</div>
+          {% endfor %}
+        </div>
+
+        <form method="POST" id="formCaca">
+          <input type="number" step="0.01" name="aposta_caca" id="apostaCaca"
+                 value="{{ request.form.aposta_caca or '' }}"
+                 placeholder="Valor da aposta" required>
+          <input type="number" name="lote" id="lote" placeholder="Qtd rodadas (opcional)">
+          <button type="submit" class="btn btn-success">Girar</button>
+        </form>
+
+        {% if resultado_caca %}
+          <div class="alert alert-info mt-3">{{ resultado_caca }}</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
 </div>
 
-<style>
-.casino-background {
-    background: url('https://images.unsplash.com/photo-1601999135003-142d1f6aa391?auto=format&fit=crop&w=1950&q=80') no-repeat center center fixed;
-    background-size: cover;
-    min-height: 100vh;
-}
-.casino-title {
-    color:#ffdd00;
-    text-shadow:0 0 5px #fff,0 0 10px #ffdd00,0 0 20px #ffdd00,0 0 40px #ffdd00;
-}
-.reel {
-    width:70px;
-    height:70px;
-    font-size:45px;
-    line-height:70px;
-    text-align:center;
-    border-radius:10px;
-    color:#fff;
-    background:linear-gradient(145deg,#444,#000);
-    border:2px solid #ffdd00;
-    box-shadow:0 0 15px #ffdd00,0 0 30px #ffdd00 inset;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.reel.spin {
-    animation: spinAnim 0.2s infinite;
-}
-@keyframes spinAnim {
-    0% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
-    100% { transform: translateY(0); }
-}
-</style>
-
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-    const reels = [
-        document.getElementById("reel1"),
-        document.getElementById("reel2"),
-        document.getElementById("reel3")
-    ];
-    const formCaca = document.getElementById("formCaca");
-    const formRoleta = document.getElementById("formRoleta");
+/* ------------------ ROLETA ------------------ */
+const canvas = document.getElementById("roletaCanvas");
+if (canvas) {
+  const ctx = canvas.getContext("2d");
+  const radius = canvas.width / 2;
+  const setores = 37; // 0 a 36
+  let angulo = 0;
+  let girando = false;
 
-    const simbolos = [
-        "🍒", "🍋", "🔔", "⭐", "💎", "🍀", "🍉", "🥭",
-        "🍇", "🍌", "🍓", "🍑", "🍍", "🥝", "🥥", "🍈", "🌈", "🎲"
-    ];
+  function desenharRoleta() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < setores; i++) {
+      const start = (i * 2 * Math.PI) / setores + angulo;
+      const end = ((i + 1) * 2 * Math.PI) / setores + angulo;
+      ctx.beginPath();
+      ctx.moveTo(radius, radius);
+      ctx.arc(radius, radius, radius, start, end);
+      ctx.fillStyle = i % 2 === 0 ? "red" : "black";
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.moveTo(radius, 0);
+    ctx.lineTo(radius - 10, 20);
+    ctx.lineTo(radius + 10, 20);
+    ctx.closePath();
+    ctx.fillStyle = "yellow";
+    ctx.fill();
+  }
 
-    formCaca.addEventListener("submit", function(e){
-        e.preventDefault();
-        reels.forEach(r => r.classList.add("spin"));
+  function girarRoleta() {
+    if (girando) return;
+    girando = true;
+    let velocidade = Math.random() * 0.3 + 0.25;
+    const desacel = 0.0005;
 
-        let spins = 15;
-        let intervalo = setInterval(() => {
-            reels.forEach(r => r.textContent = simbolos[Math.floor(Math.random()*simbolos.length)]);
-            spins--;
-            if(spins <= 0){
-                clearInterval(intervalo);
-                reels.forEach(r => r.classList.remove("spin"));
-                formCaca.submit();
-            }
-        }, 80);
-    });
+    function animar() {
+      if (velocidade > 0) {
+        angulo += velocidade;
+        velocidade -= desacel;
+        desenharRoleta();
+        requestAnimationFrame(animar);
+      } else {
+        girando = false;
+      }
+    }
+    animar();
+  }
 
-    // A roleta pode ser simples, só submit
+  desenharRoleta();
+  document.querySelector("form[method='POST']").addEventListener("submit", girarRoleta);
+}
+
+/* ------------------ CAÇA-NÍQUEL ------------------ */
+document.getElementById("formCaca").addEventListener("submit", (e) => {
+  const lote = document.getElementById("lote").value;
+  if (lote && parseInt(lote) > 1) {
+    e.preventDefault();
+    let rodadas = parseInt(lote);
+    const form = e.target;
+    function rodada() {
+      fetch(form.action, {
+        method: "POST",
+        body: new FormData(form)
+      })
+      .then(r => r.text())
+      .then(html => {
+        document.body.innerHTML = html;
+        rodadas--;
+        if (rodadas > 0) setTimeout(rodada, 1200);
+      });
+    }
+    rodada();
+  }
 });
 </script>
 {% endblock %}
