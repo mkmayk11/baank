@@ -21,9 +21,9 @@
 
                     <!-- Rolo da slot machine -->
                     <div class="slot-machine d-flex justify-content-center mb-3" style="gap: 15px;">
-                        <div class="reel" id="reel1">{% if rolos %}{{ rolos[0] }}{% else %}🍒{% endif %}</div>
-                        <div class="reel" id="reel2">{% if rolos %}{{ rolos[1] }}{% else %}🍋{% endif %}</div>
-                        <div class="reel" id="reel3">{% if rolos %}{{ rolos[2] }}{% else %}🔔{% endif %}</div>
+                        <div class="reel" id="reel1">{{ rolos[0] if rolos|length > 0 else "🍒" }}</div>
+                        <div class="reel" id="reel2">{{ rolos[1] if rolos|length > 1 else "🍋" }}</div>
+                        <div class="reel" id="reel3">{{ rolos[2] if rolos|length > 2 else "🔔" }}</div>
                     </div>
 
                     <!-- Resultado -->
@@ -117,3 +117,4 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 {% endblock %}
+
