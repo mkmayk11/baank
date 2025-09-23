@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="casino-background py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-8">
+
+            <!-- Saldo -->
+            <div class="card text-center p-3 mb-4 shadow-lg" style="background: #111; color: #fff; border-radius: 15px;">
+                <h4>💰 Saldo atual: R$ {{ saldo }}</h4>
+            </div>
+
+            <div class="row">
+                <!-- ROLETA -->
+                <div class="col-md-6 mb-4">
+                    <div class="card p-4 text-center shadow-lg"
+                         style="background: radial-gradient(circle, #1a1a1a, #0d0d0d); border-radius: 20px; color: #fff;">
+                        <h3>🎯 Roleta</h3>
+
+                        {% if resultado_roleta %}
+                            <div class="alert alert-info mt-2">{{ resultado_roleta }}</div>
+                        {% endif %}
+
+                        <form id="form-roleta" method="POST" action="{{ url_for('roleta') }}" class="text-start">
+                            <div class="mb-3">
+                                <label for="aposta_roleta" class="form-label">Valor da Aposta</label>
+                                <input type="number" class="form-control" id="aposta_roleta" name="aposta" min="1" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="numero_escolhido" class="form-label">Número de 0 a 36</label>
+                                <input type="number" class="form-control" id="numero_escolhido" name="numero_escolhido"
+                                       min="0" max="36" required>
+                            </div>
+
+                            <input type="hidden" id="numero_sorteado" name="numero_sorteado">
+
+                            <button type="submit" class="btn btn-success w-100">🎲 Girar</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- CAÇA-NÍQUEL -->
+                <div class="col-md-6 mb-4">
+                    <div class="card p-4 text-center shadow-lg"
+                         style="background: radial-gradient(circle, #1a1a1a, #0d0d0d); border-radius: 20px; color: #fff;">
+                        <h3>🎰 Caça-níquel</h3>
+
+                        {% if resultado_caca %}
+                            <div class="alert alert-info mt-2">{{ resultado_caca }}</div>
+                        {% endif %}
+
+                        <form method="POST" id="formCaca" action="{{ url_for('caca') }}">
+                            <div class="mb-3">
+                                <label for="aposta_caca" class="form-label">Valor da Aposta</label>
+                                <input type="number" class="form-control" id="aposta_caca" name="aposta" min="1" required>
+                            </div>
+                            <button type="submit" class="btn btn-warning w-100">🎰 Girar</button>
+                        </form>
+
+                        {% if rolos %}
+                            <div class="mt-3 fs-2">
+                                {% for r in rolos %}
+                                    {{ r }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    // Gera número sorteado automaticamente na roleta antes do envio
+    document.getElementById("form-roleta").addEventListener("submit", function() {
+        document.getElementById("numero_sorteado").value = Math.floor(Math.random() * 37);
+    });
+</script>
+{% endblock %}
