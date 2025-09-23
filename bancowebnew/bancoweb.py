@@ -274,32 +274,53 @@ def jogos():
 
     if request.method == "POST":
         # -------- CAÇA-NÍQUEL --------
-        if "aposta_caca" in request.form:
-            try:
-                aposta = float(request.form["aposta_caca"])
-            except ValueError:
-                flash("Aposta inválida!", "danger")
-                return redirect(url_for("jogos"))
+if "aposta_caca" in request.form:
+    try:
+        aposta = float(request.form["aposta_caca"])
+    except ValueError:
+        flash("Aposta inválida!", "danger")
+        return redirect(url_for("jogos"))
 
-            if aposta <= 0:
-                resultado_caca = "Digite um valor válido de aposta!"
-            elif aposta > saldo:
-                resultado_caca = "Saldo insuficiente!"
-            else:
-                rolos = [random.choice(simbolos) for _ in range(3)]
-                if rolos[0] == rolos[1] == rolos[2]:
-                    ganho = aposta * 30
-                    saldo += ganho
-                    resultado_caca = f"🎉 Jackpot! {rolos} Você ganhou R$ {ganho:.2f}!"
-                elif rolos[0] == rolos[1] or rolos[1] == rolos[2] or rolos[0] == rolos[2]:
-                    ganho = aposta * 6
-                    saldo += ganho
-                    resultado_caca = f"✨ Quase lá! {rolos} Você ganhou R$ {ganho:.2f}!"
-                else:
-                    saldo -= aposta
-                    resultado_caca = f"❌ {rolos} Você perdeu R$ {aposta:.2f}."
+    if aposta <= 0:
+        resultado_caca = "Digite um valor válido de aposta!"
+    elif aposta > saldo:
+        resultado_caca = "Saldo insuficiente!"
+    else:
+        rolos = [random.choice(simbolos) for _ in range(3)]
 
-                salvar_cliente(usuario, saldo=saldo)
+        # ⭐ e 🎲 regras especiais
+        if rolos.count("⭐") == 2:
+            ganho = aposta * 50
+            saldo += ganho
+            resultado_caca = f"🌟 Duas estrelas! {rolos} Você ganhou R$ {ganho:.2f}!"
+        elif rolos.count("⭐") == 3:
+            ganho = aposta * 200
+            saldo += ganho
+            resultado_caca = f"🌟🌟🌟 Três estrelas! {rolos} Jackpot cósmico! R$ {ganho:.2f}!"
+        elif rolos.count("🎲") == 2:
+            ganho = aposta * 20
+            saldo += ganho
+            resultado_caca = f"🎲🎲 Dois dados! {rolos} Você ganhou R$ {ganho:.2f}!"
+        elif rolos.count("🎲") == 3:
+            ganho = aposta * 80
+            saldo += ganho
+            resultado_caca = f"🎲🎲🎲 Três dados! {rolos} Sortudo demais! R$ {ganho:.2f}!"
+
+        # Regras normais
+        elif rolos[0] == rolos[1] == rolos[2]:
+            ganho = aposta * 30
+            saldo += ganho
+            resultado_caca = f"🎉 Jackpot! {rolos} Você ganhou R$ {ganho:.2f}!"
+        elif rolos[0] == rolos[1] or rolos[1] == rolos[2] or rolos[0] == rolos[2]:
+            ganho = aposta * 6
+            saldo += ganho
+            resultado_caca = f"✨ Quase lá! {rolos} Você ganhou R$ {ganho:.2f}!"
+        else:
+            saldo -= aposta
+            resultado_caca = f"❌ {rolos} Você perdeu R$ {aposta:.2f}."
+
+        salvar_cliente(usuario, saldo=saldo)
+
 
         # -------- ROLETA --------
         elif "aposta_roleta" in request.form:
@@ -401,6 +422,7 @@ def recusar_deposito(id):
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
