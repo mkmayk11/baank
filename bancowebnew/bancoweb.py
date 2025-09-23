@@ -338,7 +338,56 @@ def recusar_deposito(id):
     conn.close()
     flash("Depósito recusado!")
     return redirect(url_for("admin_depositos"))
+    @app.route("/caca", methods=["GET", "POST"])
+def caca_slot():
+    if "usuario" not in session or session["usuario"] == "admin":
+        return redirect(url_for("login"))
+    
+    usuario = session["usuario"]
+    dados = carregar_dados()
+    saldo_atual = dados["clientes"][usuario]["saldo"]
+    resultado = None
+    rolos = []
+
+    # 13 símbolos diferentes
+    simbolos = [
+        "🍒", "🍋", "🔔", "⭐", "💎", "🍀", "🍉", "🥭",
+        "🍇", "🍌", "🍓", "🍑", "🍍"
+    ]
+
+    if request.method == "POST":
+        aposta = float(request.form["aposta"])
+
+        if aposta <= 0:
+            resultado = "Digite um valor válido de aposta!"
+        elif aposta > saldo_atual:
+            resultado = "Saldo insuficiente!"
+        else:
+            # sorteio dos 3 rolos
+            rolos = [random.choice(simbolos) for _ in range(3)]
+
+            # cálculo do ganho
+            if rolos[0] == rolos[1] == rolos[2]:
+                ganho = aposta * 30  # 3 iguais
+                saldo_atual += ganho
+                resultado = f"🎉 Jackpot! {rolos} Você ganhou R$ {ganho:.2f}!"
+                registrar_historico(usuario, f"Caça-níquel (Jackpot {rolos})", ganho)
+            elif rolos[0] == rolos[1] or rolos[1] == rolos[2] or rolos[0] == rolos[2]:
+                ganho = aposta * 6  # 2 iguais
+                saldo_atual += ganho
+                resultado = f"✨ Quase lá! {rolos} Você ganhou R$ {ganho:.2f}!"
+                registrar_historico(usuario, f"Caça-níquel (Par {rolos})", ganho)
+            else:
+                saldo_atual -= aposta
+                resultado = f"❌ {rolos} Você perdeu R$ {aposta:.2f}."
+                registrar_historico(usuario, f"Caça-níquel (Derrota {rolos})", -aposta)
+
+            # atualiza saldo no banco
+            salvar_cliente(usuario, saldo=saldo_atual)
+
+    return render_template("caca.html", resultado=resultado, rolos=rolos, saldo=saldo_atual)
 
 
 if __name__ == "__main__":
     app.run(debug=True)
+
