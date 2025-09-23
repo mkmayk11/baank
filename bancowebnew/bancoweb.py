@@ -338,7 +338,7 @@ def recusar_deposito(id):
     conn.close()
     flash("Depósito recusado!")
     return redirect(url_for("admin_depositos"))
-    @app.route("/roleta", methods=["GET", "POST"])
+@app.route("/roleta", methods=["GET", "POST"])
 def roleta():
     # lógica aqui
     return render_template("roleta.html")
@@ -375,6 +375,7 @@ def roleta():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
