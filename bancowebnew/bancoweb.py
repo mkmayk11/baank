@@ -349,10 +349,11 @@ def caca_slot():
     resultado = None
     rolos = []
 
-    # 13 símbolos diferentes
+    # 19 símbolos diferentes (13 antigos + 6 novos)
     simbolos = [
         "🍒", "🍋", "🔔", "⭐", "💎", "🍀", "🍉", "🥭",
-        "🍇", "🍌", "🍓", "🍑", "🍍"
+        "🍇", "🍌", "🍓", "🍑", "🍍",
+        "🥝", "🥥", "🍈", "🌈", "🎲",   # novos
     ]
 
     if request.method == "POST":
@@ -388,8 +389,10 @@ def caca_slot():
     return render_template("caca.html", resultado=resultado, rolos=rolos, saldo=saldo_atual)
 
 
+
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
