@@ -156,3 +156,124 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 {% endblock %}
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="casino-background py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+
+            <div class="card p-4 text-center shadow-lg" style="background: radial-gradient(circle, #1a1a1a, #0d0d0d); border-radius: 20px; border: 3px solid #ffdd00;">
+                <h2 class="casino-title mb-4">🎰 Caça-níquel Vegas</h2>
+
+                <!-- Saldo -->
+                <div class="saldo mb-3">
+                    <span class="text-warning fw-bold">Saldo:</span> 
+                    <span id="saldo" class="text-light fs-5">{{ saldo }}</span>
+                </div>
+
+                <!-- Campo de aposta -->
+                <form method="POST" id="formCaca">
+                    <div class="mb-3">
+                        <input type="number" name="aposta" id="apostaSlot" step="0.01" class="form-control form-control-lg text-center" placeholder="Valor da aposta" required style="font-size:1.2rem; border: 2px solid #ffdd00; background-color:#222; color:#fff;">
+                    </div>
+
+                    <!-- Rolo da slot machine -->
+                    <div class="slot-machine d-flex justify-content-center mb-3" style="gap: 15px;">
+                        <div class="reel" id="reel1">{{ rolos[0] if rolos|length > 0 else "🍒" }}</div>
+                        <div class="reel" id="reel2">{{ rolos[1] if rolos|length > 1 else "🍋" }}</div>
+                        <div class="reel" id="reel3">{{ rolos[2] if rolos|length > 2 else "🔔" }}</div>
+                    </div>
+
+                    <!-- Resultado -->
+                    <div id="resultadoSlot" class="alert alert-dark mt-3" style="border: 2px solid #ffdd00; color:#fff; font-weight:bold;">
+                        {% if resultado %}{{ resultado }}{% endif %}
+                    </div>
+
+                    <button type="submit" class="btn btn-warning fw-bold mt-3" style="font-size:1.2rem; padding:10px 25px; border-radius:10px; box-shadow:0 0 10px #ffdd00;">Girar 🎲</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Background estilo cassino */
+.casino-background {
+    background: url('https://images.unsplash.com/photo-1601999135003-142d1f6aa391?auto=format&fit=crop&w=1950&q=80') no-repeat center center fixed;
+    background-size: cover;
+    min-height: 100vh;
+}
+
+/* Título neon */
+.casino-title {
+    color: #ffdd00;
+    text-shadow: 0 0 5px #fff, 0 0 10px #ffdd00, 0 0 20px #ffdd00, 0 0 40px #ffdd00;
+}
+
+/* Rolo do slot */
+.reel {
+    width: 70px;
+    height: 70px;
+    font-size: 45px;
+    line-height: 70px;
+    text-align: center;
+    border-radius: 10px;
+    color: #fff;
+    background: linear-gradient(145deg, #444, #000);
+    border: 2px solid #ffdd00;
+    box-shadow: 0 0 15px #ffdd00, 0 0 30px #ffdd00 inset;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Animação rápida ao girar */
+.reel.spin {
+    animation: spinAnim 0.2s infinite;
+}
+
+@keyframes spinAnim {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0); }
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const reels = [
+        document.getElementById("reel1"),
+        document.getElementById("reel2"),
+        document.getElementById("reel3")
+    ];
+    const apostaInput = document.getElementById("apostaSlot");
+    const saldoEl = document.getElementById("saldo");
+
+    // Lista dos 13 emojis do Flask
+    const simbolos = [
+        "🍒", "🍋", "🔔", "⭐", "💎", "🍀", "🍉", "🥭",
+        "🍇", "🍌", "🍓", "🍑", "🍍"
+    ];
+
+    // Aplica animação aos rolos enquanto espera o POST do Flask
+    const form = document.getElementById("formCaca");
+    form.addEventListener("submit", function(e){
+        e.preventDefault();
+        reels.forEach(r => r.classList.add("spin"));
+
+        let spins = 15;
+        let intervalo = setInterval(() => {
+            reels.forEach(r => r.textContent = simbolos[Math.floor(Math.random() * simbolos.length)]);
+            spins--;
+            if(spins <= 0){
+                clearInterval(intervalo);
+                reels.forEach(r => r.classList.remove("spin"));
+
+                // Envia ao Flask via POST
+                form.submit();
+            }
+        }, 80);
+    });
+});
+</script>
+{% endblock %}
+
+
