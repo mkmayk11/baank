@@ -339,7 +339,7 @@ def recusar_deposito(id):
     flash("Depósito recusado!")
     return redirect(url_for("admin_depositos"))
     @app.route("/caca", methods=["GET", "POST"])
-def caca():
+def caca_slot():
     if "usuario" not in session or session["usuario"] == "admin":
         return redirect(url_for("login"))
     
@@ -390,5 +390,6 @@ def caca():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
