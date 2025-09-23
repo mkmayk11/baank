@@ -11,9 +11,10 @@
             </div>
         </div>
 
-        <!-- Ações -->
-        <a href="{{ url_for('jogos') }}" class="btn btn-warning fw-bold">🎲 Ir para Jogos</a>
+        <!-- Botão para a página de Jogos -->
+        <a href="{{ url_for('jogos') }}" class="btn btn-warning fw-bold mb-4">🎲 Ir para Jogos</a>
 
+        <!-- Outras ações -->
         <div class="row g-3">
             <div class="col-6 col-md-3">
                 <a href="{{ url_for('deposito') }}" class="btn w-100 py-3 shadow-sm"
@@ -45,12 +46,7 @@
                    <i class="bi bi-key"></i> Alterar senha
                 </a>
             </div>
-            <div class="col-6 col-md-3">
-                <a href="{{ url_for('roleta') }}" class="btn w-100 py-3 shadow-sm"
-                   style="background:#1e1e1e; color:#f5f5f5; border:1px solid #444;">
-                   <i class="bi bi-dice-5"></i> Roleta
-                </a>
-            </div>
+            <!-- Removido o botão roleta individual, agora só existe o botão Jogos -->
             <div class="col-6 col-md-3">
                 <a href="{{ url_for('logout') }}" class="btn w-100 py-3 shadow-sm"
                    style="background:#000; color:#ff4c4c; border:1px solid #444;">
@@ -61,4 +57,3 @@
     </div>
 </div>
 {% endblock %}
-
