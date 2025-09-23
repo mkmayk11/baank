@@ -273,8 +273,8 @@ def jogos():
     ]
 
     if request.method == "POST":
+        # -------- CAÇA-NÍQUEL --------
         if "aposta_caca" in request.form:
-            # PROCESSA CAÇA-NÍQUEL
             try:
                 aposta = float(request.form["aposta_caca"])
             except ValueError:
@@ -300,15 +300,41 @@ def jogos():
                     resultado_caca = f"❌ {rolos} Você perdeu R$ {aposta:.2f}."
 
                 salvar_cliente(usuario, saldo=saldo)
-        elif "aposta_roleta" in request.form:
-            # PROCESSA ROLETA (igual a que você já tem)
-            pass
 
-    return render_template("jogos.html",
-                           saldo=saldo,
-                           resultado_caca=resultado_caca,
-                           resultado_roleta=resultado_roleta,
-                           rolos=rolos)
+        # -------- ROLETA --------
+        elif "aposta_roleta" in request.form:
+            try:
+                aposta = float(request.form["aposta_roleta"])
+            except ValueError:
+                flash("Aposta inválida!", "danger")
+                return redirect(url_for("jogos"))
+
+            if aposta <= 0:
+                resultado_roleta = "Digite um valor válido de aposta!"
+            elif aposta > saldo:
+                resultado_roleta = "Saldo insuficiente!"
+            else:
+                numero = random.randint(0, 36)
+                cor = "vermelho" if numero % 2 == 0 else "preto"
+                aposta_cor = request.form.get("cor_roleta", "").lower()
+
+                if aposta_cor == cor:
+                    ganho = aposta * 2
+                    saldo += ganho
+                    resultado_roleta = f"🎉 Número {numero} ({cor})! Você ganhou R$ {ganho:.2f}!"
+                else:
+                    saldo -= aposta
+                    resultado_roleta = f"❌ Número {numero} ({cor})! Você perdeu R$ {aposta:.2f}."
+
+                salvar_cliente(usuario, saldo=saldo)
+
+    return render_template(
+        "jogos.html",
+        saldo=saldo,
+        resultado_caca=resultado_caca,
+        resultado_roleta=resultado_roleta,
+        rolos=rolos
+    )
 
 
 
@@ -375,6 +401,7 @@ def recusar_deposito(id):
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
