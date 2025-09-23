@@ -307,51 +307,31 @@ def caca():
     usuario = session["usuario"]
     dados = carregar_dados()
     saldo_atual = dados["clientes"][usuario]["saldo"]
+
     resultado_roleta = None
     resultado_caca = None
     rolos = []
 
-    simbolos = [
-        "🍒", "🍋", "🔔", "⭐", "💎", "🍀", "🍉", "🥭",
-        "🍇", "🍌", "🍓", "🍑", "🍍", "🥝", "🥥", "🍈", "🌈", "🎲"
-    ]
-
     if request.method == "POST":
-        try:
-            aposta = float(request.form["aposta"])
-        except (KeyError, ValueError):
-            flash("Dados inválidos enviados!", "danger")
-            return redirect(url_for("dashboard"))
+        jogo = request.form.get("jogo")  # "roleta" ou "caca"
+        aposta = float(request.form.get("aposta", 0))
 
-        if aposta <= 0:
-            resultado_caca = "Digite um valor válido de aposta!"
-        elif aposta > saldo_atual:
-            resultado_caca = "Saldo insuficiente!"
-        else:
-            rolos = [random.choice(simbolos) for _ in range(3)]
+        if jogo == "caca":
+            # lógica do caça-níquel
+            rolos, resultado_caca, saldo_atual = processar_caca(usuario, saldo_atual, aposta)
 
-            if rolos[0] == rolos[1] == rolos[2]:
-                ganho = aposta * 30
-                saldo_atual += ganho
-                resultado_caca = f"🎉 Jackpot! {rolos} Você ganhou R$ {ganho:.2f}!"
-                registrar_historico(usuario, f"Caça-níquel (Jackpot {rolos})", ganho)
-            elif rolos[0] == rolos[1] or rolos[1] == rolos[2] or rolos[0] == rolos[2]:
-                ganho = aposta * 6
-                saldo_atual += ganho
-                resultado_caca = f"✨ Quase lá! {rolos} Você ganhou R$ {ganho:.2f}!"
-                registrar_historico(usuario, f"Caça-níquel (Par {rolos})", ganho)
-            else:
-                saldo_atual -= aposta
-                resultado_caca = f"❌ {rolos} Você perdeu R$ {aposta:.2f}."
-                registrar_historico(usuario, f"Caça-níquel (Derrota {rolos})", -aposta)
+        elif jogo == "roleta":
+            # lógica da roleta
+            resultado_roleta, saldo_atual = processar_roleta(usuario, saldo_atual, aposta)
 
-            salvar_cliente(usuario, saldo=saldo_atual)
+    return render_template(
+        "jogos.html",
+        saldo=saldo_atual,
+        resultado_roleta=resultado_roleta,
+        resultado_caca=resultado_caca,
+        rolos=rolos,
+    )
 
-    return render_template("jogos.html",
-                           saldo=saldo_atual,
-                           resultado_roleta=resultado_roleta,
-                           resultado_caca=resultado_caca,
-                           rolos=rolos)
 
 
 
@@ -483,6 +463,7 @@ def recusar_deposito(id):
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
