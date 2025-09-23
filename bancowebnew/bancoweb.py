@@ -298,39 +298,6 @@ def roleta():
                            rolos=rolos)
 
 
-# -------------------- CAÇA-NÍQUEL --------------------
-@app.route("/caca", methods=["GET", "POST"])
-def caca():
-    if "usuario" not in session or session["usuario"] == "admin":
-        return redirect(url_for("login"))
-
-    usuario = session["usuario"]
-    dados = carregar_dados()
-    saldo_atual = dados["clientes"][usuario]["saldo"]
-
-    resultado_roleta = None
-    resultado_caca = None
-    rolos = []
-
-    if request.method == "POST":
-        jogo = request.form.get("jogo")  # "roleta" ou "caca"
-        aposta = float(request.form.get("aposta", 0))
-
-        if jogo == "caca":
-            # lógica do caça-níquel
-            rolos, resultado_caca, saldo_atual = processar_caca(usuario, saldo_atual, aposta)
-
-        elif jogo == "roleta":
-            # lógica da roleta
-            resultado_roleta, saldo_atual = processar_roleta(usuario, saldo_atual, aposta)
-
-    return render_template(
-        "jogos.html",
-        saldo=saldo_atual,
-        resultado_roleta=resultado_roleta,
-        resultado_caca=resultado_caca,
-        rolos=rolos,
-    )
 
 
 
@@ -463,6 +430,7 @@ def recusar_deposito(id):
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
