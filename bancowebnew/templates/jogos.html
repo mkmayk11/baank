@@ -33,7 +33,7 @@
       <div class="col-md-6">
         <div class="card p-4 text-center shadow-lg roulette-card">
           <h2 class="mb-3">🎡 Roleta</h2>
-          <form method="POST" action="{{ url_for('jogar_roleta') }}">
+          <form method="POST" action="{{ url_for('jogos') }}">
             <input type="number" name="aposta_roleta" id="apostaRoleta" step="0.01"
               value="{{ last_aposta_roleta }}" placeholder="Valor da aposta" required class="form-control mb-3">
             <button type="submit" class="btn btn-neon w-100">Rodar 🎡</button>
@@ -199,7 +199,7 @@
     animate();
   }
 
-  document.querySelector("form[action*='jogar_roleta']")
+  document.querySelector("form[action*='jogos']")
     .addEventListener("submit", e => {
       e.preventDefault();
       spinRoulette();
@@ -209,4 +209,5 @@
   drawRoulette();
 </script>
 {% endblock %}
+
 
