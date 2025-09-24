@@ -29,8 +29,6 @@
             <div class="reel" id="reel2">{{ rolos[1] if rolos else "❔" }}</div>
             <div class="reel" id="reel3">{{ rolos[2] if rolos else "❔" }}</div>
           </div>
-
-          <div id="slotResultado" class="alert alert-info mt-3" style="display:none;"></div>
         </div>
       </div>
 
@@ -41,7 +39,6 @@
           <form method="POST" action="{{ url_for('jogos') }}" id="formRoleta">
             <input type="number" name="aposta_roleta" id="apostaRoleta" step="0.01"
               value="{{ last_aposta_roleta }}" placeholder="Valor da aposta" required class="form-control mb-2">
-
             <input type="number" name="numero_roleta" id="numeroAposta" min="0" max="36"
               value="{{ last_numero_aposta }}" placeholder="Número apostado (0-36)" class="form-control mb-3">
 
@@ -100,26 +97,7 @@ async function startSlot(rolos) {
   await spinReel("reel3", rolos[2]);
 }
 
-document.getElementById("formCaca").addEventListener("submit", async e => {
-  e.preventDefault();
-  const aposta = parseFloat(document.getElementById("apostaCaca").value);
-  const lote = parseInt(document.getElementById("lote").value) || 1;
-
-  for (let i=0; i<lote; i++) {
-    const resp = await fetch("{{ url_for('jogos') }}", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({tipo:"caca", aposta})
-    });
-    const data = await resp.json();
-    await startSlot(data.rolos);
-    document.getElementById("slotResultado").style.display="block";
-    document.getElementById("slotResultado").innerText = data.resultado;
-    document.getElementById("saldoBox").innerText = "R$ "+data.saldo.toFixed(2);
-  }
-});
-
-// -------------------- ROLETA --------------------
+// -------------------- ROleta --------------------
 const canvas = document.getElementById("rouletteCanvas");
 const ctx = canvas.getContext("2d");
 const segments = Array.from({length:37},(_,i)=>i);
@@ -155,7 +133,7 @@ function animateToIndex(winningIndex) {
   if(spinning) return;
   spinning=true;
   const segmentAngle=(2*Math.PI)/segments.length;
-  let targetAngle=angle+(2*Math.PI*5)+(winningIndex*segmentAngle);
+  const targetAngle=angle+(2*Math.PI*5)+(winningIndex*segmentAngle);
   let speed=0.5;
   function animate(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -167,7 +145,6 @@ function animateToIndex(winningIndex) {
     } else {
       angle=targetAngle;
       spinning=false;
-      document.getElementById("rouletteResult").innerText="Número sorteado: "+winningIndex;
     }
   }
   animate();
@@ -175,23 +152,23 @@ function animateToIndex(winningIndex) {
 
 drawRoulette();
 
-document.getElementById("formRoleta").addEventListener("submit", async e=>{
-  e.preventDefault();
-  const aposta=parseFloat(document.getElementById("apostaRoleta").value);
-  const numero=parseInt(document.getElementById("numeroAposta").value);
-  const resp=await fetch("{{ url_for('jogos') }}",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({tipo:"roleta", aposta, numero})
-  });
-  const data=await resp.json();
-  animateToIndex(data.numero);
-  const checkInterval = setInterval(()=>{
-    if(!spinning){
-      clearInterval(checkInterval);
-      document.getElementById("saldoBox").innerText="R$ "+data.saldo.toFixed(2);
+// -------------------- ANIMAÇÃO AUTOMÁTICA APÓS O BACKEND --------------------
+document.addEventListener("DOMContentLoaded", function(){
+  // Slots
+  const serverRolos = {{ rolos|tojson if rolos else 'null' }};
+  if(serverRolos){
+    startSlot(serverRolos);
+  }
+
+  // Roleta
+  const serverResultadoRoleta = {{ resultado_roleta|tojson if resultado_roleta else 'null' }};
+  if(serverResultadoRoleta){
+    const match = serverResultadoRoleta.match(/\b([0-9]|[1-2][0-9]|3[0-6])\b/);
+    if(match){
+      const numero = parseInt(match[0],10);
+      animateToIndex(numero);
     }
-  },50);
+  }
 });
 </script>
 {% endblock %}
