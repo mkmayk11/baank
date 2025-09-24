@@ -25,10 +25,12 @@
           </form>
 
           <div id="slotMachine" class="slot-machine mt-4">
-            <div class="reel" id="reel1">{{ rolos[0] if rolos else "❔" }}</div>
-            <div class="reel" id="reel2">{{ rolos[1] if rolos else "❔" }}</div>
-            <div class="reel" id="reel3">{{ rolos[2] if rolos else "❔" }}</div>
+            <div class="reel" id="reel1">❔</div>
+            <div class="reel" id="reel2">❔</div>
+            <div class="reel" id="reel3">❔</div>
           </div>
+
+          <div id="slotResultado" class="alert alert-info mt-3" style="display:none;"></div>
         </div>
       </div>
 
@@ -87,21 +89,27 @@ async function spinReel(reelId, finalSymbol) {
       clearInterval(interval);
       reel.textContent = finalSymbol;
       resolve();
-    }, 1200);
+    }, 1800); // tempo para criar suspense
   });
 }
 
-async function startSlot(rolos) {
+async function startSlot(rolos, resultado, saldoFinal) {
+  document.getElementById("slotResultado").style.display = "none";
   await spinReel("reel1", rolos[0]);
   await spinReel("reel2", rolos[1]);
   await spinReel("reel3", rolos[2]);
+  // mostra resultado só agora
+  const slotDiv = document.getElementById("slotResultado");
+  slotDiv.style.display = "block";
+  slotDiv.innerText = resultado;
+  document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
 }
 
 // -------------------- ROleta --------------------
 const canvas = document.getElementById("rouletteCanvas");
 const ctx = canvas.getContext("2d");
 const segments = Array.from({length:37},(_,i)=>i);
-let angle=0, spinning=false;
+let angle = 0, spinning = false;
 
 function drawRoulette() {
   const radius = canvas.width/2;
@@ -129,46 +137,30 @@ function drawRoulette() {
   ctx.restore();
 }
 
-function animateToIndex(winningIndex) {
+function animateToIndex(winningIndex, saldoFinal, resultadoTexto) {
   if(spinning) return;
-  spinning=true;
+  spinning = true;
   const segmentAngle=(2*Math.PI)/segments.length;
-  const targetAngle=angle+(2*Math.PI*5)+(winningIndex*segmentAngle);
-  let speed=0.5;
+  const targetAngle = angle + (2*Math.PI*5) + (winningIndex * segmentAngle);
+  let speed = 0.5;
   function animate(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
     drawRoulette();
-    if(angle<targetAngle){
-      angle+=speed;
-      speed*=0.995;
+    if(angle < targetAngle){
+      angle += speed;
+      speed *= 0.995;
       requestAnimationFrame(animate);
     } else {
-      angle=targetAngle;
-      spinning=false;
+      angle = targetAngle;
+      spinning = false;
+      // resultado e saldo só após parar
+      document.getElementById("rouletteResult").innerText = resultadoTexto;
+      document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
     }
   }
   animate();
 }
 
 drawRoulette();
-
-// -------------------- ANIMAÇÃO AUTOMÁTICA APÓS O BACKEND --------------------
-document.addEventListener("DOMContentLoaded", function(){
-  // Slots
-  const serverRolos = {{ rolos|tojson if rolos else 'null' }};
-  if(serverRolos){
-    startSlot(serverRolos);
-  }
-
-  // Roleta
-  const serverResultadoRoleta = {{ resultado_roleta|tojson if resultado_roleta else 'null' }};
-  if(serverResultadoRoleta){
-    const match = serverResultadoRoleta.match(/\b([0-9]|[1-2][0-9]|3[0-6])\b/);
-    if(match){
-      const numero = parseInt(match[0],10);
-      animateToIndex(numero);
-    }
-  }
-});
 </script>
 {% endblock %}
