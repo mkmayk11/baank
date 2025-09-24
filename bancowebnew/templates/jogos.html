@@ -2,6 +2,13 @@
 {% block conteudo %}
 <div class="casino-background py-5">
   <div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="text-white">🎲 Joguinhos</h2>
+      <div class="px-3 py-2" style="background: rgba(0,0,0,0.4); border-radius:12px; border:1px solid #2f2;">
+        <strong>Saldo:</strong> R$ {{ '%.2f' % saldo }}
+      </div>
+    </div>
+
     <div class="row justify-content-center g-4">
 
       <!-- 🎰 CAÇA-NÍQUEL -->
@@ -18,9 +25,9 @@
           </form>
 
           <div id="slotMachine" class="slot-machine mt-4">
-            <div class="reel" id="reel1">{{ slot1 if slot1 else "❔" }}</div>
-            <div class="reel" id="reel2">{{ slot2 if slot2 else "❔" }}</div>
-            <div class="reel" id="reel3">{{ slot3 if slot3 else "❔" }}</div>
+            <div class="reel" id="reel1">{{ rolos[0] if rolos else "❔" }}</div>
+            <div class="reel" id="reel2">{{ rolos[1] if rolos else "❔" }}</div>
+            <div class="reel" id="reel3">{{ rolos[2] if rolos else "❔" }}</div>
           </div>
 
           {% if resultado_caca %}
@@ -37,7 +44,8 @@
             <input type="number" name="aposta_roleta" id="apostaRoleta" step="0.01"
               value="{{ last_aposta_roleta }}" placeholder="Valor da aposta" required class="form-control mb-2">
 
-            <input type="number" name="numero_aposta" id="numeroAposta" min="0" max="36"
+            <!-- NOTE: name="numero_roleta" corresponde à lógica do Flask -->
+            <input type="number" name="numero_roleta" id="numeroAposta" min="0" max="36"
               value="{{ last_numero_aposta }}" placeholder="Número apostado (0-36)" class="form-control mb-3">
 
             <button type="submit" class="btn btn-neon w-100">Rodar 🎡</button>
@@ -48,7 +56,10 @@
               <canvas id="rouletteCanvas" width="300" height="300"></canvas>
               <div class="roulette-pointer">▼</div>
             </div>
-            <div id="rouletteResult" class="mt-3"></div>
+            <div id="rouletteResult" class="mt-3 text-white"></div>
+            {% if resultado_roleta %}
+              <div class="alert alert-info mt-2">{{ resultado_roleta }}</div>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -112,6 +123,7 @@
     border-radius: 50%;
     border: 5px solid #0f0;
     box-shadow: 0 0 20px #0f0;
+    background: #111;
   }
   .roulette-pointer {
     position: absolute;
@@ -125,7 +137,7 @@
 </style>
 
 <script>
-  // 🎰 Slot Machine
+  // ⚠ IMPORTANTE: esta lista deve bater com a lista `simbolos` do Flask.
   const symbols = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲"];
 
   async function spinReel(reelId, delay, finalSymbol) {
@@ -135,7 +147,7 @@
       const interval = setInterval(() => {
         reel.textContent = symbols[i % symbols.length];
         i++;
-      }, 100);
+      }, 80);
       setTimeout(() => {
         clearInterval(interval);
         reel.textContent = finalSymbol;
@@ -145,32 +157,24 @@
   }
 
   async function startSlot(results) {
-    await spinReel("reel1", 1500, results[0]);
-    await spinReel("reel2", 2500, results[1]);
-    await spinReel("reel3", 3500, results[2]);
+    // results é um array tipo ["🍒","🍋","⭐"] vindo do servidor
+    await spinReel("reel1", 900, results[0]);
+    await spinReel("reel2", 1400, results[1]);
+    await spinReel("reel3", 1900, results[2]);
   }
 
-  document.getElementById("formCaca").addEventListener("submit", e => {
-    e.preventDefault();
-    // pega resultados já renderizados pelo backend
-    const results = [
-      "{{ slot1 if slot1 else '🍒' }}",
-      "{{ slot2 if slot2 else '🍋' }}",
-      "{{ slot3 if slot3 else '⭐' }}"
-    ];
-    startSlot(results).then(() => e.target.submit());
-  });
-
-  // 🎡 Roleta
+  /* -------------------- Roleta drawing + animação para número do servidor -------------------- */
   const canvas = document.getElementById("rouletteCanvas");
   const ctx = canvas.getContext("2d");
-  const segments = Array.from({length: 37}, (_, i) => i.toString());
+  const segments = Array.from({length: 37}, (_, i) => i); // 0..36
   const colors = segments.map((_, i) => i === 0 ? "#0f0" : (i % 2 === 0 ? "#f00" : "#000"));
   let angle = 0, spinning = false;
 
   function drawRoulette() {
     const radius = canvas.width / 2;
     const segmentAngle = (2 * Math.PI) / segments.length;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
     for (let i = 0; i < segments.length; i++) {
       ctx.beginPath();
       ctx.moveTo(radius, radius);
@@ -183,23 +187,21 @@
       ctx.fillStyle = "#fff";
       ctx.font = "14px Arial";
       ctx.textAlign = "center";
-      ctx.fillText(segments[i], radius * 0.75, 5);
+      ctx.fillText(segments[i].toString(), radius * 0.75, 5);
       ctx.restore();
     }
   }
 
-  function spinRoulette() {
+  function animateToIndex(winningIndex) {
     if (spinning) return;
     spinning = true;
-
-    const winningIndex = Math.floor(Math.random() * segments.length);
     const segmentAngle = (2 * Math.PI) / segments.length;
     const targetAngle = angle + (2 * Math.PI * 6) + (winningIndex * segmentAngle);
 
     let speed = 0.4;
     function animate() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.save();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.translate(canvas.width / 2, canvas.height / 2);
       ctx.rotate(angle);
       ctx.translate(-canvas.width / 2, -canvas.height / 2);
@@ -208,11 +210,13 @@
 
       if (angle < targetAngle) {
         angle += speed;
-        if (targetAngle - angle < 2) speed *= 0.97; // desaceleração
+        if (targetAngle - angle < 2) speed *= 0.97;
         requestAnimationFrame(animate);
       } else {
         spinning = false;
-        document.getElementById("rouletteResult").innerText = "Resultado: " + segments[winningIndex];
+        // mostra o resultado ao lado (se já não estiver setado)
+        // o backend já mostra uma mensagem textual em resultado_roleta, então esse div é suplementar.
+        document.getElementById("rouletteResult").innerText = "Resultado: " + winningIndex;
       }
     }
     animate();
@@ -220,10 +224,29 @@
 
   drawRoulette();
 
-  document.getElementById("formRoleta").addEventListener("submit", e => {
-    e.preventDefault();
-    spinRoulette();
-    setTimeout(() => e.target.submit(), 5000);
+  /* -------------------- Comportamento ao carregar (usa resultados do servidor) -------------------- */
+  document.addEventListener("DOMContentLoaded", function() {
+    // rolos vindo do servidor (array) — template injeta aqui quando houver rolagem feita.
+    const serverRolos = {{ rolos|tojson if rolos else 'null' }};
+    if (serverRolos) {
+      // anima para os símbolos que o servidor já calculou
+      startSlot(serverRolos);
+    }
+
+    // resultado textual da roleta (ex: "🎉 Número 7! Você ganhou R$ 10.00!")
+    const serverResultadoRoleta = {{ resultado_roleta|tojson if resultado_roleta else 'null' }};
+    if (serverResultadoRoleta) {
+      // exibe a mensagem textual (vinda do backend)
+      document.getElementById("rouletteResult").innerText = serverResultadoRoleta;
+
+      // tenta extrair o número sorteado (0..36) da string do backend
+      const match = serverResultadoRoleta.match(/\b([0-9]|[1-2][0-9]|3[0-6])\b/);
+      if (match) {
+        const numero = parseInt(match[0], 10);
+        // anima a roleta para esse número
+        animateToIndex(numero);
+      }
+    }
   });
 </script>
 {% endblock %}
