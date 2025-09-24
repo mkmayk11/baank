@@ -8,7 +8,7 @@
       <div class="col-md-6">
         <div class="card p-4 text-center shadow-lg slot-card">
           <h2 class="mb-3">🎰 Caça-Níquel</h2>
-          <form method="POST" action="{{ url_for('jogos') }}">
+          <form method="POST" action="{{ url_for('jogos') }}" id="formCaca">
             <input type="number" name="aposta_caca" id="apostaCaca" step="0.01"
               value="{{ last_aposta_caca }}" placeholder="Valor da aposta" required class="form-control mb-2">
             <input type="number" name="lote" id="lote" value="{{ last_lote }}"
@@ -33,7 +33,7 @@
       <div class="col-md-6">
         <div class="card p-4 text-center shadow-lg roulette-card">
           <h2 class="mb-3">🎡 Roleta</h2>
-          <form method="POST" action="{{ url_for('jogos') }}">
+          <form method="POST" action="{{ url_for('jogos') }}" id="formRoleta">
             <input type="number" name="aposta_roleta" id="apostaRoleta" step="0.01"
               value="{{ last_aposta_roleta }}" placeholder="Valor da aposta" required class="form-control mb-3">
             <button type="submit" class="btn btn-neon w-100">Rodar 🎡</button>
@@ -129,17 +129,15 @@
   }
 
   async function startSlot() {
-    const s1 = await spinReel("reel1", 1500);
-    const s2 = await spinReel("reel2", 2500);
-    const s3 = await spinReel("reel3", 3500);
+    await spinReel("reel1", 1500);
+    await spinReel("reel2", 2500);
+    await spinReel("reel3", 3500);
   }
 
-  document.querySelector("form[action*='jogar_caca']")
-    .addEventListener("submit", e => {
-      e.preventDefault();
-      startSlot();
-      e.target.submit();
-    });
+  document.getElementById("formCaca").addEventListener("submit", e => {
+    e.preventDefault();
+    startSlot().then(() => e.target.submit());
+  });
 
   // 🎡 Roleta
   const canvas = document.getElementById("rouletteCanvas");
@@ -199,15 +197,12 @@
     animate();
   }
 
-  document.querySelector("form[action*='jogos']")
-    .addEventListener("submit", e => {
-      e.preventDefault();
-      spinRoulette();
-      e.target.submit();
-    });
+  document.getElementById("formRoleta").addEventListener("submit", e => {
+    e.preventDefault();
+    spinRoulette();
+    e.target.submit();
+  });
 
   drawRoulette();
 </script>
 {% endblock %}
-
-
