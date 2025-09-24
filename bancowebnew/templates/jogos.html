@@ -15,7 +15,7 @@
       <div class="col-md-6">
         <div class="card p-4 text-center shadow-lg slot-card">
           <h2 class="mb-3">🎰 Caça-Níquel</h2>
-          <form method="POST" action="{{ url_for('jogos') }}" id="formCaca">
+          <form id="formCaca">
             <input type="number" name="aposta_caca" id="apostaCaca" step="0.01"
               value="{{ last_aposta_caca }}" placeholder="Valor da aposta" required class="form-control mb-2">
             <input type="number" name="lote" id="lote" value="{{ last_lote }}"
@@ -29,7 +29,6 @@
             <div class="reel" id="reel2">❔</div>
             <div class="reel" id="reel3">❔</div>
           </div>
-
           <div id="slotResultado" class="alert alert-info mt-3" style="display:none;"></div>
         </div>
       </div>
@@ -38,7 +37,7 @@
       <div class="col-md-6">
         <div class="card p-4 text-center shadow-lg roulette-card">
           <h2 class="mb-3">🎡 Roleta</h2>
-          <form method="POST" action="{{ url_for('jogos') }}" id="formRoleta">
+          <form id="formRoleta">
             <input type="number" name="aposta_roleta" id="apostaRoleta" step="0.01"
               value="{{ last_aposta_roleta }}" placeholder="Valor da aposta" required class="form-control mb-2">
             <input type="number" name="numero_roleta" id="numeroAposta" min="0" max="36"
@@ -77,41 +76,54 @@
 <script>
 const symbols = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲"];
 
+// -------------------- SLOTS --------------------
 async function spinReel(reelId, finalSymbol) {
   return new Promise(resolve => {
     const reel = document.getElementById(reelId);
-    let i = 0;
-    const interval = setInterval(() => {
+    let i=0;
+    const interval = setInterval(()=>{
       reel.textContent = symbols[i % symbols.length];
       i++;
     }, 80);
-    setTimeout(() => {
+    setTimeout(()=>{
       clearInterval(interval);
       reel.textContent = finalSymbol;
       resolve();
-    }, 1800); // tempo para criar suspense
+    }, 1800);
   });
 }
 
-async function startSlot(rolos, resultado, saldoFinal) {
-  document.getElementById("slotResultado").style.display = "none";
+async function startSlot(rolos, resultado, saldoFinal){
+  document.getElementById("slotResultado").style.display="none";
   await spinReel("reel1", rolos[0]);
   await spinReel("reel2", rolos[1]);
   await spinReel("reel3", rolos[2]);
-  // mostra resultado só agora
-  const slotDiv = document.getElementById("slotResultado");
-  slotDiv.style.display = "block";
-  slotDiv.innerText = resultado;
+  document.getElementById("slotResultado").style.display="block";
+  document.getElementById("slotResultado").innerText = resultado;
   document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
 }
 
-// -------------------- ROleta --------------------
+// AJAX para slot
+document.getElementById("formCaca").addEventListener("submit", async e=>{
+  e.preventDefault();
+  const aposta=parseFloat(document.getElementById("apostaCaca").value);
+  const lote=parseInt(document.getElementById("lote").value)||1;
+  const resp = await fetch("{{ url_for('jogos') }}",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({tipo:"caca", aposta, lote})
+  });
+  const data = await resp.json();
+  await startSlot(data.rolos, data.resultado, data.saldo);
+});
+
+// -------------------- ROLETA --------------------
 const canvas = document.getElementById("rouletteCanvas");
 const ctx = canvas.getContext("2d");
 const segments = Array.from({length:37},(_,i)=>i);
-let angle = 0, spinning = false;
+let angle=0, spinning=false;
 
-function drawRoulette() {
+function drawRoulette(){
   const radius = canvas.width/2;
   const segmentAngle = (2*Math.PI)/segments.length;
   ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -137,23 +149,27 @@ function drawRoulette() {
   ctx.restore();
 }
 
-function animateToIndex(winningIndex, saldoFinal, resultadoTexto) {
+function animateToIndex(winningIndex, saldoFinal, resultadoTexto){
   if(spinning) return;
-  spinning = true;
+  spinning=true;
   const segmentAngle=(2*Math.PI)/segments.length;
-  const targetAngle = angle + (2*Math.PI*5) + (winningIndex * segmentAngle);
+  const targetAngle = angle + (2*Math.PI*6) + (winningIndex * segmentAngle);
   let speed = 0.5;
   function animate(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.save();
+    ctx.translate(canvas.width/2,canvas.height/2);
+    ctx.rotate(angle);
+    ctx.translate(-canvas.width/2,-canvas.height/2);
     drawRoulette();
+    ctx.restore();
     if(angle < targetAngle){
       angle += speed;
       speed *= 0.995;
       requestAnimationFrame(animate);
     } else {
       angle = targetAngle;
-      spinning = false;
-      // resultado e saldo só após parar
+      spinning=false;
       document.getElementById("rouletteResult").innerText = resultadoTexto;
       document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
     }
@@ -162,5 +178,18 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto) {
 }
 
 drawRoulette();
+
+// AJAX para roleta
+document.getElementById("formRoleta").addEventListener("submit", async e=>{
+  e.preventDefault();
+  const aposta = parseFloat(document.getElementById("apostaRoleta").value);
+  const numero = parseInt(document.getElementById("numeroAposta").value);
+  const resp = await fetch("{{ url_for('jogos') }}",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({tipo:"roleta", aposta, numero})
+  });
+  const data = await resp.json();
+  animateToIndex(data.numero, data.saldo, data.resultado);
+});
 </script>
-{% endblock %}
