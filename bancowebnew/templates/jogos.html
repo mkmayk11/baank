@@ -4,7 +4,7 @@
   <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h2 class="text-white">🎲 Joguinhos</h2>
-      <div class="px-3 py-2" style="background: rgba(0,0,0,0.4); border-radius:12px; border:1px solid #2f2;">
+      <div id="saldoBox" class="px-3 py-2" style="background: rgba(0,0,0,0.4); border-radius:12px; border:1px solid #2f2;">
         <strong>Saldo:</strong> R$ {{ '%.2f' % saldo }}
       </div>
     </div>
@@ -30,9 +30,7 @@
             <div class="reel" id="reel3">{{ rolos[2] if rolos else "❔" }}</div>
           </div>
 
-          {% if resultado_caca %}
-            <div class="alert alert-info mt-3">{{ resultado_caca }}</div>
-          {% endif %}
+          <div id="slotResultado" class="alert alert-info mt-3" style="display:none;"></div>
         </div>
       </div>
 
@@ -44,7 +42,6 @@
             <input type="number" name="aposta_roleta" id="apostaRoleta" step="0.01"
               value="{{ last_aposta_roleta }}" placeholder="Valor da aposta" required class="form-control mb-2">
 
-            <!-- NOTE: name="numero_roleta" corresponde à lógica do Flask -->
             <input type="number" name="numero_roleta" id="numeroAposta" min="0" max="36"
               value="{{ last_numero_aposta }}" placeholder="Número apostado (0-36)" class="form-control mb-3">
 
@@ -57,9 +54,6 @@
               <div class="roulette-pointer">▼</div>
             </div>
             <div id="rouletteResult" class="mt-3 text-white"></div>
-            {% if resultado_roleta %}
-              <div class="alert alert-info mt-2">{{ resultado_roleta }}</div>
-            {% endif %}
           </div>
         </div>
       </div>
@@ -69,184 +63,135 @@
 </div>
 
 <style>
-  body {
-    background: radial-gradient(circle at center, #111 0%, #000 100%);
-    color: #fff;
-  }
-  .card {
-    border-radius: 20px;
-    background: rgba(20,20,20,0.95);
-    border: 1px solid #444;
-  }
-  .btn-neon {
-    background: linear-gradient(45deg, #0ff, #0f0);
-    color: #000;
-    font-weight: bold;
-    border-radius: 12px;
-    transition: 0.2s;
-  }
-  .btn-neon:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 20px #0f0;
-  }
-
-  /* 🎰 SLOT MACHINE */
-  .slot-machine {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-  }
-  .reel {
-    width: 70px;
-    height: 70px;
-    background: #111;
-    border: 2px solid #0f0;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2.2rem;
-    color: #0f0;
-    box-shadow: inset 0 0 10px #0f0;
-  }
-
-  /* 🎡 ROLETA */
-  .roulette-container {
-    position: relative;
-    margin: auto;
-  }
-  .roulette-wrapper {
-    position: relative;
-    display: inline-block;
-  }
-  #rouletteCanvas {
-    border-radius: 50%;
-    border: 5px solid #0f0;
-    box-shadow: 0 0 20px #0f0;
-    background: #111;
-  }
-  .roulette-pointer {
-    position: absolute;
-    top: -25px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 2rem;
-    color: #ff0;
-    text-shadow: 0 0 5px #000, 0 0 10px #ff0;
-  }
+  body { background: radial-gradient(circle at center, #111 0%, #000 100%); color: #fff; }
+  .card { border-radius: 20px; background: rgba(20,20,20,0.95); border: 1px solid #444; }
+  .btn-neon { background: linear-gradient(45deg, #0ff, #0f0); color: #000; font-weight: bold; border-radius: 12px; transition: 0.2s; }
+  .btn-neon:hover { transform: scale(1.05); box-shadow: 0 0 20px #0f0; }
+  .slot-machine { display: flex; justify-content: center; gap: 10px; }
+  .reel { width: 70px; height: 70px; background: #111; border: 2px solid #0f0; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; color: #0f0; box-shadow: inset 0 0 10px #0f0; }
+  .roulette-container { position: relative; margin: auto; }
+  .roulette-wrapper { position: relative; display: inline-block; }
+  #rouletteCanvas { border-radius: 50%; border: 5px solid #0f0; box-shadow: 0 0 20px #0f0; background: #111; }
+  .roulette-pointer { position: absolute; top: -25px; left: 50%; transform: translateX(-50%); font-size: 2rem; color: #ff0; text-shadow: 0 0 5px #000, 0 0 10px #ff0; }
 </style>
 
 <script>
-  // ⚠ IMPORTANTE: esta lista deve bater com a lista `simbolos` do Flask.
-  const symbols = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲"];
+const symbols = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲"];
 
-  async function spinReel(reelId, delay, finalSymbol) {
-    return new Promise(resolve => {
-      const reel = document.getElementById(reelId);
-      let i = 0;
-      const interval = setInterval(() => {
-        reel.textContent = symbols[i % symbols.length];
-        i++;
-      }, 80);
-      setTimeout(() => {
-        clearInterval(interval);
-        reel.textContent = finalSymbol;
-        resolve(finalSymbol);
-      }, delay);
-    });
-  }
-
-  async function startSlot(results) {
-    // results é um array tipo ["🍒","🍋","⭐"] vindo do servidor
-    await spinReel("reel1", 900, results[0]);
-    await spinReel("reel2", 1400, results[1]);
-    await spinReel("reel3", 1900, results[2]);
-  }
-
-  /* -------------------- Roleta drawing + animação para número do servidor -------------------- */
-  const canvas = document.getElementById("rouletteCanvas");
-  const ctx = canvas.getContext("2d");
-  const segments = Array.from({length: 37}, (_, i) => i); // 0..36
-  const colors = segments.map((_, i) => i === 0 ? "#0f0" : (i % 2 === 0 ? "#f00" : "#000"));
-  let angle = 0, spinning = false;
-
-  function drawRoulette() {
-    const radius = canvas.width / 2;
-    const segmentAngle = (2 * Math.PI) / segments.length;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    for (let i = 0; i < segments.length; i++) {
-      ctx.beginPath();
-      ctx.moveTo(radius, radius);
-      ctx.arc(radius, radius, radius, i * segmentAngle, (i + 1) * segmentAngle);
-      ctx.fillStyle = colors[i];
-      ctx.fill();
-      ctx.save();
-      ctx.translate(radius, radius);
-      ctx.rotate(i * segmentAngle + segmentAngle / 2);
-      ctx.fillStyle = "#fff";
-      ctx.font = "14px Arial";
-      ctx.textAlign = "center";
-      ctx.fillText(segments[i].toString(), radius * 0.75, 5);
-      ctx.restore();
-    }
-  }
-
-  function animateToIndex(winningIndex) {
-    if (spinning) return;
-    spinning = true;
-    const segmentAngle = (2 * Math.PI) / segments.length;
-    const targetAngle = angle + (2 * Math.PI * 6) + (winningIndex * segmentAngle);
-
-    let speed = 0.4;
-    function animate() {
-      ctx.save();
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.rotate(angle);
-      ctx.translate(-canvas.width / 2, -canvas.height / 2);
-      drawRoulette();
-      ctx.restore();
-
-      if (angle < targetAngle) {
-        angle += speed;
-        if (targetAngle - angle < 2) speed *= 0.97;
-        requestAnimationFrame(animate);
-      } else {
-        spinning = false;
-        // mostra o resultado ao lado (se já não estiver setado)
-        // o backend já mostra uma mensagem textual em resultado_roleta, então esse div é suplementar.
-        document.getElementById("rouletteResult").innerText = "Resultado: " + winningIndex;
-      }
-    }
-    animate();
-  }
-
-  drawRoulette();
-
-  /* -------------------- Comportamento ao carregar (usa resultados do servidor) -------------------- */
-  document.addEventListener("DOMContentLoaded", function() {
-    // rolos vindo do servidor (array) — template injeta aqui quando houver rolagem feita.
-    const serverRolos = {{ rolos|tojson if rolos else 'null' }};
-    if (serverRolos) {
-      // anima para os símbolos que o servidor já calculou
-      startSlot(serverRolos);
-    }
-
-    // resultado textual da roleta (ex: "🎉 Número 7! Você ganhou R$ 10.00!")
-    const serverResultadoRoleta = {{ resultado_roleta|tojson if resultado_roleta else 'null' }};
-    if (serverResultadoRoleta) {
-      // exibe a mensagem textual (vinda do backend)
-      document.getElementById("rouletteResult").innerText = serverResultadoRoleta;
-
-      // tenta extrair o número sorteado (0..36) da string do backend
-      const match = serverResultadoRoleta.match(/\b([0-9]|[1-2][0-9]|3[0-6])\b/);
-      if (match) {
-        const numero = parseInt(match[0], 10);
-        // anima a roleta para esse número
-        animateToIndex(numero);
-      }
-    }
+async function spinReel(reelId, finalSymbol) {
+  return new Promise(resolve => {
+    const reel = document.getElementById(reelId);
+    let i = 0;
+    const interval = setInterval(() => {
+      reel.textContent = symbols[i % symbols.length];
+      i++;
+    }, 80);
+    setTimeout(() => {
+      clearInterval(interval);
+      reel.textContent = finalSymbol;
+      resolve();
+    }, 1200);
   });
+}
+
+async function startSlot(rolos) {
+  await spinReel("reel1", rolos[0]);
+  await spinReel("reel2", rolos[1]);
+  await spinReel("reel3", rolos[2]);
+}
+
+document.getElementById("formCaca").addEventListener("submit", async e => {
+  e.preventDefault();
+  const aposta = parseFloat(document.getElementById("apostaCaca").value);
+  const lote = parseInt(document.getElementById("lote").value) || 1;
+
+  for (let i=0; i<lote; i++) {
+    const resp = await fetch("{{ url_for('jogos') }}", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({tipo:"caca", aposta})
+    });
+    const data = await resp.json();
+    await startSlot(data.rolos);
+    document.getElementById("slotResultado").style.display="block";
+    document.getElementById("slotResultado").innerText = data.resultado;
+    document.getElementById("saldoBox").innerText = "R$ "+data.saldo.toFixed(2);
+  }
+});
+
+// -------------------- ROLETA --------------------
+const canvas = document.getElementById("rouletteCanvas");
+const ctx = canvas.getContext("2d");
+const segments = Array.from({length:37},(_,i)=>i);
+let angle=0, spinning=false;
+
+function drawRoulette() {
+  const radius = canvas.width/2;
+  const segmentAngle = (2*Math.PI)/segments.length;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.save();
+  ctx.translate(radius,radius);
+  ctx.rotate(angle);
+  ctx.translate(-radius,-radius);
+  for(let i=0;i<segments.length;i++){
+    ctx.beginPath();
+    ctx.moveTo(radius,radius);
+    ctx.arc(radius,radius,radius,i*segmentAngle,(i+1)*segmentAngle);
+    ctx.strokeStyle="#0f0"; ctx.stroke();
+    ctx.fillStyle="#111"; ctx.fill();
+    ctx.save();
+    ctx.translate(radius,radius);
+    ctx.rotate(i*segmentAngle + segmentAngle/2);
+    ctx.fillStyle="#fff";
+    ctx.font="16px Arial";
+    ctx.textAlign="center";
+    ctx.fillText(segments[i].toString(), radius*0.75,5);
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+function animateToIndex(winningIndex) {
+  if(spinning) return;
+  spinning=true;
+  const segmentAngle=(2*Math.PI)/segments.length;
+  let targetAngle=angle+(2*Math.PI*5)+(winningIndex*segmentAngle);
+  let speed=0.5;
+  function animate(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    drawRoulette();
+    if(angle<targetAngle){
+      angle+=speed;
+      speed*=0.995;
+      requestAnimationFrame(animate);
+    } else {
+      angle=targetAngle;
+      spinning=false;
+      document.getElementById("rouletteResult").innerText="Número sorteado: "+winningIndex;
+    }
+  }
+  animate();
+}
+
+drawRoulette();
+
+document.getElementById("formRoleta").addEventListener("submit", async e=>{
+  e.preventDefault();
+  const aposta=parseFloat(document.getElementById("apostaRoleta").value);
+  const numero=parseInt(document.getElementById("numeroAposta").value);
+  const resp=await fetch("{{ url_for('jogos') }}",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({tipo:"roleta", aposta, numero})
+  });
+  const data=await resp.json();
+  animateToIndex(data.numero);
+  const checkInterval = setInterval(()=>{
+    if(!spinning){
+      clearInterval(checkInterval);
+      document.getElementById("saldoBox").innerText="R$ "+data.saldo.toFixed(2);
+    }
+  },50);
+});
 </script>
 {% endblock %}
