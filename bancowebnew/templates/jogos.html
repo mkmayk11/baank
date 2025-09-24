@@ -35,7 +35,11 @@
           <h2 class="mb-3">🎡 Roleta</h2>
           <form method="POST" action="{{ url_for('jogos') }}" id="formRoleta">
             <input type="number" name="aposta_roleta" id="apostaRoleta" step="0.01"
-              value="{{ last_aposta_roleta }}" placeholder="Valor da aposta" required class="form-control mb-3">
+              value="{{ last_aposta_roleta }}" placeholder="Valor da aposta" required class="form-control mb-2">
+
+            <input type="number" name="numero_aposta" id="numeroAposta" min="0" max="36"
+              value="{{ last_numero_aposta }}" placeholder="Número apostado (0-36)" class="form-control mb-3">
+
             <button type="submit" class="btn btn-neon w-100">Rodar 🎡</button>
           </form>
 
@@ -106,32 +110,37 @@
 
 <script>
   // 🎰 Slot Machine
-  const symbols = [
-    "⭐","🍒","🍋","7️⃣","🎲","🔔","💎","🍇",
-    "🍉","🍌","🍓","🍀","🍍","🥭","🥝","🍈"
-  ];
+  const symbols = ["⭐","🍒","🍋","7️⃣","🎲","🔔","💎","🍇"];
 
-  function spinReel(reelId, delay) {
-    return new Promise(resolve => {
-      const reel = document.getElementById(reelId);
-      let i = 0;
-      const interval = setInterval(() => {
-        reel.textContent = symbols[i % symbols.length];
-        i++;
-      }, 100);
-      setTimeout(() => {
-        clearInterval(interval);
-        const finalSymbol = symbols[Math.floor(Math.random() * symbols.length)];
-        reel.textContent = finalSymbol;
-        resolve(finalSymbol);
-      }, delay);
-    });
-  }
-
+  // Agora o resultado será fixado e sincronizado com o backend
   async function startSlot() {
-    await spinReel("reel1", 1500);
-    await spinReel("reel2", 2500);
-    await spinReel("reel3", 3500);
+    const results = [
+      symbols[Math.floor(Math.random() * symbols.length)],
+      symbols[Math.floor(Math.random() * symbols.length)],
+      symbols[Math.floor(Math.random() * symbols.length)]
+    ];
+
+    async function spinReelFixed(reelId, delay, finalSymbol) {
+      return new Promise(resolve => {
+        const reel = document.getElementById(reelId);
+        let i = 0;
+        const interval = setInterval(() => {
+          reel.textContent = symbols[i % symbols.length];
+          i++;
+        }, 100);
+        setTimeout(() => {
+          clearInterval(interval);
+          reel.textContent = finalSymbol;
+          resolve(finalSymbol);
+        }, delay);
+      });
+    }
+
+    await spinReelFixed("reel1", 1500, results[0]);
+    await spinReelFixed("reel2", 2500, results[1]);
+    await spinReelFixed("reel3", 3500, results[2]);
+
+    return results;
   }
 
   document.getElementById("formCaca").addEventListener("submit", e => {
@@ -142,14 +151,9 @@
   // 🎡 Roleta
   const canvas = document.getElementById("rouletteCanvas");
   const ctx = canvas.getContext("2d");
-  const segments = symbols; // mesma lista do caça
-  const colors = [
-    "#0f0","#0ff","#ff0","#f0f",
-    "#f90","#09f","#fa0","#0fa",
-    "#ff5","#5ff","#f55","#5f5",
-    "#55f","#f5f","#0cf","#cf0"
-  ];
-  let angle = 0, spinning = false;
+  const segments = Array.from({length: 37}, (_, i) => i.toString()); // números 0-36
+  const colors = segments.map((_, i) => i % 2 === 0 ? "#0f0" : "#f00"); // verde/vermelho alternado
+  let angle = 0, spinning = false, targetAngle = 0;
 
   function drawRoulette() {
     const radius = canvas.width / 2;
@@ -164,9 +168,9 @@
       ctx.translate(radius, radius);
       ctx.rotate(i * segmentAngle + segmentAngle / 2);
       ctx.fillStyle = "#000";
-      ctx.font = "20px Arial";
+      ctx.font = "16px Arial";
       ctx.textAlign = "center";
-      ctx.fillText(segments[i], radius * 0.65, 5);
+      ctx.fillText(segments[i], radius * 0.75, 5);
       ctx.restore();
     }
   }
@@ -174,8 +178,13 @@
   function spinRoulette() {
     if (spinning) return;
     spinning = true;
-    let speed = Math.random() * 0.3 + 0.25;
-    const slowDown = 0.995;
+
+    // escolher número vencedor
+    const winningIndex = Math.floor(Math.random() * segments.length);
+    const segmentAngle = (2 * Math.PI) / segments.length;
+    targetAngle = (2 * Math.PI * 5) + (winningIndex * segmentAngle); // 5 voltas + parar no número
+
+    let speed = 0.35;
     function animate() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.save();
@@ -184,14 +193,14 @@
       ctx.translate(-canvas.width / 2, -canvas.height / 2);
       drawRoulette();
       ctx.restore();
-      angle += speed;
-      speed *= slowDown;
-      if (speed < 0.002) {
-        spinning = false;
-        const winningIndex = Math.floor(((2 * Math.PI - angle) % (2 * Math.PI)) / ((2 * Math.PI) / segments.length));
-        document.getElementById("rouletteResult").innerText = "Resultado: " + segments[winningIndex];
-      } else {
+
+      if (angle < targetAngle) {
+        angle += speed;
+        if (targetAngle - angle < 1) speed *= 0.97; // suaviza desaceleração
         requestAnimationFrame(animate);
+      } else {
+        spinning = false;
+        document.getElementById("rouletteResult").innerText = "Resultado: " + segments[winningIndex];
       }
     }
     animate();
