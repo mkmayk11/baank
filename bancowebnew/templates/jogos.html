@@ -132,7 +132,7 @@ document.getElementById("formCaca").addEventListener("submit", async e => {
   runSlots(aposta, lote);
 });
 
-// -------------------- ROLETA LENTA --------------------
+// -------------------- ROLETA CORRIGIDA --------------------
 const canvas = document.getElementById("rouletteCanvas");
 const ctx = canvas.getContext("2d");
 const segments = Array.from({length:21},(_,i)=>i);
@@ -173,7 +173,7 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
     spinning = true;
     const segmentAngle = (2*Math.PI)/segments.length;
     let currentAngle = angle;
-    let totalSpins = 6; // número de giros antes de parar
+    let totalSpins = 6;
     let targetAngle = totalSpins*2*Math.PI + winningIndex*segmentAngle;
     let speed = 0.5;
 
@@ -188,7 +188,7 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
 
         if(currentAngle < targetAngle){
             currentAngle += speed;
-            speed *= 0.992; // desaceleração lenta
+            speed *= 0.992;
             requestAnimationFrame(animate);
         } else {
             angle = targetAngle % (2*Math.PI);
@@ -198,7 +198,11 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
             const indexUnderPointer = Math.floor(normalizedAngle / segmentAngle) % segments.length;
             const numeroFinal = segments[indexUnderPointer];
 
-            let resultadoFinal = `Número: ${numeroFinal} → Caiu ${numeroFinal}. ${resultadoTexto.split('→')[1] ? resultadoTexto.split('→')[1].trim() : resultadoTexto}`;
+            // ------------------ CORREÇÃO AQUI ------------------
+            let resultadoFinal = `Número: ${numeroFinal}`;
+            if(resultadoTexto.includes("Você ganhou") || resultadoTexto.includes("Você perdeu")){
+                resultadoFinal += ` → ${resultadoTexto.split('→')[1] ? resultadoTexto.split('→')[1].trim() : resultadoTexto}`;
+            }
 
             if(numeroEscolhido !== null && aposta !== null){
                 if(numeroFinal === numeroEscolhido){
