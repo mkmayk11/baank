@@ -770,26 +770,26 @@ def delete_jogo(jogo_id):
 
 @app.route("/futebol", methods=["GET", "POST"])
 def futebol():
+    # Pega usuário logado
     usuario = session.get("usuario")
     if not usuario:
-        flash("Você precisa estar logado para apostar.", "danger")
         return redirect(url_for("login"))
 
-    # Abre a conexão aqui
+    # Conecta no banco
     conn = psycopg2.connect(DB_URL)
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-    # Pega o saldo atualizado do usuário
+    # Pega saldo do usuário
     cur.execute("SELECT saldo FROM usuarios WHERE username = %s", (usuario,))
-    saldo_db = cur.fetchone()
-    saldo = saldo_db[0] if saldo_db else 0
+    row = cur.fetchone()
+    saldo = row["saldo"] if row else 0
 
-    # Pega só os jogos ativos
+    # Pega apenas jogos ativos
     cur.execute("SELECT * FROM jogos_futebol WHERE ativo = TRUE")
     jogos = cur.fetchall()
 
     if request.method == "POST":
-        jogo_id = int(request.form.get("jogo_id"))
+        jogo_id = request.form.get("jogo_id")
         valor_aposta = float(request.form.get("valor_aposta", 0))
 
         if valor_aposta <= 0 or valor_aposta > saldo:
@@ -798,16 +798,20 @@ def futebol():
             conn.close()
             return redirect(url_for("futebol"))
 
-        # Subtrai do saldo no banco
-        cur.execute("UPDATE usuarios SET saldo = saldo - %s WHERE username = %s", (valor_aposta, usuario))
+        # Subtrai do saldo do usuário
+        saldo -= valor_aposta
+        session["saldo"] = saldo
 
-        # Salva a aposta no banco
+        # Atualiza saldo no banco
+        cur.execute("UPDATE usuarios SET saldo = %s WHERE username = %s", (saldo, usuario))
+
+        # Salva a aposta
         cur.execute(
-            "INSERT INTO apostas_futebol (usuario, jogo_id, valor) VALUES (%s, %s, %s)",
+            "INSERT INTO apostas (usuario, jogo_id, valor) VALUES (%s, %s, %s)",
             (usuario, jogo_id, valor_aposta)
         )
-        conn.commit()
 
+        conn.commit()
         flash(f"Aposta de {valor_aposta} realizada com sucesso!", "success")
         cur.close()
         conn.close()
@@ -820,8 +824,10 @@ def futebol():
 
 
 
+
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
