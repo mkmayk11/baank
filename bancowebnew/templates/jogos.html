@@ -16,7 +16,7 @@
         <div class="card p-4 text-center shadow-lg slot-card">
           <h2 class="mb-3">🎰 Caça-Níquel</h2>
           <form id="formCaca">
-            <input type="number" name="aposta_caca" id="apostaCaca" step="0.09"
+            <input type="number" name="aposta_caca" id="apostaCaca" step="0.01"
               value="{{ last_aposta_caca }}" placeholder="Valor da aposta" required class="form-control mb-2">
             <input type="number" name="lote" id="lote" value="{{ last_lote }}"
               placeholder="Qtd rodadas (opcional)" class="form-control mb-3">
@@ -143,86 +143,90 @@ const segments = Array.from({length:21},(_,i)=>i); // 21 números
 let angle=0, spinning=false;
 
 // Desenha a roleta
-function drawRoulette(){
-  const radius = canvas.width/2;
-  const segmentAngle = (2*Math.PI)/segments.length;
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.save();
-  ctx.translate(radius,radius);
-  ctx.rotate(angle);
-  ctx.translate(-radius,-radius);
-  for(let i=0;i<segments.length;i++){
-    ctx.beginPath();
-    ctx.moveTo(radius,radius);
-    ctx.arc(radius,radius,radius,i*segmentAngle,(i+1)*segmentAngle);
-    ctx.strokeStyle="#0f0"; ctx.stroke();
-    ctx.fillStyle="#111"; ctx.fill();
-
-    // desenha número
+function drawRoulette() {
+    const radius = canvas.width / 2;
+    const segmentAngle = (2 * Math.PI) / segments.length;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
-    ctx.translate(radius,radius);
-    ctx.rotate(i*segmentAngle + segmentAngle/2);
-    ctx.fillStyle="#fff";
-    ctx.font="16px Arial";
-    ctx.textAlign="center";
-    ctx.fillText(segments[i].toString(), radius*0.75,5);
+    ctx.translate(radius, radius);
+
+    // rotaciona toda roleta
+    ctx.rotate(angle);
+
+    for (let i = 0; i < segments.length; i++) {
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, radius, i * segmentAngle, (i + 1) * segmentAngle);
+        ctx.fillStyle = "#111";
+        ctx.fill();
+        ctx.strokeStyle = "#0f0";
+        ctx.stroke();
+
+        // desenha número
+        ctx.save();
+        ctx.rotate(i * segmentAngle + segmentAngle / 2);
+        ctx.fillStyle = "#fff";
+        ctx.font = "16px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(segments[i].toString(), radius * 0.75, 5);
+        ctx.restore();
+    }
+
     ctx.restore();
-  }
-  ctx.restore();
 }
+
 
 // Animação da roleta
 function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhido=null, aposta=null){
-  if(spinning) return;
-  spinning = true;
-  const segmentAngle = (2*Math.PI)/segments.length;
+    if(spinning) return;
+    spinning = true;
+    const segmentAngle = (2*Math.PI)/segments.length;
 
-  // cálculo corrigido -> seta no topo = 0
-  const numberAngle = (winningIndex * segmentAngle) - Math.PI/2;
-  const targetAngle = (2*Math.PI*6) + numberAngle; // 6 voltas completas
+    // 0 no topo
+    const numberAngle = winningIndex * segmentAngle;
+    const targetAngle = (2*Math.PI*6) - numberAngle + Math.PI/2; // gira 6 voltas, alinhando topo com número
 
-  let currentAngle = angle;
-  let speed = 0.5;
+    let currentAngle = angle;
+    let speed = 0.5;
 
-  function animate(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.save();
-    ctx.translate(canvas.width/2, canvas.height/2);
-    ctx.rotate(currentAngle);
-    ctx.translate(-canvas.width/2, -canvas.height/2);
-    drawRoulette();
-    ctx.restore();
-
-    if(currentAngle < targetAngle){
-      currentAngle += speed;
-      speed *= 0.995; // desacelera
-      requestAnimationFrame(animate);
-    } else {
-      angle = targetAngle % (2*Math.PI);
-      spinning = false;
-
-      // Verifica se acertou o número escolhido
-      let resultadoFinal = resultadoTexto;
-      if(numeroEscolhido !== null && aposta !== null){
-        if(winningIndex === numeroEscolhido){
-          const premio = aposta * 200;
-          resultadoFinal += ` 🎉 Acertou! Prêmio x200 = R$ ${premio.toFixed(2)}`;
-        }
-      }
-
-      document.getElementById("rouletteResult").innerText = "Número: " + winningIndex + " → " + resultadoFinal;
-      document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
-
-      // volta à posição inicial após 3 segundos
-      setTimeout(() => {
-        angle = 0;
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save();
+        ctx.translate(canvas.width/2, canvas.height/2);
+        ctx.rotate(currentAngle);
+        ctx.translate(-canvas.width/2, -canvas.height/2);
         drawRoulette();
-      }, 3000);
-    }
-  }
+        ctx.restore();
 
-  animate();
+        if(currentAngle < targetAngle){
+            currentAngle += speed;
+            speed *= 0.995;
+            requestAnimationFrame(animate);
+        } else {
+            angle = targetAngle % (2*Math.PI);
+            spinning = false;
+
+            let resultadoFinal = resultadoTexto;
+            if(numeroEscolhido !== null && aposta !== null){
+                if(winningIndex === numeroEscolhido){
+                    const premio = aposta * 36;
+                    resultadoFinal += ` 🎉 Acertou! Prêmio x36 = R$ ${premio.toFixed(2)}`;
+                }
+            }
+
+            document.getElementById("rouletteResult").innerText = "Número: " + winningIndex + " → " + resultadoFinal;
+            document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
+
+            setTimeout(() => {
+                angle = 0;
+                drawRoulette();
+            }, 3000);
+        }
+    }
+
+    animate();
 }
+
 
 drawRoulette();
 
@@ -244,3 +248,4 @@ document.getElementById("formRoleta").addEventListener("submit", async e => {
 </script>
 
 {% endblock %}
+
