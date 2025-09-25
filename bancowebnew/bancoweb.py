@@ -821,12 +821,68 @@ def futebol():
     conn.close()
     return render_template("futebol.html", usuario=usuario, saldo=saldo, jogos=jogos)
 
+import psycopg2
+
+DB_URL = "postgresql://savesite_user:5X70ctnMmv1jfWVuCQssRvmQUjW0D56p@dpg-d37hgjjuibrs7392ou1g-a/savesite"
+
+@app.route("/setup_db")
+def setup_db():
+    try:
+        conn = psycopg2.connect(DB_URL)
+        cur = conn.cursor()
+
+        # Cria tabela de usuários
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS usuarios (
+            username TEXT PRIMARY KEY,
+            saldo NUMERIC DEFAULT 0
+        );
+        """)
+
+        # Cria tabela de jogos de futebol
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS jogos_futebol (
+            id SERIAL PRIMARY KEY,
+            time1 TEXT NOT NULL,
+            time2 TEXT NOT NULL,
+            odds1 NUMERIC NOT NULL,
+            odds2 NUMERIC NOT NULL,
+            odds_empate NUMERIC NOT NULL,
+            ativo BOOLEAN DEFAULT TRUE
+        );
+        """)
+
+        # Cria tabela de apostas
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS apostas (
+            id SERIAL PRIMARY KEY,
+            usuario TEXT REFERENCES usuarios(username),
+            jogo_id INT REFERENCES jogos_futebol(id),
+            valor NUMERIC NOT NULL,
+            data_aposta TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        """)
+
+        # Insere usuário de teste (opcional)
+        cur.execute("""
+        INSERT INTO usuarios (username, saldo) 
+        VALUES ('teste', 100) 
+        ON CONFLICT (username) DO NOTHING;
+        """)
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return "Tabelas criadas com sucesso! Usuário 'teste' com saldo 100 criado."
+    except Exception as e:
+        return f"Erro: {e}"
 
 
 
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
