@@ -497,43 +497,67 @@ def deletar_historico():
 # -------------------- Histórico - deletar tudo --------------------
 @app.route("/admin/deletar_todo_historico")
 def deletar_todo_historico():
-    if "usuario" not in session or session["usuario"] != "admin":
+    if "usuario" not in session:
         return redirect(url_for("login"))
 
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("DELETE FROM historico")
-    conn.commit()
-    conn.close()
+    if session["usuario"] == "admin":
+        # Admin apaga geral
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("DELETE FROM historico")
+        conn.commit()
+        conn.close()
+        flash("Todo o histórico foi deletado pelo Admin!")
+    else:
+        # Usuário comum apaga só o dele
+        usuario = session["usuario"]
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("DELETE FROM historico WHERE usuario = %s", (usuario,))
+        conn.commit()
+        conn.close()
+        flash("Seu histórico foi deletado.")
 
-    flash("Todo o histórico foi deletado!")
     return redirect(url_for("historico"))
+
 
 # -------------------- Histórico - deletar selecionados --------------------
 @app.route("/admin/deletar_historico_selecionados", methods=["POST"])
 def deletar_historico_selecionados():
-    if "usuario" not in session or session["usuario"] != "admin":
+    if "usuario" not in session:
         return redirect(url_for("login"))
 
     ids = request.form.getlist("ids")
-    if ids:
-        conn = get_connection()
-        c = conn.cursor()
+    if not ids:
+        flash("Nenhum item selecionado para deletar.")
+        return redirect(url_for("historico"))
+
+    conn = get_connection()
+    c = conn.cursor()
+
+    if session["usuario"] == "admin":
+        # Admin pode apagar qualquer id
         query = "DELETE FROM historico WHERE id = ANY(%s)"
         c.execute(query, (ids,))
-        conn.commit()
-        conn.close()
-        flash(f"{len(ids)} registros deletados!")
+        flash(f"{len(ids)} registros foram deletados pelo Admin!")
     else:
-        flash("Nenhum item selecionado para deletar.")
+        # Usuário só pode apagar IDs que pertencem a ele
+        usuario = session["usuario"]
+        query = "DELETE FROM historico WHERE id = ANY(%s) AND usuario = %s"
+        c.execute(query, (ids, usuario))
+        flash("Seus registros selecionados foram deletados.")
 
+    conn.commit()
+    conn.close()
     return redirect(url_for("historico"))
+
 
 
 
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
