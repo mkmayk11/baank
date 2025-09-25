@@ -182,14 +182,13 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
     spinning = true;
     const segmentAngle = (2*Math.PI)/segments.length;
 
-    // 0 no topo
-    const numberAngle = winningIndex * segmentAngle;
-    const targetAngle = (2*Math.PI*6) - numberAngle + Math.PI/2; // gira 6 voltas, alinhando topo com número
+    // ângulo para colocar winningIndex no topo (seta amarela)
+    const targetAngle = (2*Math.PI*6) + (Math.PI/2 - winningIndex * segmentAngle);
 
     let currentAngle = angle;
     let speed = 0.5;
 
-    function animate() {
+    function animate(){
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
         ctx.translate(canvas.width/2, canvas.height/2);
@@ -200,7 +199,7 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
 
         if(currentAngle < targetAngle){
             currentAngle += speed;
-            speed *= 0.995;
+            speed *= 0.995; // desacelera
             requestAnimationFrame(animate);
         } else {
             angle = targetAngle % (2*Math.PI);
@@ -217,6 +216,7 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
             document.getElementById("rouletteResult").innerText = "Número: " + winningIndex + " → " + resultadoFinal;
             document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
 
+            // volta ao estado inicial
             setTimeout(() => {
                 angle = 0;
                 drawRoulette();
@@ -226,6 +226,7 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
 
     animate();
 }
+
 
 
 drawRoulette();
@@ -248,4 +249,5 @@ document.getElementById("formRoleta").addEventListener("submit", async e => {
 </script>
 
 {% endblock %}
+
 
