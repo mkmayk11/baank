@@ -173,8 +173,8 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
     spinning = true;
     const segmentAngle = (2*Math.PI)/segments.length;
 
-    // ajuste: 0 no topo, sentido horário
-    const targetAngle = (2*Math.PI*6) - winningIndex * segmentAngle;
+    // Ajusta para que o número sorteado fique sob a seta (0 no topo)
+    const targetAngle = (2*Math.PI*6) + winningIndex * segmentAngle; // 6 voltas
 
     let currentAngle = angle;
     let speed = 0.5;
@@ -196,15 +196,20 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
             angle = targetAngle % (2*Math.PI);
             spinning = false;
 
+            // Calcula qual número está exatamente sob a seta
+            const normalizedAngle = (2*Math.PI - angle + Math.PI/2) % (2*Math.PI);
+            const indexUnderPointer = Math.floor(normalizedAngle / segmentAngle) % segments.length;
+            const numeroFinal = segments[indexUnderPointer];
+
             let resultadoFinal = resultadoTexto;
             if(numeroEscolhido !== null && aposta !== null){
-                if(winningIndex === numeroEscolhido){
+                if(numeroFinal === numeroEscolhido){
                     const premio = aposta * 36;
                     resultadoFinal += ` 🎉 Acertou! Prêmio x36 = R$ ${premio.toFixed(2)}`;
                 }
             }
 
-            document.getElementById("rouletteResult").innerText = "Número: " + winningIndex + " → " + resultadoFinal;
+            document.getElementById("rouletteResult").innerText = "Número: " + numeroFinal + " → " + resultadoFinal;
             document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
 
             setTimeout(() => {
@@ -216,6 +221,7 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
 
     animate();
 }
+
 
 drawRoulette();
 
@@ -236,3 +242,4 @@ document.getElementById("formRoleta").addEventListener("submit", async e => {
 </script>
 
 {% endblock %}
+
