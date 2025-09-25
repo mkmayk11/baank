@@ -16,7 +16,7 @@
         <div class="card p-4 text-center shadow-lg slot-card">
           <h2 class="mb-3">🎰 Caça-Níquel</h2>
           <form id="formCaca">
-            <input type="number" name="aposta_caca" id="apostaCaca" step="0.01"
+            <input type="number" name="aposta_caca" id="apostaCaca" step="0.09"
               value="{{ last_aposta_caca }}" placeholder="Valor da aposta" required class="form-control mb-2">
             <input type="number" name="lote" id="lote" value="{{ last_lote }}"
               placeholder="Qtd rodadas (opcional)" class="form-control mb-3">
@@ -137,7 +137,6 @@ document.getElementById("formCaca").addEventListener("submit", async e => {
 });
 
 // -------------------- ROLETA --------------------
-// -------------------- ROLETA --------------------
 const canvas = document.getElementById("rouletteCanvas");
 const ctx = canvas.getContext("2d");
 const segments = Array.from({length:21},(_,i)=>i); // 21 números
@@ -178,8 +177,8 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
   spinning = true;
   const segmentAngle = (2*Math.PI)/segments.length;
 
-  // cálculo do ângulo correto para a seta no topo
-  const numberAngle = (winningIndex * segmentAngle) + (segmentAngle/2) - Math.PI/2;
+  // cálculo corrigido -> seta no topo = 0
+  const numberAngle = (winningIndex * segmentAngle) - Math.PI/2;
   const targetAngle = (2*Math.PI*6) + numberAngle; // 6 voltas completas
 
   let currentAngle = angle;
@@ -242,8 +241,6 @@ document.getElementById("formRoleta").addEventListener("submit", async e => {
   const data = await resp.json();
   animateToIndex(data.numero, data.saldo, data.resultado, numero, aposta);
 });
-
 </script>
 
 {% endblock %}
-
