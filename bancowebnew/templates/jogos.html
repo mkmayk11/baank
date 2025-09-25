@@ -132,39 +132,38 @@ document.getElementById("formCaca").addEventListener("submit", async e => {
   runSlots(aposta, lote);
 });
 
-// -------------------- ROLETA CORRIGIDA --------------------
+// -------------------- ROLETA SUAVE E CORRETA --------------------
 const canvas = document.getElementById("rouletteCanvas");
 const ctx = canvas.getContext("2d");
-const segments = Array.from({length:21},(_,i)=>i);
+const segments = Array.from({length:21}, (_,i)=>i);
 let angle=0, spinning=false;
 
 function drawRoulette() {
     const radius = canvas.width / 2;
-    const segmentAngle = (2 * Math.PI) / segments.length;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const segmentAngle = (2*Math.PI)/segments.length;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.save();
-    ctx.translate(radius, radius);
+    ctx.translate(radius,radius);
     ctx.rotate(angle - segmentAngle/2 - Math.PI/2);
 
-    for (let i = 0; i < segments.length; i++) {
+    for(let i=0;i<segments.length;i++){
         ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.arc(0, 0, radius, i * segmentAngle, (i + 1) * segmentAngle);
-        ctx.fillStyle = "#111";
+        ctx.moveTo(0,0);
+        ctx.arc(0,0,radius,i*segmentAngle,(i+1)*segmentAngle);
+        ctx.fillStyle="#111";
         ctx.fill();
-        ctx.strokeStyle = "#0f0";
+        ctx.strokeStyle="#0f0";
         ctx.stroke();
 
         ctx.save();
-        ctx.rotate(i * segmentAngle + segmentAngle / 2);
-        ctx.fillStyle = "#fff";
-        ctx.font = "16px Arial";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(segments[i].toString(), radius * 0.65, 0);
+        ctx.rotate(i*segmentAngle + segmentAngle/2);
+        ctx.fillStyle="#fff";
+        ctx.font="16px Arial";
+        ctx.textAlign="center";
+        ctx.textBaseline="middle";
+        ctx.fillText(segments[i].toString(), radius*0.65,0);
         ctx.restore();
     }
-
     ctx.restore();
 }
 
@@ -173,42 +172,44 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
     spinning = true;
     const segmentAngle = (2*Math.PI)/segments.length;
     let currentAngle = angle;
-    let totalSpins = 6;
-    let targetAngle = totalSpins*2*Math.PI + winningIndex*segmentAngle;
-    let speed = 0.5;
+    const totalSpins = 8; // mais giros pra efeito visual
+    const targetAngle = totalSpins*2*Math.PI + winningIndex*segmentAngle;
+
+    let speed = 0.6;
+    const friction = 0.995;
 
     function animate(){
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.clearRect(0,0,canvas.width,canvas.height);
         ctx.save();
         ctx.translate(canvas.width/2, canvas.height/2);
         ctx.rotate(currentAngle - segmentAngle/2 - Math.PI/2);
-        ctx.translate(-canvas.width/2, -canvas.height/2);
+        ctx.translate(-canvas.width/2,-canvas.height/2);
         drawRoulette();
         ctx.restore();
 
         if(currentAngle < targetAngle){
             currentAngle += speed;
-            speed *= 0.992;
+            speed *= friction; // desaceleração gradual
             requestAnimationFrame(animate);
         } else {
             angle = targetAngle % (2*Math.PI);
             spinning = false;
 
+            // calcula número final corretamente
             const normalizedAngle = (2*Math.PI - angle + segmentAngle/2 + Math.PI/2) % (2*Math.PI);
-            const indexUnderPointer = Math.floor(normalizedAngle / segmentAngle) % segments.length;
+            const indexUnderPointer = Math.floor(normalizedAngle/segmentAngle) % segments.length;
             const numeroFinal = segments[indexUnderPointer];
 
-            // ------------------ CORREÇÃO AQUI ------------------
+            // resultado final consistente
             let resultadoFinal = `Número: ${numeroFinal}`;
             if(resultadoTexto.includes("Você ganhou") || resultadoTexto.includes("Você perdeu")){
-                resultadoFinal += ` → ${resultadoTexto.split('→')[1] ? resultadoTexto.split('→')[1].trim() : resultadoTexto}`;
+                const msgSplit = resultadoTexto.split('→');
+                resultadoFinal += ` → ${msgSplit[1] ? msgSplit[1].trim() : ""}`;
             }
 
-            if(numeroEscolhido !== null && aposta !== null){
-                if(numeroFinal === numeroEscolhido){
-                    const premio = aposta * 36;
-                    resultadoFinal += ` 🎉 Acertou! Prêmio x36 = R$ ${premio.toFixed(2)}`;
-                }
+            if(numeroEscolhido!==null && aposta!==null && numeroFinal===numeroEscolhido){
+                const premio = aposta*36;
+                resultadoFinal += ` 🎉 Acertou! Prêmio x36 = R$ ${premio.toFixed(2)}`;
             }
 
             document.getElementById("rouletteResult").innerText = resultadoFinal;
@@ -226,19 +227,19 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
 
 drawRoulette();
 
-document.getElementById("formRoleta").addEventListener("submit", async e => {
-  e.preventDefault();
-  const aposta = parseFloat(document.getElementById("apostaRoleta").value);
-  const numero = parseInt(document.getElementById("numeroAposta").value);
+document.getElementById("formRoleta").addEventListener("submit", async e=>{
+    e.preventDefault();
+    const aposta = parseFloat(document.getElementById("apostaRoleta").value);
+    const numero = parseInt(document.getElementById("numeroAposta").value);
 
-  const resp = await fetch("{{ url_for('jogos') }}",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({tipo:"roleta", aposta, numero})
-  });
+    const resp = await fetch("{{ url_for('jogos') }}", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({tipo:"roleta", aposta, numero})
+    });
 
-  const data = await resp.json();
-  animateToIndex(data.numero, data.saldo, data.resultado, numero, aposta);
+    const data = await resp.json();
+    animateToIndex(data.numero, data.saldo, data.resultado, numero, aposta);
 });
 </script>
 
