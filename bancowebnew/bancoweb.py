@@ -780,11 +780,45 @@ def delete_jogo(jogo_id):
     conn.close()
     return redirect(url_for("admin_futebol"))
 
+@app.route("/futebol", methods=["GET", "POST"])
+def futebol():
+    usuario = session.get("usuario")  # Pega o usuário logado
+    saldo = session.get("saldo", 0)
+
+    # Pega só os jogos ativos
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM jogos_futebol WHERE ativo = TRUE")
+    jogos = cur.fetchall()
+
+    if request.method == "POST":
+        jogo_id = request.form.get("jogo_id")
+        valor_aposta = float(request.form.get("valor_aposta", 0))
+
+        if valor_aposta <= 0 or valor_aposta > saldo:
+            flash("Valor inválido ou saldo insuficiente!", "danger")
+            return redirect(url_for("futebol"))
+
+        # Subtrai do saldo do usuário
+        saldo -= valor_aposta
+        session["saldo"] = saldo
+
+        # Aqui você salvaria no banco a aposta
+        cur.execute(
+            "INSERT INTO apostas (usuario, jogo_id, valor) VALUES (%s, %s, %s)",
+            (usuario, jogo_id, valor_aposta)
+        )
+        conn.commit()
+
+        flash(f"Aposta de {valor_aposta} realizada com sucesso!", "success")
+        return redirect(url_for("futebol"))
+
+    return render_template("futebol.html", usuario=usuario, saldo=saldo, jogos=jogos)
 
 
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
