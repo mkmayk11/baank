@@ -344,7 +344,7 @@ def jogos():
                 resultado = "Saldo insuficiente!"
                 numero_sorteado = 0
             else:
-                numero_sorteado = random.randint(0,36)
+                numero_sorteado = random.randint(0,20)
 
                 if numero == numero_sorteado:
                     ganho = aposta * 36
@@ -435,6 +435,7 @@ def recusar_deposito(id):
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
