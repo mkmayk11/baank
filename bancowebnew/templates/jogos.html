@@ -76,34 +76,42 @@
 
 <script>
 const symbols = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲"];
+const slotSound = new Audio("https://freesound.org/data/previews/256/256113_3263906-lq.mp3"); // som de slot
+const rouletteSound = new Audio("https://freesound.org/data/previews/146/146727_2615111-lq.mp3"); // clique da roleta
 
 // -------------------- SLOTS --------------------
 async function spinReel(reelId, finalSymbol) {
   return new Promise(resolve => {
     const reel = document.getElementById(reelId);
     let i = 0;
-    let speed = 20; // início rápido
-    let duration = 1500; // duração total
+    let speed = 20;
+    let duration = 1500;
     let elapsed = 0;
 
     function step() {
       reel.textContent = symbols[i % symbols.length];
+      slotSound.currentTime = 0; 
+      slotSound.play();
       i++;
       elapsed += speed;
 
       if (elapsed < duration) {
-        // desaceleração exponencial
         speed = speed * 1.05;
-        setTimeout(step, Math.min(speed, 100)); // máximo de 100ms
+        setTimeout(step, Math.min(speed, 80));
       } else {
-        // efeito bouncing suave
+        // bounce + sacudir
         let bounceCount = 0;
-        let bounceSymbols = [symbols[i%symbols.length], finalSymbol, symbols[i%symbols.length]];
+        const bounceSymbols = [symbols[i%symbols.length], finalSymbol, symbols[i%symbols.length]];
         function bounce() {
+          const shakeOffset = (bounceCount % 2 === 0 ? 5 : -5);
+          reel.style.transform = `translateX(${shakeOffset}px)`;
           reel.textContent = bounceSymbols[bounceCount % bounceSymbols.length];
           bounceCount++;
           if (bounceCount < 6) setTimeout(bounce, 150);
-          else resolve();
+          else {
+            reel.style.transform = 'translateX(0)';
+            resolve();
+          }
         }
         bounce();
       }
@@ -151,7 +159,7 @@ document.getElementById("formCaca").addEventListener("submit", async e => {
   runSlots(aposta, lote);
 });
 
-// -------------------- ROLETA CORRIGIDA --------------------
+// -------------------- ROLETA --------------------
 const canvas = document.getElementById("rouletteCanvas");
 const ctx = canvas.getContext("2d");
 const segments = Array.from({length:21},(_,i)=>i);
@@ -194,8 +202,8 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
     const targetAngle = (2*Math.PI*6) + winningIndex * segmentAngle;
 
     let currentAngle = angle;
-    let speed = 2.5; // velocidade inicial mais rápida
-    const deceleration = 0.997; // desaceleração lenta e suave
+    let speed = 2.5;
+    const deceleration = 0.997;
 
     function animate(){
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -206,9 +214,12 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
         drawRoulette();
         ctx.restore();
 
+        rouletteSound.currentTime = 0;
+        rouletteSound.play();
+
         if(currentAngle < targetAngle){
             currentAngle += speed;
-            speed *= deceleration; // desaceleração suave
+            speed *= deceleration;
             requestAnimationFrame(animate);
         } else {
             angle = targetAngle % (2*Math.PI);
