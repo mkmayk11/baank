@@ -494,12 +494,47 @@ def deletar_historico():
     flash("Histórico de depósitos/saques deletado!")
     return redirect(url_for("admin_depositos"))
 
+# -------------------- Histórico - deletar tudo --------------------
+@app.route("/admin/deletar_todo_historico")
+def deletar_todo_historico():
+    if "usuario" not in session or session["usuario"] != "admin":
+        return redirect(url_for("login"))
+
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("DELETE FROM historico")
+    conn.commit()
+    conn.close()
+
+    flash("Todo o histórico foi deletado!")
+    return redirect(url_for("historico"))
+
+# -------------------- Histórico - deletar selecionados --------------------
+@app.route("/admin/deletar_historico_selecionados", methods=["POST"])
+def deletar_historico_selecionados():
+    if "usuario" not in session or session["usuario"] != "admin":
+        return redirect(url_for("login"))
+
+    ids = request.form.getlist("ids")
+    if ids:
+        conn = get_connection()
+        c = conn.cursor()
+        query = "DELETE FROM historico WHERE id = ANY(%s)"
+        c.execute(query, (ids,))
+        conn.commit()
+        conn.close()
+        flash(f"{len(ids)} registros deletados!")
+    else:
+        flash("Nenhum item selecionado para deletar.")
+
+    return redirect(url_for("historico"))
 
 
 
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
