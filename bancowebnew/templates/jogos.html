@@ -173,7 +173,9 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
   if(spinning) return;
   spinning = true;
   const segmentAngle = (2*Math.PI)/segments.length;
-  const targetAngle = (2*Math.PI*6) - (winningIndex * segmentAngle) + (segmentAngle/2); // 6 voltas, ajusta posição
+
+  const targetAngle = (2*Math.PI*6) - (winningIndex * segmentAngle) - segmentAngle/2; 
+
 
   let currentAngle = angle;
   let speed = 0.5;
@@ -228,3 +230,4 @@ document.getElementById("formRoleta").addEventListener("submit", async e => {
 </script>
 
 {% endblock %}
+
