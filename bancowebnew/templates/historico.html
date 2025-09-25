@@ -2,27 +2,49 @@
 {% block conteudo %}
 <div class="card p-4">
     <h2>Histórico de transações</h2>
+
     {% if historico %}
-        <table class="table table-striped mt-3">
-            <thead>
-                <tr>
-                    <th>Data</th>
-                    <th>Ação</th>
-                    <th>Valor</th>
-                    <th>Destino</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for h in historico %}
+        <!-- Botão global de deletar todo o histórico -->
+        <div class="mb-3">
+            <a href="{{ url_for('deletar_todo_historico') }}"
+               class="btn btn-outline-danger btn-sm"
+               onclick="return confirm('Tem certeza que deseja deletar TODO o histórico?')">
+               Deletar Todo Histórico
+            </a>
+        </div>
+
+        <!-- Formulário para deletar selecionados -->
+        <form method="post" action="{{ url_for('deletar_historico_selecionados') }}">
+            <table class="table table-striped mt-3">
+                <thead>
                     <tr>
-                        <td>{{ h.data }}</td>
-                        <td>{{ h.acao }}</td>
-                        <td>{{ h.valor|round(2) }}</td>
-                        <td>{{ h.destino or "-" }}</td>
+                        <th></th>
+                        <th>Data</th>
+                        <th>Ação</th>
+                        <th>Valor</th>
+                        <th>Destino</th>
                     </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {% for h in historico %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" name="ids" value="{{ h.id }}">
+                            </td>
+                            <td>{{ h.data }}</td>
+                            <td>{{ h.acao }}</td>
+                            <td>{{ h.valor|round(2) }}</td>
+                            <td>{{ h.destino or "-" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <button type="submit" class="btn btn-danger btn-sm"
+                    onclick="return confirm('Deletar os itens selecionados?')">
+                Deletar Selecionados
+            </button>
+        </form>
     {% else %}
         <p>Nenhuma transação registrada.</p>
     {% endif %}
