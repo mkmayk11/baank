@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="container py-5">
+    <div class="card shadow border-0 rounded-4 p-4">
+        <h2 class="fw-bold mb-4">⚽ Gerenciar Jogos de Futebol</h2>
+
+        <!-- Formulário de novo jogo -->
+        <form method="POST" action="{{ url_for('admin_futebol') }}" class="row g-3 mb-4">
+            <div class="col-md-3">
+                <input type="text" name="time1" class="form-control" placeholder="Time 1" required>
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="time2" class="form-control" placeholder="Time 2" required>
+            </div>
+            <div class="col-md-2">
+                <input type="number" step="0.01" name="odds1" class="form-control" placeholder="Odd Time 1" required>
+            </div>
+            <div class="col-md-2">
+                <input type="number" step="0.01" name="odds2" class="form-control" placeholder="Odd Time 2" required>
+            </div>
+            <div class="col-md-2">
+                <input type="number" step="0.01" name="odds_empate" class="form-control" placeholder="Odd Empate" required>
+            </div>
+            <div class="col-12 text-end">
+                <button type="submit" class="btn btn-success">Adicionar Jogo</button>
+            </div>
+        </form>
+
+        <!-- Lista de jogos -->
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Times</th>
+                    <th>Odds</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for jogo in jogos %}
+                <tr>
+                    <td>{{ jogo.id }}</td>
+                    <td>{{ jogo.time1 }} x {{ jogo.time2 }}</td>
+                    <td>
+                        {{ jogo.odds1 }} / {{ jogo.odds2 }} / Empate: {{ jogo.odds_empate }}
+                    </td>
+                    <td>
+                        {% if jogo.ativo %}
+                            <span class="badge bg-success">Ativo</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inativo</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <form method="POST" action="{{ url_for('toggle_jogo', jogo_id=jogo.id) }}" style="display:inline;">
+                            <button type="submit" class="btn btn-sm {% if jogo.ativo %}btn-warning{% else %}btn-success{% endif %}">
+                                {% if jogo.ativo %}Desativar{% else %}Ativar{% endif %}
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('delete_jogo', jogo_id=jogo.id) }}" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
