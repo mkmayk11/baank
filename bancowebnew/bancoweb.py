@@ -265,10 +265,10 @@ def jogos():
     saldo = dados["clientes"][usuario]["saldo"]
 
     # símbolos do caça-níquel
-    simbolos =  ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲","🏺","💸"]
+    simbolos = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲","🏺","💸"]
 
     if request.method == "POST":
-        data = request.get_json()  # <-- pega JSON do AJAX
+        data = request.get_json()  # pega JSON do AJAX
         tipo = data.get("tipo")
 
         # -------- CAÇA-NÍQUEL --------
@@ -290,26 +290,26 @@ def jogos():
                 ganho = 0
                 resultado = ""
 
-                # --- novas regras especiais ---
-                if rolos.count("💸") == 3:  # TRIO de dinheiro
+                # --- regras especiais ---
+                if rolos.count("💸") == 3:
                     ganho = aposta * 160
                     saldo += ganho
                     resultado = f"💸💸💸 TRIPLO DINHEIRO! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (3 Dinheiro {rolos})", ganho)
 
-                elif rolos.count("💸") == 2:  # PAR de dinheiro
+                elif rolos.count("💸") == 2:
                     ganho = aposta * 70
                     saldo += ganho
                     resultado = f"💸💸 Dois Dinheiros! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (2 Dinheiro {rolos})", ganho)
 
-                elif rolos.count("🍀") == 2:  # Dois trevos
+                elif rolos.count("🍀") == 2:
                     resultado = f"🍀🍀 Sorte Grande! {rolos} Você ganhou 10 rodadas grátis!"
                     registrar_historico(usuario, f"Caça-níquel (2 Trevos {rolos})", 0)
-                    # Aqui você pode salvar as rodadas grátis no banco, exemplo:
+                    # salva rodadas grátis
                     dados["clientes"][usuario]["rodadas_gratis"] = dados["clientes"][usuario].get("rodadas_gratis", 0) + 10
 
-                # --- regras especiais já existentes ---
+                # --- regras já existentes ---
                 elif rolos.count("⭐") == 3:
                     ganho = aposta * 200
                     saldo += ganho
@@ -335,13 +335,13 @@ def jogos():
                     registrar_historico(usuario, f"Caça-níquel (2 Dados {rolos})", ganho)
 
                 # --- regras padrão ---
-                elif rolos[0]==rolos[1]==rolos[2]:
+                elif rolos[0] == rolos[1] == rolos[2]:
                     ganho = aposta * 30
                     saldo += ganho
                     resultado = f"🎉 Jackpot! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (Jackpot {rolos})", ganho)
 
-                elif rolos[0]==rolos[1] or rolos[1]==rolos[2] or rolos[0]==rolos[2]:
+                elif rolos[0] == rolos[1] or rolos[1] == rolos[2] or rolos[0] == rolos[2]:
                     ganho = aposta * 6
                     saldo += ganho
                     resultado = f"✨ Par! {rolos} Você ganhou R$ {ganho:.2f}!"
@@ -355,7 +355,6 @@ def jogos():
             salvar_cliente(usuario, saldo=saldo)
             return jsonify({"rolos": rolos, "resultado": resultado, "saldo": saldo})
 
-
     # GET normal
     return render_template(
         "jogos.html",
@@ -363,11 +362,10 @@ def jogos():
         last_aposta_caca="",
         last_aposta_roleta="",
         last_lote="",
-        last_numero_aposta=""
+        last_numero_aposta="",
+        dados=dados,      # <- Corrigido aqui
+        usuario=usuario   # <- Corrigido aqui
     )
-
-
-
 
 
 
@@ -553,6 +551,7 @@ def deletar_historico_selecionados():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
