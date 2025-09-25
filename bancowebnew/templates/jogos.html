@@ -144,7 +144,7 @@ function drawRoulette() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
     ctx.translate(radius, radius);
-    ctx.rotate(angle - segmentAngle/2 - Math.PI/2); // corrige 0 no topo
+    ctx.rotate(angle - segmentAngle/2 - Math.PI/2);
 
     for (let i = 0; i < segments.length; i++) {
         ctx.beginPath();
@@ -172,7 +172,7 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
     if(spinning) return;
     spinning = true;
     const segmentAngle = (2*Math.PI)/segments.length;
-    const targetAngle = (2*Math.PI*6) + winningIndex * segmentAngle; // 6 voltas
+    const targetAngle = (2*Math.PI*6) + winningIndex * segmentAngle;
 
     let currentAngle = angle;
     let speed = 0.5;
@@ -194,12 +194,12 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
             angle = targetAngle % (2*Math.PI);
             spinning = false;
 
-            // calcula número sob a seta
             const normalizedAngle = (2*Math.PI - angle + segmentAngle/2 + Math.PI/2) % (2*Math.PI);
             const indexUnderPointer = Math.floor(normalizedAngle / segmentAngle) % segments.length;
             const numeroFinal = segments[indexUnderPointer];
 
-            let resultadoFinal = resultadoTexto;
+            let resultadoFinal = `Número: ${numeroFinal} → Caiu ${numeroFinal}. ${resultadoTexto.split('→')[1] ? resultadoTexto.split('→')[1].trim() : resultadoTexto}`;
+
             if(numeroEscolhido !== null && aposta !== null){
                 if(numeroFinal === numeroEscolhido){
                     const premio = aposta * 36;
@@ -207,7 +207,7 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
                 }
             }
 
-            document.getElementById("rouletteResult").innerText = "Número: " + numeroFinal + " → " + resultadoFinal;
+            document.getElementById("rouletteResult").innerText = resultadoFinal;
             document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
 
             setTimeout(() => {
