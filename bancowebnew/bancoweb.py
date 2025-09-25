@@ -775,19 +775,23 @@ def futebol():
 
     usuario = session.get("usuario")
 
-    # Conecta ao banco
+    # Conecta ao banco usando DictCursor para acessar campos por nome
     conn = psycopg2.connect(DB_URL)
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    # Garante que a coluna 'resultado' existe na tabela apostas
+    cur.execute("ALTER TABLE apostas ADD COLUMN IF NOT EXISTS resultado TEXT;")
+    conn.commit()
 
     # Pega o saldo real do banco
     cur.execute("SELECT saldo FROM usuarios WHERE username = %s", (usuario,))
     resultado = cur.fetchone()
-    saldo = float(resultado[0]) if resultado else 0
+    saldo = float(resultado['saldo']) if resultado else 0
     session["saldo"] = saldo  # atualiza a sessão com o saldo real
 
     # Pega só os jogos ativos
     cur.execute("SELECT * FROM jogos_futebol WHERE ativo = TRUE")
-    jogos = cur.fetchall()
+    jogos = cur.fetchall()  # cada 'jogo' agora é um dicionário
 
     if request.method == "POST":
         jogo_id = request.form.get("jogo_id")
@@ -800,7 +804,7 @@ def futebol():
             conn.close()
             return redirect(url_for("futebol"))
 
-        # Subtrai do saldo do usuário
+        # Subtrai do saldo do usuário e atualiza no banco
         saldo -= valor_aposta
         session["saldo"] = saldo
         cur.execute("UPDATE usuarios SET saldo = %s WHERE username = %s", (saldo, usuario))
@@ -913,6 +917,7 @@ criar_coluna_resultado()
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
