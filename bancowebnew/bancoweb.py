@@ -780,23 +780,12 @@ def delete_jogo(jogo_id):
     conn.close()
     return redirect(url_for("admin_futebol"))
 
-@app.route("/fixar_tabela")
-def fixar_tabela():
-    try:
-        conn = psycopg2.connect(DB_URL)
-        cur = conn.cursor()
-        cur.execute("ALTER TABLE jogos_futebol ADD COLUMN IF NOT EXISTS ativo BOOLEAN DEFAULT TRUE;")
-        conn.commit()
-        cur.close()
-        conn.close()
-        return "✅ Coluna 'ativo' criada ou já existia!"
-    except Exception as e:
-        return f"❌ Erro: {e}"
 
 
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
