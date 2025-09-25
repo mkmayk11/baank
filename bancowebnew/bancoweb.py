@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file
+from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file, jsonify
 import psycopg2, psycopg2.extras
 import csv, random
 from datetime import datetime
@@ -138,6 +138,7 @@ def dashboard():
     dados = carregar_dados()
     saldo = dados["clientes"][usuario]["saldo"]
     return render_template("dashboard.html", usuario=usuario, saldo=saldo, dados=dados)
+
 
 # -------------------- Depósito pendente --------------------
 @app.route("/deposito", methods=["GET", "POST"])
@@ -563,6 +564,7 @@ def deletar_historico_selecionados():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
