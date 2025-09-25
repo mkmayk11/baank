@@ -62,16 +62,16 @@
 </div>
 
 <style>
-body { background: radial-gradient(circle at center, #111 0%, #000 100%); color: #fff; }
-.card { border-radius: 20px; background: rgba(20,20,20,0.95); border: 1px solid #444; }
-.btn-neon { background: linear-gradient(45deg, #0ff, #0f0); color: #000; font-weight: bold; border-radius: 12px; transition: 0.2s; }
-.btn-neon:hover { transform: scale(1.05); box-shadow: 0 0 20px #0f0; }
-.slot-machine { display: flex; justify-content: center; gap: 10px; }
-.reel { width: 70px; height: 70px; background: #111; border: 2px solid #0f0; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; color: #0f0; box-shadow: inset 0 0 10px #0f0; }
-.roulette-container { position: relative; margin: auto; }
-.roulette-wrapper { position: relative; display: inline-block; }
-#rouletteCanvas { border-radius: 50%; border: 5px solid #0f0; box-shadow: 0 0 20px #0f0; background: #111; }
-.roulette-pointer { position: absolute; top: -25px; left: 50%; transform: translateX(-50%); font-size: 2rem; color: #ff0; text-shadow: 0 0 5px #000, 0 0 10px #ff0; }
+  body { background: radial-gradient(circle at center, #111 0%, #000 100%); color: #fff; }
+  .card { border-radius: 20px; background: rgba(20,20,20,0.95); border: 1px solid #444; }
+  .btn-neon { background: linear-gradient(45deg, #0ff, #0f0); color: #000; font-weight: bold; border-radius: 12px; transition: 0.2s; }
+  .btn-neon:hover { transform: scale(1.05); box-shadow: 0 0 20px #0f0; }
+  .slot-machine { display: flex; justify-content: center; gap: 10px; }
+  .reel { width: 70px; height: 70px; background: #111; border: 2px solid #0f0; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; color: #0f0; box-shadow: inset 0 0 10px #0f0; }
+  .roulette-container { position: relative; margin: auto; }
+  .roulette-wrapper { position: relative; display: inline-block; }
+  #rouletteCanvas { border-radius: 50%; border: 5px solid #0f0; box-shadow: 0 0 20px #0f0; background: #111; }
+  .roulette-pointer { position: absolute; top: -25px; left: 50%; transform: translateX(-50%); font-size: 2rem; color: #ff0; text-shadow: 0 0 5px #000, 0 0 10px #ff0; }
 </style>
 
 <script>
@@ -80,27 +80,38 @@ const slotSound = new Audio("https://freesound.org/data/previews/256/256113_3263
 const rouletteSound = new Audio("https://freesound.org/data/previews/146/146727_2615111-lq.mp3");
 
 // -------------------- SLOTS --------------------
-async function spinReel(reelId, finalSymbol) {
-  return new Promise(resolve => {
-    const reel = document.getElementById(reelId);
-    let i = 0;
-    let totalSteps = 30;
-    let stepCount = 0;
+async function spinReel(reelId, finalSymbol){
+  return new Promise(resolve=>{
+    const reel=document.getElementById(reelId);
+    let i=0;
+    let speed=30;
+    let duration=2000;
+    let elapsed=0;
 
-    function step() {
-      reel.textContent = symbols[i % symbols.length];
-      slotSound.currentTime = 0;
+    function step(){
+      reel.textContent=symbols[i%symbols.length];
+      slotSound.currentTime=0;
       slotSound.play();
       i++;
-      stepCount++;
-      if(stepCount < totalSteps) {
-        setTimeout(step, 50 + stepCount*2); // desacelera progressivamente
+      elapsed+=speed;
+      if(elapsed<duration){
+        speed *= 0.98; // desaceleração suave
+        setTimeout(step, Math.min(speed, 60));
       } else {
-        reel.textContent = finalSymbol;
-        resolve();
+        // bounce final
+        let bounceCount=0;
+        const bounceSymbols=[symbols[i%symbols.length], finalSymbol, symbols[i%symbols.length]];
+        function bounce(){
+          const shakeOffset=(bounceCount%2===0?5:-5);
+          reel.style.transform=`translateX(${shakeOffset}px)`;
+          reel.textContent=bounceSymbols[bounceCount%bounceSymbols.length];
+          bounceCount++;
+          if(bounceCount<6) setTimeout(bounce, 120);
+          else { reel.style.transform='translateX(0)'; resolve(); }
+        }
+        bounce();
       }
     }
-
     step();
   });
 }
@@ -111,136 +122,133 @@ async function startSlot(rolos, resultado, saldoFinal, rodadasRestantes){
   await spinReel("reel2", rolos[1]);
   await spinReel("reel3", rolos[2]);
   document.getElementById("slotResultado").style.display="block";
-  document.getElementById("slotResultado").innerText = resultado;
-  document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
-  document.getElementById("rodadasRestantes").innerText = rodadasRestantes > 0 ? `Jogadas restantes: ${rodadasRestantes}` : "";
+  document.getElementById("slotResultado").innerText=resultado;
+  document.getElementById("saldoBox").innerText="R$ "+saldoFinal.toFixed(2);
+  document.getElementById("rodadasRestantes").innerText=rodadasRestantes>0?`Jogadas restantes: ${rodadasRestantes}`:"";
 
-  setTimeout(() => {
-    document.getElementById("reel1").textContent = "❔";
-    document.getElementById("reel2").textContent = "❔";
-    document.getElementById("reel3").textContent = "❔";
-    document.getElementById("slotResultado").style.display = "none";
-  }, 3000);
+  setTimeout(()=>{
+    document.getElementById("reel1").textContent="❔";
+    document.getElementById("reel2").textContent="❔";
+    document.getElementById("reel3").textContent="❔";
+    document.getElementById("slotResultado").style.display="none";
+  },3000);
 }
 
-async function runSlots(aposta, lote){
-  for(let i=0; i<lote; i++){
-    const resp = await fetch("{{ url_for('jogos') }}", {
+async function runSlots(aposta,lote){
+  for(let i=0;i<lote;i++){
+    const resp=await fetch("{{ url_for('jogos') }}",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({tipo:"caca", aposta, lote:1})
+      body:JSON.stringify({tipo:"caca",aposta,lote:1})
     });
-    const data = await resp.json();
-    await startSlot(data.rolos, data.resultado, data.saldo, lote-i-1);
-    await new Promise(res => setTimeout(res, 1000));
+    const data=await resp.json();
+    await startSlot(data.rolos,data.resultado,data.saldo,lote-i-1);
+    await new Promise(res=>setTimeout(res,4000));
   }
 }
 
-document.getElementById("formCaca").addEventListener("submit", async e => {
+document.getElementById("formCaca").addEventListener("submit",async e=>{
   e.preventDefault();
-  const aposta = parseFloat(document.getElementById("apostaCaca").value);
-  const lote = parseInt(document.getElementById("lote").value) || 1;
-  runSlots(aposta, lote);
+  const aposta=parseFloat(document.getElementById("apostaCaca").value);
+  const lote=parseInt(document.getElementById("lote").value)||1;
+  runSlots(aposta,lote);
 });
 
 // -------------------- ROLETA --------------------
-const canvas = document.getElementById("rouletteCanvas");
-const ctx = canvas.getContext("2d");
-const segments = Array.from({length:21},(_,i)=>i);
-let angle=0, spinning=false;
+const canvas=document.getElementById("rouletteCanvas");
+const ctx=canvas.getContext("2d");
+const segments=Array.from({length:21},(_,i)=>i);
+let angle=0,spinning=false;
 
-function drawRoulette() {
-  const radius = canvas.width / 2;
-  const segmentAngle = (2 * Math.PI) / segments.length;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+function drawRoulette(){
+  const radius=canvas.width/2;
+  const segmentAngle=(2*Math.PI)/segments.length;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.save();
-  ctx.translate(radius, radius);
-  ctx.rotate(angle - segmentAngle/2 - Math.PI/2);
+  ctx.translate(radius,radius);
+  ctx.rotate(angle-segmentAngle/2-Math.PI/2);
+  for(let i=0;i<segments.length;i++){
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.arc(0,0,radius,i*segmentAngle,(i+1)*segmentAngle);
+    ctx.fillStyle="#111";
+    ctx.fill();
+    ctx.strokeStyle="#0f0";
+    ctx.stroke();
 
-  for (let i = 0; i < segments.length; i++) {
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.arc(0, 0, radius, i * segmentAngle, (i + 1) * segmentAngle);
-      ctx.fillStyle = "#111";
-      ctx.fill();
-      ctx.strokeStyle = "#0f0";
-      ctx.stroke();
-
-      ctx.save();
-      ctx.rotate(i * segmentAngle + segmentAngle / 2);
-      ctx.fillStyle = "#fff";
-      ctx.font = "16px Arial";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(segments[i].toString(), radius * 0.65, 0);
-      ctx.restore();
+    ctx.save();
+    ctx.rotate(i*segmentAngle+segmentAngle/2);
+    ctx.fillStyle="#fff";
+    ctx.font="16px Arial";
+    ctx.textAlign="center";
+    ctx.textBaseline="middle";
+    ctx.fillText(segments[i].toString(),radius*0.65,0);
+    ctx.restore();
   }
   ctx.restore();
 }
 
-function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhido=null, aposta=null){
+function animateToIndex(winningIndex,saldoFinal,resultadoTexto,numeroEscolhido=null,aposta=null){
   if(spinning) return;
-  spinning = true;
-  const segmentAngle = (2*Math.PI)/segments.length;
-  const targetAngle = (2*Math.PI*6) + winningIndex * segmentAngle;
-
-  let currentAngle = angle;
-  let speed = 2.5;
-  const deceleration = 0.995;
+  spinning=true;
+  const segmentAngle=(2*Math.PI)/segments.length;
+  let targetAngle=2*Math.PI*6 + winningIndex*segmentAngle;
+  let currentAngle=angle;
+  let speed=0.2;
+  let deceleration=0.995;
 
   function animate(){
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      ctx.save();
-      ctx.translate(canvas.width/2, canvas.height/2);
-      ctx.rotate(currentAngle - segmentAngle/2 - Math.PI/2);
-      ctx.translate(-canvas.width/2, -canvas.height/2);
-      drawRoulette();
-      ctx.restore();
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.save();
+    ctx.translate(canvas.width/2,canvas.height/2);
+    ctx.rotate(currentAngle-segmentAngle/2-Math.PI/2);
+    ctx.translate(-canvas.width/2,-canvas.height/2);
+    drawRoulette();
+    ctx.restore();
 
-      rouletteSound.currentTime = 0;
-      rouletteSound.play();
+    rouletteSound.currentTime=0;
+    rouletteSound.play();
 
-      if(currentAngle < targetAngle){
-          currentAngle += speed;
-          speed *= deceleration;
-          requestAnimationFrame(animate);
-      } else {
-          angle = targetAngle % (2*Math.PI);
-          spinning = false;
+    if(currentAngle<targetAngle){
+      currentAngle+=speed;
+      speed*=deceleration;
+      requestAnimationFrame(animate);
+    } else {
+      angle=targetAngle%(2*Math.PI);
+      spinning=false;
 
-          let numeroFinal = winningIndex;
-          let resultadoFinal = `Número: ${numeroFinal} → Caiu ${numeroFinal}. ${resultadoTexto.split('→')[1] ? resultadoTexto.split('→')[1].trim() : resultadoTexto}`;
-
-          if(numeroEscolhido !== null && aposta !== null && numeroFinal === numeroEscolhido){
-              const premio = aposta * 36;
-              resultadoFinal += ` 🎉 Acertou! Prêmio x36 = R$ ${premio.toFixed(2)}`;
-          }
-
-          document.getElementById("rouletteResult").innerText = resultadoFinal;
-          document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
-
-          setTimeout(()=>drawRoulette(), 3000);
+      let numeroFinal=winningIndex;
+      let resultadoFinal=`Número: ${numeroFinal} → Caiu ${numeroFinal}. ${resultadoTexto.split('→')[1]?resultadoTexto.split('→')[1].trim():resultadoTexto}`;
+      if(numeroEscolhido!==null && aposta!==null && numeroFinal===numeroEscolhido){
+        const premio=aposta*36;
+        resultadoFinal+=` 🎉 Acertou! Prêmio x36 = R$ ${premio.toFixed(2)}`;
       }
-  }
 
+      document.getElementById("rouletteResult").innerText=resultadoFinal;
+      document.getElementById("saldoBox").innerText="R$ "+saldoFinal.toFixed(2);
+
+      setTimeout(()=>drawRoulette(),3000);
+    }
+  }
   animate();
 }
 
 drawRoulette();
 
-document.getElementById("formRoleta").addEventListener("submit", async e => {
+document.getElementById("formRoleta").addEventListener("submit",async e=>{
   e.preventDefault();
-  const aposta = parseFloat(document.getElementById("apostaRoleta").value);
-  const numero = parseInt(document.getElementById("numeroAposta").value);
+  const aposta=parseFloat(document.getElementById("apostaRoleta").value);
+  const numero=parseInt(document.getElementById("numeroAposta").value);
 
-  const resp = await fetch("{{ url_for('jogos') }}",{
+  const resp=await fetch("{{ url_for('jogos') }}",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({tipo:"roleta", aposta, numero})
+    body:JSON.stringify({tipo:"roleta",aposta,numero})
   });
 
-  const data = await resp.json();
-  animateToIndex(data.numero, data.saldo, data.resultado, numero, aposta);
+  const data=await resp.json();
+  animateToIndex(data.numero,data.saldo,data.resultado,numero,aposta);
 });
 </script>
+
 {% endblock %}
