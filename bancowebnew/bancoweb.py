@@ -259,28 +259,6 @@ def login():
         flash("Login inválido")
     return render_template("login.html")
 
-@app.route("/cadastro", methods=["GET", "POST"])
-def cadastro():
-    if request.method == "POST":
-        usuario = request.form["usuario"]
-        senha = request.form["senha"]
-        dados = carregar_dados()
-        if usuario in dados["clientes"]:
-            flash("Usuário já existe!")
-        else:
-            salvar_cliente(usuario, senha=senha, saldo=0)
-            flash("Cadastro realizado!")
-            return redirect(url_for("login"))
-    return render_template("cadastro.html")
-
-@app.route("/dashboard")
-def dashboard():
-    if "usuario" not in session or session["usuario"] == "admin":
-        return redirect(url_for("login"))
-    usuario = session["usuario"]
-    dados = carregar_dados()
-    saldo = dados["clientes"][usuario]["saldo"]
-    return render_template("dashboard.html", usuario=usuario, saldo=saldo, dados=dados)
 
 
 # -------------------- Depósito pendente --------------------
@@ -807,6 +785,7 @@ def delete_jogo(jogo_id):
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
