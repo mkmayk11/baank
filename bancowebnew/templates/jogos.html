@@ -133,6 +133,7 @@ document.getElementById("formCaca").addEventListener("submit", async e => {
 });
 
 // -------------------- ROLETA CORRIGIDA --------------------
+// -------------------- ROLETA CORRIGIDA --------------------
 const canvas = document.getElementById("rouletteCanvas");
 const ctx = canvas.getContext("2d");
 const segments = Array.from({length:21},(_,i)=>i);
@@ -172,7 +173,7 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
     if(spinning) return;
     spinning = true;
     const segmentAngle = (2*Math.PI)/segments.length;
-    const targetAngle = (2*Math.PI*6) + winningIndex * segmentAngle; // 6 giros completos + número
+    const targetAngle = (2*Math.PI*6) + winningIndex * segmentAngle;
 
     let currentAngle = angle;
     let speed = 0.5;
@@ -198,11 +199,11 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
             const indexUnderPointer = Math.floor(normalizedAngle / segmentAngle) % segments.length;
             const numeroFinal = segments[indexUnderPointer];
 
-            // Garante que o "Caiu" sempre bate com o número final
+            // Força o "Caiu" a mostrar sempre o mesmo numeroFinal
             let resultadoFinal = `Número: ${numeroFinal} → Caiu ${numeroFinal}. `;
 
-            // Aproveita a parte do texto do servidor, mas ignora números repetidos
-            let msgServidor = resultadoTexto.split("→").pop().trim();
+            // Remove qualquer "Caiu X" vindo do servidor e só usa o resto da msg
+            let msgServidor = resultadoTexto.replace(/Caiu\s+\d+\.?/gi, "").trim();
             if (msgServidor) {
                 resultadoFinal += msgServidor;
             }
@@ -227,25 +228,26 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
     animate();
 }
 
-
 drawRoulette();
 
 document.getElementById("formRoleta").addEventListener("submit", async e => {
-    e.preventDefault();
-    const aposta = parseFloat(document.getElementById("apostaRoleta").value);
-    const numero = parseInt(document.getElementById("numeroAposta").value);
+  e.preventDefault();
+  const aposta = parseFloat(document.getElementById("apostaRoleta").value);
+  const numero = parseInt(document.getElementById("numeroAposta").value);
 
-    const resp = await fetch("{{ url_for('jogos') }}",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({tipo:"roleta", aposta, numero})
-    });
+  const resp = await fetch("{{ url_for('jogos') }}",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({tipo:"roleta", aposta, numero})
+  });
 
-    const data = await resp.json();
-    animateToIndex(data.numero, data.saldo, data.resultado, numero, aposta);
+  const data = await resp.json();
+  animateToIndex(data.numero, data.saldo, data.resultado, numero, aposta);
 });
+
 </script>
 
 {% endblock %}
+
 
 
