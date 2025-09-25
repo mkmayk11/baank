@@ -268,7 +268,7 @@ def jogos():
     simbolos = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲","🏺","💸"]
 
     if request.method == "POST":
-        data = request.get_json()  # pega JSON do AJAX
+        data = request.get_json()
         tipo = data.get("tipo")
 
         # -------- CAÇA-NÍQUEL --------
@@ -279,7 +279,7 @@ def jogos():
             except:
                 return jsonify({"erro":"Aposta inválida"}), 400
 
-            if aposta <= 0:
+            if aposta <= 0 and dados["clientes"][usuario].get("rodadas_gratis", 0) <= 0:
                 resultado = "Digite um valor válido de aposta!"
                 rolos = ["❔","❔","❔"]
             elif aposta > saldo:
@@ -290,26 +290,26 @@ def jogos():
                 ganho = 0
                 resultado = ""
 
-                # --- regras especiais ---
-                if rolos.count("💸") == 3:
+                # --- novas regras especiais ---
+                if rolos.count("💸") == 3:  # TRIO de dinheiro
                     ganho = aposta * 160
                     saldo += ganho
                     resultado = f"💸💸💸 TRIPLO DINHEIRO! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (3 Dinheiro {rolos})", ganho)
 
-                elif rolos.count("💸") == 2:
+                elif rolos.count("💸") == 2:  # PAR de dinheiro
                     ganho = aposta * 70
                     saldo += ganho
                     resultado = f"💸💸 Dois Dinheiros! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (2 Dinheiro {rolos})", ganho)
 
-                elif rolos.count("🍀") == 2:
-                    resultado = f"🍀🍀 Sorte Grande! {rolos} Você ganhou 10 rodadas grátis!"
+                elif rolos.count("🍀") == 2:  # Dois trevos
+                    rodadas = 10
+                    dados["clientes"][usuario]["rodadas_gratis"] = dados["clientes"][usuario].get("rodadas_gratis", 0) + rodadas
+                    resultado = f"🍀🍀 Sorte Grande! {rolos} Você ganhou {rodadas} rodadas grátis!"
                     registrar_historico(usuario, f"Caça-níquel (2 Trevos {rolos})", 0)
-                    # salva rodadas grátis
-                    dados["clientes"][usuario]["rodadas_gratis"] = dados["clientes"][usuario].get("rodadas_gratis", 0) + 10
 
-                # --- regras já existentes ---
+                # --- regras especiais já existentes ---
                 elif rolos.count("⭐") == 3:
                     ganho = aposta * 200
                     saldo += ganho
@@ -348,12 +348,22 @@ def jogos():
                     registrar_historico(usuario, f"Caça-níquel (Par {rolos})", ganho)
 
                 else:
-                    saldo -= aposta
-                    resultado = f"❌ {rolos} Você perdeu R$ {aposta:.2f}."
-                    registrar_historico(usuario, f"Caça-níquel (Derrota {rolos})", -aposta)
+                    if dados["clientes"][usuario].get("rodadas_gratis", 0) > 0:
+                        dados["clientes"][usuario]["rodadas_gratis"] -= 1
+                        resultado = f"❌ {rolos} Você perdeu uma rodada grátis, saldo não foi descontado."
+                    else:
+                        saldo -= aposta
+                        resultado = f"❌ {rolos} Você perdeu R$ {aposta:.2f}."
+                        registrar_historico(usuario, f"Caça-níquel (Derrota {rolos})", -aposta)
 
-            salvar_cliente(usuario, saldo=saldo)
-            return jsonify({"rolos": rolos, "resultado": resultado, "saldo": saldo})
+            salvar_cliente(usuario, saldo)
+
+            return jsonify({
+                "rolos": rolos,
+                "resultado": resultado,
+                "saldo": saldo,
+                "rodadas_gratis": dados["clientes"][usuario].get("rodadas_gratis", 0)
+            })
 
     # GET normal
     return render_template(
@@ -363,8 +373,7 @@ def jogos():
         last_aposta_roleta="",
         last_lote="",
         last_numero_aposta="",
-        dados=dados,      # <- Corrigido aqui
-        usuario=usuario   # <- Corrigido aqui
+        dados=dados
     )
 
 
@@ -551,6 +560,7 @@ def deletar_historico_selecionados():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
