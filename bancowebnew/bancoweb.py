@@ -747,12 +747,79 @@ def deletar_historico_selecionados():
     conn.close()
     return redirect(url_for("historico"))
 
+# -------------------- ADMIN FUTEBOL --------------------
+
+@app.route("/admin/futebol", methods=["GET", "POST"])
+def admin_futebol():
+    # Aqui você pode colocar uma verificação se session["usuario"] == "admin"
+    if "usuario" not in session:
+        return redirect(url_for("login"))
+
+    conn = psycopg2.connect(DB_URL)
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    if request.method == "POST":
+        time1 = request.form.get("time1")
+        time2 = request.form.get("time2")
+        odds1 = request.form.get("odds1")
+        odds2 = request.form.get("odds2")
+        odds_empate = request.form.get("odds_empate")
+
+        cur.execute(
+            """
+            INSERT INTO jogos_futebol (time1, time2, odds1, odds2, odds_empate, ativo)
+            VALUES (%s, %s, %s, %s, %s, TRUE)
+            """,
+            (time1, time2, odds1, odds2, odds_empate)
+        )
+        conn.commit()
+
+    cur.execute("SELECT * FROM jogos_futebol ORDER BY id DESC")
+    jogos = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return render_template("admin_futebol.html", jogos=jogos)
+
+
+@app.route("/admin/futebol/toggle/<int:jogo_id>", methods=["POST"])
+def toggle_jogo(jogo_id):
+    if "usuario" not in session:
+        return redirect(url_for("login"))
+
+    conn = psycopg2.connect(DB_URL)
+    cur = conn.cursor()
+
+    cur.execute("UPDATE jogos_futebol SET ativo = NOT ativo WHERE id = %s", (jogo_id,))
+    conn.commit()
+
+    cur.close()
+    conn.close()
+    return redirect(url_for("admin_futebol"))
+
+
+@app.route("/admin/futebol/delete/<int:jogo_id>", methods=["POST"])
+def delete_jogo(jogo_id):
+    if "usuario" not in session:
+        return redirect(url_for("login"))
+
+    conn = psycopg2.connect(DB_URL)
+    cur = conn.cursor()
+
+    cur.execute("DELETE FROM jogos_futebol WHERE id = %s", (jogo_id,))
+    conn.commit()
+
+    cur.close()
+    conn.close()
+    return redirect(url_for("admin_futebol"))
 
 
 
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
