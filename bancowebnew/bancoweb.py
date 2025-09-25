@@ -779,11 +779,11 @@ def futebol():
     conn = psycopg2.connect("postgresql://savesite_user:5X70ctnMmv1jfWVuCQssRvmQUjW0D56p@dpg-d37hgjjuibrs7392ou1g-a/savesite")
     cur = conn.cursor()
 
-    # Pega o saldo atualizado do banco
+    # Pega o saldo atualizado do banco (igual dashboard)
     cur.execute("SELECT saldo FROM usuarios WHERE username = %s", (usuario,))
     saldo_db = cur.fetchone()
     saldo = float(saldo_db[0]) if saldo_db else 0
-    session["saldo"] = saldo  # Atualiza o saldo na sessão
+    session["saldo"] = saldo  # atualiza a sessão também
 
     # Pega os jogos ativos
     cur.execute("SELECT * FROM jogos_futebol WHERE ativo = TRUE")
@@ -803,7 +803,7 @@ def futebol():
         session["saldo"] = saldo
         cur.execute("UPDATE usuarios SET saldo = %s WHERE username = %s", (saldo, usuario))
 
-        # Salva a aposta no banco
+        # Salva a aposta no banco (certifique-se de criar coluna resultado)
         cur.execute(
             "INSERT INTO apostas (usuario, jogo_id, valor, resultado) VALUES (%s, %s, %s, %s)",
             (usuario, jogo_id, valor_aposta, resultado)
@@ -816,6 +816,7 @@ def futebol():
     cur.close()
     conn.close()
     return render_template("futebol.html", usuario=usuario, saldo=saldo, jogos=jogos)
+
 
 
 import psycopg2
@@ -879,6 +880,7 @@ def setup_db():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
