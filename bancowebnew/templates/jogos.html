@@ -82,15 +82,34 @@ async function spinReel(reelId, finalSymbol) {
   return new Promise(resolve => {
     const reel = document.getElementById(reelId);
     let i = 0;
-    const interval = setInterval(() => {
+    let speed = 20; // início rápido
+    let duration = 1500; // duração total
+    let elapsed = 0;
+
+    function step() {
       reel.textContent = symbols[i % symbols.length];
       i++;
-    }, 80);
-    setTimeout(() => {
-      clearInterval(interval);
-      reel.textContent = finalSymbol;
-      resolve();
-    }, 1800);
+      elapsed += speed;
+
+      if (elapsed < duration) {
+        // desaceleração exponencial
+        speed = speed * 1.05;
+        setTimeout(step, Math.min(speed, 100)); // máximo de 100ms
+      } else {
+        // efeito bouncing suave
+        let bounceCount = 0;
+        let bounceSymbols = [symbols[i%symbols.length], finalSymbol, symbols[i%symbols.length]];
+        function bounce() {
+          reel.textContent = bounceSymbols[bounceCount % bounceSymbols.length];
+          bounceCount++;
+          if (bounceCount < 6) setTimeout(bounce, 150);
+          else resolve();
+        }
+        bounce();
+      }
+    }
+
+    step();
   });
 }
 
@@ -175,7 +194,8 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
     const targetAngle = (2*Math.PI*6) + winningIndex * segmentAngle;
 
     let currentAngle = angle;
-    let speed = 0.5;
+    let speed = 2.5; // velocidade inicial mais rápida
+    const deceleration = 0.997; // desaceleração lenta e suave
 
     function animate(){
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -188,7 +208,7 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
 
         if(currentAngle < targetAngle){
             currentAngle += speed;
-            speed *= 0.995;
+            speed *= deceleration; // desaceleração suave
             requestAnimationFrame(animate);
         } else {
             angle = targetAngle % (2*Math.PI);
