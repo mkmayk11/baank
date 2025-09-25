@@ -106,8 +106,8 @@ async function startSlot(rolos, resultado, saldoFinal){
 // AJAX para slot
 document.getElementById("formCaca").addEventListener("submit", async e=>{
   e.preventDefault();
-  const aposta=parseFloat(document.getElementById("apostaCaca").value);
-  const lote=parseInt(document.getElementById("lote").value)||1;
+  const aposta = parseFloat(document.getElementById("apostaCaca").value);
+  const lote = parseInt(document.getElementById("lote").value) || 1;
   const resp = await fetch("{{ url_for('jogos') }}",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
@@ -151,16 +151,16 @@ function drawRoulette(){
 
 function animateToIndex(winningIndex, saldoFinal, resultadoTexto){
   if(spinning) return;
-  spinning=true;
-  const segmentAngle=(2*Math.PI)/segments.length;
+  spinning = true;
+  const segmentAngle = (2*Math.PI)/segments.length;
   const targetAngle = angle + (2*Math.PI*6) + (winningIndex * segmentAngle);
   let speed = 0.5;
   function animate(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.save();
-    ctx.translate(canvas.width/2,canvas.height/2);
+    ctx.translate(canvas.width/2, canvas.height/2);
     ctx.rotate(angle);
-    ctx.translate(-canvas.width/2,-canvas.height/2);
+    ctx.translate(-canvas.width/2, -canvas.height/2);
     drawRoulette();
     ctx.restore();
     if(angle < targetAngle){
@@ -169,7 +169,7 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto){
       requestAnimationFrame(animate);
     } else {
       angle = targetAngle;
-      spinning=false;
+      spinning = false;
       document.getElementById("rouletteResult").innerText = resultadoTexto;
       document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
     }
@@ -193,3 +193,4 @@ document.getElementById("formRoleta").addEventListener("submit", async e=>{
   animateToIndex(data.numero, data.saldo, data.resultado);
 });
 </script>
+{% endblock %}
