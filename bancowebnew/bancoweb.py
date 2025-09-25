@@ -265,10 +265,7 @@ def jogos():
     saldo = dados["clientes"][usuario]["saldo"]
 
     # símbolos do caça-níquel
-    simbolos = [
-        "🍒", "🍋", "🔔", "⭐", "💎", "🍀", "🍉", "🥭",
-        "🍇", "🍌", "🍓", "🍑", "🍍", "🥝", "🥥", "🍈", "🌈", "🎲"
-    ]
+    simbolos =  ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲","🏺","💸"]
 
     if request.method == "POST":
         data = request.get_json()  # <-- pega JSON do AJAX
@@ -557,6 +554,7 @@ def deletar_historico_selecionados():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
