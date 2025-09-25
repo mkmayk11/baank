@@ -768,60 +768,44 @@ def delete_jogo(jogo_id):
     return redirect(url_for("admin_futebol"))
 
 
+# ---------- Rota futebol ----------
 @app.route("/futebol", methods=["GET", "POST"])
 def futebol():
     if "usuario" not in session:
         return redirect(url_for("login"))
-
+    
     usuario = session["usuario"]
+    cliente = carregar_cliente(usuario)
+    saldo = float(cliente["saldo"]) if cliente else 0
 
-    # Conecta ao banco com DictCursor para acessar colunas por nome
-    conn = psycopg2.connect(DB_URL)
+    # Pega jogos ativos
+    conn = get_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-
-    # Pega o saldo real do banco
-    cur.execute("SELECT saldo FROM usuarios WHERE username = %s", (usuario,))
-    resultado = cur.fetchone()
-    saldo = float(resultado["saldo"]) if resultado else 0
-    session["saldo"] = saldo  # atualiza a sessão com o saldo real
-
-    # Pega só os jogos ativos
     cur.execute("SELECT * FROM jogos_futebol WHERE ativo = TRUE")
-    jogos = cur.fetchall()  # cada item é um dict
+    jogos = cur.fetchall()
+    conn.close()
 
     if request.method == "POST":
-        jogo_id = request.form.get("jogo_id")
+        jogo_id = int(request.form.get("jogo_id"))
         valor_aposta = float(request.form.get("valor_aposta", 0))
         resultado_aposta = request.form.get("resultado")  # time1, time2 ou empate
 
         if valor_aposta <= 0 or valor_aposta > saldo:
             flash("Valor inválido ou saldo insuficiente!", "danger")
-            cur.close()
-            conn.close()
             return redirect(url_for("futebol"))
 
-        # Subtrai do saldo do usuário
+        # Deduz saldo
         saldo -= valor_aposta
-        session["saldo"] = saldo
-        cur.execute("UPDATE usuarios SET saldo = %s WHERE username = %s", (saldo, usuario))
+        atualizar_saldo(usuario, saldo)
 
-        # Salva a aposta no banco
-        cur.execute(
-            "INSERT INTO apostas (usuario, jogo_id, valor, resultado) VALUES (%s, %s, %s, %s)",
-            (usuario, jogo_id, valor_aposta, resultado_aposta)
-        )
-        conn.commit()
+        # Salva aposta e histórico
+        registrar_aposta(usuario, jogo_id, valor_aposta, resultado_aposta)
+        registrar_historico(usuario, f"Aposta em futebol: {resultado_aposta}", valor_aposta)
 
-        flash(f"Aposta de R$ {valor_aposta:.2f} em '{resultado_aposta}' realizada com sucesso!", "success")
-
-        cur.close()
-        conn.close()
+        flash(f"Aposta de R$ {valor_aposta:.2f} em '{resultado_aposta}' realizada!", "success")
         return redirect(url_for("futebol"))
 
-    cur.close()
-    conn.close()
     return render_template("futebol.html", usuario=usuario, saldo=saldo, jogos=jogos)
-
 
 
 
@@ -914,6 +898,7 @@ criar_coluna_resultado()
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
