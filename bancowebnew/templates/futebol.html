@@ -2,66 +2,52 @@
 {% block conteudo %}
 <div class="container py-5">
     <div class="card shadow border-0 rounded-4 p-4">
-        <h2 class="fw-bold mb-4">⚽ Gerenciar Jogos de Futebol</h2>
+        <h2 class="fw-bold mb-4">⚽ Jogos Disponíveis para Aposta</h2>
 
-        <!-- Formulário de novo jogo -->
-        <form method="POST" action="{{ url_for('admin_futebol') }}" class="row g-3 mb-4">
-            <div class="col-md-3">
-                <input type="text" name="time1" class="form-control" placeholder="Time 1" required>
-            </div>
-            <div class="col-md-3">
-                <input type="text" name="time2" class="form-control" placeholder="Time 2" required>
-            </div>
-            <div class="col-md-2">
-                <input type="number" step="0.01" name="odds1" class="form-control" placeholder="Odd Time 1" required>
-            </div>
-            <div class="col-md-2">
-                <input type="number" step="0.01" name="odds2" class="form-control" placeholder="Odd Time 2" required>
-            </div>
-            <div class="col-md-2">
-                <input type="number" step="0.01" name="odds_empate" class="form-control" placeholder="Odd Empate" required>
-            </div>
-            <div class="col-12 text-end">
-                <button type="submit" class="btn btn-success">Adicionar Jogo</button>
-            </div>
-        </form>
+        <!-- Saldo do usuário -->
+        <p class="fw-bold">Saldo disponível: <span class="text-success">{{ saldo }}</span></p>
 
-        <!-- Lista de jogos -->
+        <!-- Mensagens de flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Lista de jogos ativos -->
         <table class="table table-striped align-middle">
             <thead>
                 <tr>
-                    <th>ID</th>
                     <th>Times</th>
                     <th>Odds</th>
-                    <th>Status</th>
-                    <th>Ações</th>
+                    <th>Apostar</th>
                 </tr>
             </thead>
             <tbody>
                 {% for jogo in jogos %}
                 <tr>
-                    <td>{{ jogo.id }}</td>
                     <td>{{ jogo.time1 }} x {{ jogo.time2 }}</td>
                     <td>
-                        {{ jogo.odds1 }} / {{ jogo.odds2 }} / Empate: {{ jogo.odds_empate }}
+                        {{ jogo.odds1 }} / Empate: {{ jogo.odds_empate }} / {{ jogo.odds2 }}
                     </td>
                     <td>
-                        {% if jogo.ativo %}
-                            <span class="badge bg-success">Ativo</span>
-                        {% else %}
-                            <span class="badge bg-secondary">Inativo</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <form method="POST" action="{{ url_for('toggle_jogo', jogo_id=jogo.id) }}" style="display:inline;">
-                            <button type="submit" class="btn btn-sm {% if jogo.ativo %}btn-warning{% else %}btn-success{% endif %}">
-                                {% if jogo.ativo %}Desativar{% else %}Ativar{% endif %}
-                            </button>
-                        </form>
-                        <form method="POST" action="{{ url_for('delete_jogo', jogo_id=jogo.id) }}" style="display:inline;">
-                            <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
+                        <form method="POST">
+                            <input type="hidden" name="jogo_id" value="{{ jogo.id }}">
+                            <div class="input-group">
+                                <input type="number" step="0.01" name="valor_aposta" class="form-control" placeholder="Valor" max="{{ saldo }}" required>
+                                <button type="submit" class="btn btn-success">Apostar</button>
+                            </div>
                         </form>
                     </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3" class="text-center">Nenhum jogo ativo disponível no momento.</td>
                 </tr>
                 {% endfor %}
             </tbody>
