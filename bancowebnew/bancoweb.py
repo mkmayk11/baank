@@ -113,6 +113,11 @@ def registrar_historico(usuario, acao, valor=0, destino=None):
     conn.commit()
     conn.close()
 
+def carregar_cliente(usuario):
+    dados = carregar_dados()
+    return dados["clientes"].get(usuario)
+
+
 # -------------------- Rotas básicas --------------------
 
 
@@ -775,12 +780,14 @@ def futebol():
         return redirect(url_for("login"))
     
     usuario = session["usuario"]
-    cliente = carregar_cliente(usuario)
+    dados = carregar_dados()
+    cliente = dados["clientes"].get(usuario)
     saldo = float(cliente["saldo"]) if cliente else 0
 
+    # Pega jogos ativos
     conn = get_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    cur.execute("SELECT * FROM jogos_futebol WHERE ativo=TRUE")
+    cur.execute("SELECT * FROM jogos_futebol WHERE ativo = TRUE")
     jogos = cur.fetchall()
     conn.close()
 
@@ -793,10 +800,11 @@ def futebol():
             flash("Valor inválido ou saldo insuficiente!", "danger")
             return redirect(url_for("futebol"))
 
+        # Deduz saldo
         saldo -= valor_aposta
-        atualizar_saldo(usuario, saldo)
+        salvar_cliente(usuario, saldo=saldo)  # atualizar saldo
 
-        registrar_aposta(usuario, jogo_id, valor_aposta, resultado_aposta)
+        # Salva aposta e histórico
         registrar_historico(usuario, f"Aposta em futebol: {resultado_aposta}", valor_aposta)
 
         flash(f"Aposta de R$ {valor_aposta:.2f} em '{resultado_aposta}' realizada!", "success")
@@ -895,6 +903,7 @@ criar_coluna_resultado()
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
