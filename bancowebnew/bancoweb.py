@@ -366,15 +366,16 @@ def jogos():
             })
 
     # GET normal
-    return render_template(
-        "jogos.html",
-        saldo=saldo,
-        last_aposta_caca="",
-        last_aposta_roleta="",
-        last_lote="",
-        last_numero_aposta="",
-        dados=dados
-    )
+    rodadas_gratis = dados["clientes"][usuario].get("rodadas_gratis", 0)
+return render_template(
+    "jogos.html",
+    saldo=saldo,
+    last_aposta_caca="",
+    last_aposta_roleta="",
+    last_lote="",
+    last_numero_aposta="",
+    rodadas_gratis=rodadas_gratis
+)
 
 
 
@@ -560,6 +561,7 @@ def deletar_historico_selecionados():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
