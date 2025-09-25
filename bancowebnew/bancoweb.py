@@ -433,11 +433,74 @@ def recusar_deposito(id):
     flash("Depósito recusado!")
     return redirect(url_for("admin_depositos"))
 
+# -------------------- Saques (admin) --------------------
+@app.route("/admin/aprovar_saque/<int:id>")
+def aprovar_saque(id):
+    if "usuario" not in session or session["usuario"] != "admin":
+        return redirect(url_for("login"))
+    conn = get_connection()
+    c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    c.execute("SELECT * FROM depositos_pendentes WHERE id = %s", (id,))
+    saque = c.fetchone()
+    if saque and saque["aprovado"] == -1:
+        # Só marca como aprovado, já foi debitado no pedido de saque
+        c.execute("UPDATE depositos_pendentes SET aprovado = 1 WHERE id = %s", (id,))
+        c.execute("INSERT INTO historico (usuario, acao, valor, destino, data) VALUES (%s,%s,%s,%s,%s)",
+                  (saque["usuario"], "Saque Aprovado", saque["valor"], None,
+                   datetime.now().strftime("%d/%m/%Y %H:%M:%S")))
+        conn.commit()
+
+    conn.close()
+    flash("Saque aprovado!")
+    return redirect(url_for("admin_depositos"))
+
+@app.route("/admin/recusar_saque/<int:id>")
+def recusar_saque(id):
+    if "usuario" not in session or session["usuario"] != "admin":
+        return redirect(url_for("login"))
+    conn = get_connection()
+    c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    c.execute("SELECT * FROM depositos_pendentes WHERE id = %s", (id,))
+    saque = c.fetchone()
+    if saque and saque["aprovado"] == -1:
+        # Devolve o valor para o saldo do usuário
+        c.execute("UPDATE clientes SET saldo = saldo + %s WHERE usuario = %s",
+                  (saque["valor"], saque["usuario"]))
+        c.execute("UPDATE depositos_pendentes SET aprovado = 2 WHERE id = %s", (id,))
+        c.execute("INSERT INTO historico (usuario, acao, valor, destino, data) VALUES (%s,%s,%s,%s,%s)",
+                  (saque["usuario"], "Saque Recusado (valor devolvido)", saque["valor"], None,
+                   datetime.now().strftime("%d/%m/%Y %H:%M:%S")))
+        conn.commit()
+
+    conn.close()
+    flash("Saque recusado! Valor devolvido ao usuário.")
+    return redirect(url_for("admin_depositos"))
+
+
+# -------------------- Deletar histórico de depósitos/saques --------------------
+@app.route("/admin/deletar_historico")
+def deletar_historico():
+    if "usuario" not in session or session["usuario"] != "admin":
+        return redirect(url_for("login"))
+
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("DELETE FROM depositos_pendentes")
+    conn.commit()
+    conn.close()
+
+    flash("Histórico de depósitos/saques deletado!")
+    return redirect(url_for("admin_depositos"))
+
+
 
 
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
