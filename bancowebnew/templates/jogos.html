@@ -30,7 +30,6 @@
             <div class="reel" id="reel3">❔</div>
           </div>
           <div id="slotResultado" class="alert alert-info mt-3" style="display:none;"></div>
-          <!-- Novo campo para mostrar jogadas restantes -->
           <div id="rodadasRestantes" class="text-white mt-2" style="font-size:0.9rem;"></div>
         </div>
       </div>
@@ -105,7 +104,6 @@ async function startSlot(rolos, resultado, saldoFinal, rodadasRestantes){
   document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
   document.getElementById("rodadasRestantes").innerText = rodadasRestantes > 0 ? `Jogadas restantes: ${rodadasRestantes}` : "";
 
-  // volta pra ❔ depois de 3s
   setTimeout(() => {
     document.getElementById("reel1").textContent = "❔";
     document.getElementById("reel2").textContent = "❔";
@@ -114,7 +112,6 @@ async function startSlot(rolos, resultado, saldoFinal, rodadasRestantes){
   }, 3000);
 }
 
-// -------------------- SLOTS COM MÚLTIPLAS RODADAS --------------------
 async function runSlots(aposta, lote){
   for(let i=0; i<lote; i++){
     const resp = await fetch("{{ url_for('jogos') }}", {
@@ -128,7 +125,6 @@ async function runSlots(aposta, lote){
   }
 }
 
-// AJAX para slot
 document.getElementById("formCaca").addEventListener("submit", async e => {
   e.preventDefault();
   const aposta = parseFloat(document.getElementById("apostaCaca").value);
@@ -139,19 +135,16 @@ document.getElementById("formCaca").addEventListener("submit", async e => {
 // -------------------- ROLETA --------------------
 const canvas = document.getElementById("rouletteCanvas");
 const ctx = canvas.getContext("2d");
-const segments = Array.from({length:21},(_,i)=>i); // 21 números
+const segments = Array.from({length:21},(_,i)=>i);
 let angle=0, spinning=false;
 
-// Desenha a roleta
 function drawRoulette() {
     const radius = canvas.width / 2;
     const segmentAngle = (2 * Math.PI) / segments.length;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
     ctx.translate(radius, radius);
-
-    // rotaciona toda roleta
-    ctx.rotate(angle - Math.PI/2); // <-- corrige para 0 no topo
+    ctx.rotate(angle - Math.PI/2);
 
     for (let i = 0; i < segments.length; i++) {
         ctx.beginPath();
@@ -162,27 +155,26 @@ function drawRoulette() {
         ctx.strokeStyle = "#0f0";
         ctx.stroke();
 
-        // desenha número
         ctx.save();
         ctx.rotate(i * segmentAngle + segmentAngle / 2);
         ctx.fillStyle = "#fff";
         ctx.font = "16px Arial";
         ctx.textAlign = "center";
-        ctx.fillText(segments[i].toString(), radius * 0.75, 5);
+        ctx.textBaseline = "middle";
+        ctx.fillText(segments[i].toString(), radius * 0.75, 0);
         ctx.restore();
     }
 
     ctx.restore();
 }
 
-// Animação da roleta
 function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhido=null, aposta=null){
     if(spinning) return;
     spinning = true;
     const segmentAngle = (2*Math.PI)/segments.length;
 
-    // agora 0 está no topo, então targetAngle é apenas o número sorteado
-    const targetAngle = (2*Math.PI*6) + winningIndex * segmentAngle; // 6 voltas
+    // ajuste: 0 no topo, sentido horário
+    const targetAngle = (2*Math.PI*6) - winningIndex * segmentAngle;
 
     let currentAngle = angle;
     let speed = 0.5;
@@ -191,14 +183,14 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
         ctx.translate(canvas.width/2, canvas.height/2);
-        ctx.rotate(currentAngle - Math.PI/2); // mantém alinhamento com draw
+        ctx.rotate(currentAngle - Math.PI/2);
         ctx.translate(-canvas.width/2, -canvas.height/2);
         drawRoulette();
         ctx.restore();
 
         if(currentAngle < targetAngle){
             currentAngle += speed;
-            speed *= 0.995; // desacelera
+            speed *= 0.995;
             requestAnimationFrame(animate);
         } else {
             angle = targetAngle % (2*Math.PI);
@@ -225,12 +217,8 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
     animate();
 }
 
-
-
-
 drawRoulette();
 
-// AJAX para roleta
 document.getElementById("formRoleta").addEventListener("submit", async e => {
   e.preventDefault();
   const aposta = parseFloat(document.getElementById("apostaRoleta").value);
@@ -248,6 +236,3 @@ document.getElementById("formRoleta").addEventListener("submit", async e => {
 </script>
 
 {% endblock %}
-
-
-
