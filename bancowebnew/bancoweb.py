@@ -251,12 +251,7 @@ def exportar_csv():
         writer.writerows(historico_user)
     return send_file(filename, as_attachment=True)
 
-# -------------------- Roleta --------------------
-# -------------------- Roleta --------------------
-# -------------------- ROLETA --------------------
-# -------------------- Roleta / Jogos --------------------
-from flask import jsonify
-
+# -------------------- Jogos (Caça-níquel e Roleta) --------------------
 @app.route("/jogos", methods=["GET", "POST"])
 def jogos():
     if "usuario" not in session or session["usuario"] == "admin":
@@ -266,7 +261,6 @@ def jogos():
     dados = carregar_dados()
     saldo = dados["clientes"][usuario]["saldo"]
 
-    # símbolos do caça-níquel
     simbolos = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲","🏺","💸"]
 
     if request.method == "POST":
@@ -292,65 +286,53 @@ def jogos():
                 ganho = 0
                 resultado = ""
 
-                # --- novas regras especiais ---
-                if rolos.count("💸") == 3:  # TRIO de dinheiro
+                if rolos.count("💸") == 3:
                     ganho = aposta * 160
                     saldo += ganho
                     resultado = f"💸💸💸 TRIPLO DINHEIRO! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (3 Dinheiro {rolos})", ganho)
-
-                elif rolos.count("💸") == 2:  # PAR de dinheiro
+                elif rolos.count("💸") == 2:
                     ganho = aposta * 70
                     saldo += ganho
                     resultado = f"💸💸 Dois Dinheiros! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (2 Dinheiro {rolos})", ganho)
-
-                elif rolos.count("🍀") == 2:  # Dois trevos
+                elif rolos.count("🍀") == 2:
                     rodadas = 10
-                    dados["clientes"][usuario]["rodadas_gratis"] = dados["clientes"][usuario].get("rodadas_gratis", 0) + rodadas
+                    dados["clientes"][usuario]["rodadas_gratis"] = dados["clientes"][usuario].get("rodadas_gratis",0)+rodadas
                     resultado = f"🍀🍀 Sorte Grande! {rolos} Você ganhou {rodadas} rodadas grátis!"
                     registrar_historico(usuario, f"Caça-níquel (2 Trevos {rolos})", 0)
-
-                # --- regras especiais já existentes ---
                 elif rolos.count("⭐") == 3:
                     ganho = aposta * 200
                     saldo += ganho
                     resultado = f"🌟🌟🌟 JACKPOT SUPREMO! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (Jackpot Estrelas {rolos})", ganho)
-
                 elif rolos.count("⭐") == 2:
                     ganho = aposta * 50
                     saldo += ganho
                     resultado = f"🌟 Duas estrelas! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (2 Estrelas {rolos})", ganho)
-
                 elif rolos.count("🎲") == 3:
                     ganho = aposta * 80
                     saldo += ganho
                     resultado = f"🎲🎲🎲 TRIPLO DADOS! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (3 Dados {rolos})", ganho)
-
                 elif rolos.count("🎲") == 2:
                     ganho = aposta * 20
                     saldo += ganho
                     resultado = f"🎲🎲 Dois dados! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (2 Dados {rolos})", ganho)
-
-                # --- regras padrão ---
-                elif rolos[0] == rolos[1] == rolos[2]:
+                elif rolos[0]==rolos[1]==rolos[2]:
                     ganho = aposta * 30
                     saldo += ganho
                     resultado = f"🎉 Jackpot! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (Jackpot {rolos})", ganho)
-
-                elif rolos[0] == rolos[1] or rolos[1] == rolos[2] or rolos[0] == rolos[2]:
+                elif rolos[0]==rolos[1] or rolos[1]==rolos[2] or rolos[0]==rolos[2]:
                     ganho = aposta * 6
                     saldo += ganho
                     resultado = f"✨ Par! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (Par {rolos})", ganho)
-
                 else:
-                    if dados["clientes"][usuario].get("rodadas_gratis", 0) > 0:
+                    if dados["clientes"][usuario].get("rodadas_gratis",0)>0:
                         dados["clientes"][usuario]["rodadas_gratis"] -= 1
                         resultado = f"❌ {rolos} Você perdeu uma rodada grátis, saldo não foi descontado."
                     else:
@@ -359,26 +341,15 @@ def jogos():
                         registrar_historico(usuario, f"Caça-níquel (Derrota {rolos})", -aposta)
 
             salvar_cliente(usuario, saldo)
-
             return jsonify({
                 "rolos": rolos,
                 "resultado": resultado,
                 "saldo": saldo,
-                "rodadas_gratis": dados["clientes"][usuario].get("rodadas_gratis", 0)
+                "rodadas_gratis": dados["clientes"][usuario].get("rodadas_gratis",0)
             })
 
-    # GET normal
-    rodadas_gratis = dados["clientes"][usuario].get("rodadas_gratis", 0)
-    return render_template(
-        "jogos.html",
-        saldo=saldo,
-        last_aposta_caca="",
-        last_aposta_roleta="",
-        last_lote="",
-        last_numero_aposta="",
-        rodadas_gratis=rodadas_gratis
-    )
-
+    rodadas_gratis = dados["clientes"][usuario].get("rodadas_gratis",0)
+    return render_template("jogos.html", saldo=saldo, last_aposta_caca="", last_aposta_roleta="", last_lote="", last_numero_aposta="", rodadas_gratis=rodadas_gratis)
 
 
 
@@ -564,6 +535,7 @@ def deletar_historico_selecionados():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
