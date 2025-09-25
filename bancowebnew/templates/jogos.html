@@ -20,6 +20,7 @@
               value="{{ last_aposta_caca }}" placeholder="Valor da aposta" required class="form-control mb-2">
             <input type="number" name="lote" id="lote" value="{{ last_lote }}"
               placeholder="Qtd rodadas (opcional)" class="form-control mb-3">
+
             <button type="submit" class="btn btn-neon w-100">Girar 🎰</button>
           </form>
 
@@ -42,6 +43,7 @@
               value="{{ last_aposta_roleta }}" placeholder="Valor da aposta" required class="form-control mb-2">
             <input type="number" name="numero_roleta" id="numeroAposta" min="0" max="20"
               value="{{ last_numero_aposta }}" placeholder="Número apostado (0-20)" class="form-control mb-3">
+
             <button type="submit" class="btn btn-neon w-100">Rodar 🎡</button>
           </form>
 
@@ -74,30 +76,21 @@
 
 <script>
 const symbols = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲"];
-const slotSound = new Audio("https://freesound.org/data/previews/256/256113_3263906-lq.mp3");
-const rouletteSound = new Audio("https://freesound.org/data/previews/146/146727_2615111-lq.mp3");
 
 // -------------------- SLOTS --------------------
-async function spinReel(reelId, finalSymbol){
-  return new Promise(resolve=>{
-    const reel=document.getElementById(reelId);
-    let i=0;
-    let elapsed=0;
-    const duration=1500;
-    const interval=50;
-
-    const intervalId=setInterval(()=>{
-      reel.textContent=symbols[i%symbols.length];
-      slotSound.currentTime=0;
-      slotSound.play();
+async function spinReel(reelId, finalSymbol) {
+  return new Promise(resolve => {
+    const reel = document.getElementById(reelId);
+    let i = 0;
+    const interval = setInterval(() => {
+      reel.textContent = symbols[i % symbols.length];
       i++;
-      elapsed+=interval;
-      if(elapsed>=duration){
-        clearInterval(intervalId);
-        reel.textContent = finalSymbol;
-        resolve();
-      }
-    }, interval);
+    }, 80);
+    setTimeout(() => {
+      clearInterval(interval);
+      reel.textContent = finalSymbol;
+      resolve();
+    }, 1800);
   });
 }
 
@@ -107,116 +100,142 @@ async function startSlot(rolos, resultado, saldoFinal, rodadasRestantes){
   await spinReel("reel2", rolos[1]);
   await spinReel("reel3", rolos[2]);
   document.getElementById("slotResultado").style.display="block";
-  document.getElementById("slotResultado").innerText=resultado;
-  document.getElementById("saldoBox").innerText="R$ "+saldoFinal.toFixed(2);
-  document.getElementById("rodadasRestantes").innerText=rodadasRestantes>0?`Jogadas restantes: ${rodadasRestantes}`:"";
+  document.getElementById("slotResultado").innerText = resultado;
+  document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
+  document.getElementById("rodadasRestantes").innerText = rodadasRestantes > 0 ? `Jogadas restantes: ${rodadasRestantes}` : "";
+
+  setTimeout(() => {
+    document.getElementById("reel1").textContent = "❔";
+    document.getElementById("reel2").textContent = "❔";
+    document.getElementById("reel3").textContent = "❔";
+    document.getElementById("slotResultado").style.display = "none";
+  }, 3000);
 }
 
-async function runSlots(aposta,lote){
-  for(let i=0;i<lote;i++){
-    const resp=await fetch("{{ url_for('jogos') }}",{
+async function runSlots(aposta, lote){
+  for(let i=0; i<lote; i++){
+    const resp = await fetch("{{ url_for('jogos') }}", {
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({tipo:"caca",aposta,lote:1})
+      body:JSON.stringify({tipo:"caca", aposta, lote:1})
     });
-    const data=await resp.json();
-    await startSlot(data.rolos,data.resultado,data.saldo,lote-i-1);
-    await new Promise(res=>setTimeout(res,1000));
+    const data = await resp.json();
+    await startSlot(data.rolos, data.resultado, data.saldo, lote-i-1);
+    await new Promise(res => setTimeout(res, 4000));
   }
 }
 
-document.getElementById("formCaca").addEventListener("submit",async e=>{
+document.getElementById("formCaca").addEventListener("submit", async e => {
   e.preventDefault();
-  const aposta=parseFloat(document.getElementById("apostaCaca").value);
-  const lote=parseInt(document.getElementById("lote").value)||1;
-  runSlots(aposta,lote);
+  const aposta = parseFloat(document.getElementById("apostaCaca").value);
+  const lote = parseInt(document.getElementById("lote").value) || 1;
+  runSlots(aposta, lote);
 });
 
-// -------------------- ROLETA --------------------
-const canvas=document.getElementById("rouletteCanvas");
-const ctx=canvas.getContext("2d");
-const segments=Array.from({length:21},(_,i)=>i);
-let angle=0,spinning=false;
+// -------------------- ROLETA LENTA --------------------
+const canvas = document.getElementById("rouletteCanvas");
+const ctx = canvas.getContext("2d");
+const segments = Array.from({length:21},(_,i)=>i);
+let angle=0, spinning=false;
 
-function drawRoulette(baseAngle=angle){
-  const radius=canvas.width/2;
-  const segmentAngle=(2*Math.PI)/segments.length;
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.save();
-  ctx.translate(radius,radius);
-  ctx.rotate(baseAngle-segmentAngle/2-Math.PI/2);
-  for(let i=0;i<segments.length;i++){
-    ctx.beginPath();
-    ctx.moveTo(0,0);
-    ctx.arc(0,0,radius,i*segmentAngle,(i+1)*segmentAngle);
-    ctx.fillStyle="#111";
-    ctx.fill();
-    ctx.strokeStyle="#0f0";
-    ctx.stroke();
-
+function drawRoulette() {
+    const radius = canvas.width / 2;
+    const segmentAngle = (2 * Math.PI) / segments.length;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
-    ctx.rotate(i*segmentAngle+segmentAngle/2);
-    ctx.fillStyle="#fff";
-    ctx.font="16px Arial";
-    ctx.textAlign="center";
-    ctx.textBaseline="middle";
-    ctx.fillText(segments[i].toString(),radius*0.65,0);
+    ctx.translate(radius, radius);
+    ctx.rotate(angle - segmentAngle/2 - Math.PI/2);
+
+    for (let i = 0; i < segments.length; i++) {
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, radius, i * segmentAngle, (i + 1) * segmentAngle);
+        ctx.fillStyle = "#111";
+        ctx.fill();
+        ctx.strokeStyle = "#0f0";
+        ctx.stroke();
+
+        ctx.save();
+        ctx.rotate(i * segmentAngle + segmentAngle / 2);
+        ctx.fillStyle = "#fff";
+        ctx.font = "16px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(segments[i].toString(), radius * 0.65, 0);
+        ctx.restore();
+    }
+
     ctx.restore();
-  }
-  ctx.restore();
 }
 
-function animateRouletteToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhido=null, aposta=null){
-  if(spinning) return;
-  spinning=true;
+function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhido=null, aposta=null){
+    if(spinning) return;
+    spinning = true;
+    const segmentAngle = (2*Math.PI)/segments.length;
+    let currentAngle = angle;
+    let totalSpins = 6; // número de giros antes de parar
+    let targetAngle = totalSpins*2*Math.PI + winningIndex*segmentAngle;
+    let speed = 0.5;
 
-  const segmentAngle=(2*Math.PI)/segments.length;
-  const spins=6;
-  const finalAngle = spins*2*Math.PI + winningIndex*segmentAngle;
-  let currentAngle = angle;
-  let speed = 0.25;
+    function animate(){
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save();
+        ctx.translate(canvas.width/2, canvas.height/2);
+        ctx.rotate(currentAngle - segmentAngle/2 - Math.PI/2);
+        ctx.translate(-canvas.width/2, -canvas.height/2);
+        drawRoulette();
+        ctx.restore();
 
-  function step(){
-    if(currentAngle < finalAngle){
-      currentAngle += speed;
-      speed *= 0.995; // desaceleração suave
-      drawRoulette(currentAngle);
-      rouletteSound.currentTime=0;
-      rouletteSound.play();
-      requestAnimationFrame(step);
-    } else {
-      angle = finalAngle % (2*Math.PI);
-      spinning=false;
-      drawRoulette(angle);
+        if(currentAngle < targetAngle){
+            currentAngle += speed;
+            speed *= 0.992; // desaceleração lenta
+            requestAnimationFrame(animate);
+        } else {
+            angle = targetAngle % (2*Math.PI);
+            spinning = false;
 
-      const numeroFinal=winningIndex;
-      let resultadoFinal=`Número: ${numeroFinal} → Caiu ${numeroFinal}. ${resultadoTexto.split('→')[1]?resultadoTexto.split('→')[1].trim():resultadoTexto}`;
-      if(numeroEscolhido!==null && aposta!==null && numeroFinal===numeroEscolhido){
-        resultadoFinal += ` 🎉 Acertou! Prêmio x36 = R$ ${(aposta*36).toFixed(2)}`;
-      }
+            const normalizedAngle = (2*Math.PI - angle + segmentAngle/2 + Math.PI/2) % (2*Math.PI);
+            const indexUnderPointer = Math.floor(normalizedAngle / segmentAngle) % segments.length;
+            const numeroFinal = segments[indexUnderPointer];
 
-      document.getElementById("rouletteResult").innerText = resultadoFinal;
-      document.getElementById("saldoBox").innerText = "R$ "+saldoFinal.toFixed(2);
+            let resultadoFinal = `Número: ${numeroFinal} → Caiu ${numeroFinal}. ${resultadoTexto.split('→')[1] ? resultadoTexto.split('→')[1].trim() : resultadoTexto}`;
+
+            if(numeroEscolhido !== null && aposta !== null){
+                if(numeroFinal === numeroEscolhido){
+                    const premio = aposta * 36;
+                    resultadoFinal += ` 🎉 Acertou! Prêmio x36 = R$ ${premio.toFixed(2)}`;
+                }
+            }
+
+            document.getElementById("rouletteResult").innerText = resultadoFinal;
+            document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
+
+            setTimeout(() => {
+                angle = 0;
+                drawRoulette();
+            }, 3000);
+        }
     }
-  }
-  requestAnimationFrame(step);
+
+    animate();
 }
 
 drawRoulette();
 
-document.getElementById("formRoleta").addEventListener("submit",async e=>{
+document.getElementById("formRoleta").addEventListener("submit", async e => {
   e.preventDefault();
-  const aposta=parseFloat(document.getElementById("apostaRoleta").value);
-  const numero=parseInt(document.getElementById("numeroAposta").value);
+  const aposta = parseFloat(document.getElementById("apostaRoleta").value);
+  const numero = parseInt(document.getElementById("numeroAposta").value);
 
   const resp = await fetch("{{ url_for('jogos') }}",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({tipo:"roleta",aposta,numero})
+    body:JSON.stringify({tipo:"roleta", aposta, numero})
   });
 
   const data = await resp.json();
-  animateRouletteToIndex(data.numero, data.saldo, data.resultado, numero, aposta);
+  animateToIndex(data.numero, data.saldo, data.resultado, numero, aposta);
 });
 </script>
+
 {% endblock %}
