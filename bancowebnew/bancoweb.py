@@ -770,56 +770,53 @@ def delete_jogo(jogo_id):
 
 @app.route("/futebol", methods=["GET", "POST"])
 def futebol():
-    # Pega usuário logado
-    usuario = session.get("usuario")
-    if not usuario:
+    if "usuario" not in session:
         return redirect(url_for("login"))
 
-    # Conecta no banco
-    conn = psycopg2.connect(DB_URL)
-    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    usuario = session["usuario"]
 
-    # Pega saldo do usuário
+    # Conecta ao banco
+    conn = psycopg2.connect("postgresql://savesite_user:5X70ctnMmv1jfWVuCQssRvmQUjW0D56p@dpg-d37hgjjuibrs7392ou1g-a/savesite")
+    cur = conn.cursor()
+
+    # Pega o saldo atualizado do banco
     cur.execute("SELECT saldo FROM usuarios WHERE username = %s", (usuario,))
-    row = cur.fetchone()
-    saldo = row["saldo"] if row else 0
+    saldo_db = cur.fetchone()
+    saldo = float(saldo_db[0]) if saldo_db else 0
+    session["saldo"] = saldo  # Atualiza o saldo na sessão
 
-    # Pega apenas jogos ativos
+    # Pega os jogos ativos
     cur.execute("SELECT * FROM jogos_futebol WHERE ativo = TRUE")
     jogos = cur.fetchall()
 
     if request.method == "POST":
         jogo_id = request.form.get("jogo_id")
         valor_aposta = float(request.form.get("valor_aposta", 0))
+        resultado = request.form.get("resultado")  # time1, time2 ou empate
 
         if valor_aposta <= 0 or valor_aposta > saldo:
             flash("Valor inválido ou saldo insuficiente!", "danger")
-            cur.close()
-            conn.close()
             return redirect(url_for("futebol"))
 
-        # Subtrai do saldo do usuário
+        # Subtrai do saldo do usuário e atualiza no banco
         saldo -= valor_aposta
         session["saldo"] = saldo
-
-        # Atualiza saldo no banco
         cur.execute("UPDATE usuarios SET saldo = %s WHERE username = %s", (saldo, usuario))
 
-        # Salva a aposta
+        # Salva a aposta no banco
         cur.execute(
-            "INSERT INTO apostas (usuario, jogo_id, valor) VALUES (%s, %s, %s)",
-            (usuario, jogo_id, valor_aposta)
+            "INSERT INTO apostas (usuario, jogo_id, valor, resultado) VALUES (%s, %s, %s, %s)",
+            (usuario, jogo_id, valor_aposta, resultado)
         )
-
         conn.commit()
-        flash(f"Aposta de {valor_aposta} realizada com sucesso!", "success")
-        cur.close()
-        conn.close()
+
+        flash(f"Aposta de {valor_aposta} no {resultado} realizada com sucesso!", "success")
         return redirect(url_for("futebol"))
 
     cur.close()
     conn.close()
     return render_template("futebol.html", usuario=usuario, saldo=saldo, jogos=jogos)
+
 
 import psycopg2
 
@@ -882,6 +879,7 @@ def setup_db():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
