@@ -775,18 +775,18 @@ def futebol():
 
     usuario = session["usuario"]
 
-    # Conecta ao banco
-    conn = psycopg2.connect("postgresql://savesite_user:5X70ctnMmv1jfWVuCQssRvmQUjW0D56p@dpg-d37hgjjuibrs7392ou1g-a/savesite")
-    cur = conn.cursor()
+    # Conecta no banco
+    conn = psycopg2.connect(DB_URL)
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-    # Pega o saldo atualizado do banco (igual dashboard)
+    # Pega o saldo real do banco
     cur.execute("SELECT saldo FROM usuarios WHERE username = %s", (usuario,))
     saldo_db = cur.fetchone()
     saldo = float(saldo_db[0]) if saldo_db else 0
-    session["saldo"] = saldo  # atualiza a sessão também
+    session["saldo"] = saldo  # atualiza a sessão com saldo correto
 
     # Pega os jogos ativos
-    cur.execute("SELECT * FROM jogos_futebol WHERE ativo = TRUE")
+    cur.execute("SELECT * FROM jogos_futebol WHERE ativo = TRUE ORDER BY id ASC")
     jogos = cur.fetchall()
 
     if request.method == "POST":
@@ -798,24 +798,28 @@ def futebol():
             flash("Valor inválido ou saldo insuficiente!", "danger")
             return redirect(url_for("futebol"))
 
-        # Subtrai do saldo do usuário e atualiza no banco
+        # Subtrai do saldo do usuário
         saldo -= valor_aposta
         session["saldo"] = saldo
+
+        # Atualiza no banco
         cur.execute("UPDATE usuarios SET saldo = %s WHERE username = %s", (saldo, usuario))
 
-        # Salva a aposta no banco (certifique-se de criar coluna resultado)
+        # Salva a aposta
         cur.execute(
             "INSERT INTO apostas (usuario, jogo_id, valor, resultado) VALUES (%s, %s, %s, %s)",
             (usuario, jogo_id, valor_aposta, resultado)
         )
-        conn.commit()
 
-        flash(f"Aposta de {valor_aposta} no {resultado} realizada com sucesso!", "success")
+        conn.commit()
+        flash(f"Aposta de R$ {valor_aposta:.2f} no {resultado} realizada com sucesso!", "success")
         return redirect(url_for("futebol"))
 
     cur.close()
     conn.close()
+
     return render_template("futebol.html", usuario=usuario, saldo=saldo, jogos=jogos)
+
 
 
 
@@ -876,10 +880,37 @@ def setup_db():
         return f"Erro: {e}"
 
 
+import psycopg2
+
+def criar_coluna_resultado():
+    conn = psycopg2.connect(DB_URL)
+    cur = conn.cursor()
+
+    # Verifica se a coluna "resultado" já existe
+    cur.execute("""
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name='apostas' AND column_name='resultado'
+    """)
+    existe = cur.fetchone()
+
+    if not existe:
+        cur.execute("ALTER TABLE apostas ADD COLUMN resultado TEXT")
+        conn.commit()
+        print("Coluna 'resultado' criada com sucesso!")
+    else:
+        print("Coluna 'resultado' já existe.")
+
+    cur.close()
+    conn.close()
+
+# Chame essa função uma vez no seu Flask antes de começar a usar apostas
+criar_coluna_resultado()
 
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
