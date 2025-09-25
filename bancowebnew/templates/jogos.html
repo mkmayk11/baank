@@ -198,8 +198,14 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
             const indexUnderPointer = Math.floor(normalizedAngle / segmentAngle) % segments.length;
             const numeroFinal = segments[indexUnderPointer];
 
-            // Aqui garantimos que o número final bate com o winningIndex e o texto do servidor
-            let resultadoFinal = `Número: ${numeroFinal} → ${resultadoTexto.split('→')[0].trim()}`;
+            // Garante que o "Caiu" sempre bate com o número final
+            let resultadoFinal = `Número: ${numeroFinal} → Caiu ${numeroFinal}. `;
+
+            // Aproveita a parte do texto do servidor, mas ignora números repetidos
+            let msgServidor = resultadoTexto.split("→").pop().trim();
+            if (msgServidor) {
+                resultadoFinal += msgServidor;
+            }
 
             if(numeroEscolhido !== null && aposta !== null){
                 if(numeroFinal === numeroEscolhido){
@@ -221,6 +227,7 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
     animate();
 }
 
+
 drawRoulette();
 
 document.getElementById("formRoleta").addEventListener("submit", async e => {
@@ -240,4 +247,5 @@ document.getElementById("formRoleta").addEventListener("submit", async e => {
 </script>
 
 {% endblock %}
+
 
