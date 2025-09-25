@@ -197,9 +197,10 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
             spinning = false;
 
             // Calcula qual número está exatamente sob a seta
-            const normalizedAngle = (2*Math.PI - angle + Math.PI/2) % (2*Math.PI);
+            const normalizedAngle = (2*Math.PI - angle + Math.PI/2 + segmentAngle/2) % (2*Math.PI);
             const indexUnderPointer = Math.floor(normalizedAngle / segmentAngle) % segments.length;
             const numeroFinal = segments[indexUnderPointer];
+
 
             let resultadoFinal = resultadoTexto;
             if(numeroEscolhido !== null && aposta !== null){
@@ -242,5 +243,6 @@ document.getElementById("formRoleta").addEventListener("submit", async e => {
 </script>
 
 {% endblock %}
+
 
 
