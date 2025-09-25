@@ -84,35 +84,34 @@ async function spinReel(reelId, finalSymbol){
   return new Promise(resolve=>{
     const reel=document.getElementById(reelId);
     let i=0;
-    let speed=30;
-    let duration=2000;
     let elapsed=0;
+    const duration=1500; // duração total
+    const interval=50;
 
-    function step(){
+    const intervalId=setInterval(()=>{
       reel.textContent=symbols[i%symbols.length];
       slotSound.currentTime=0;
       slotSound.play();
       i++;
-      elapsed+=speed;
-      if(elapsed<duration){
-        speed *= 0.98; // desaceleração suave
-        setTimeout(step, Math.min(speed, 60));
-      } else {
+      elapsed+=interval;
+      if(elapsed>=duration){
+        clearInterval(intervalId);
         // bounce final
         let bounceCount=0;
         const bounceSymbols=[symbols[i%symbols.length], finalSymbol, symbols[i%symbols.length]];
-        function bounce(){
+        const bounce=setInterval(()=>{
           const shakeOffset=(bounceCount%2===0?5:-5);
           reel.style.transform=`translateX(${shakeOffset}px)`;
           reel.textContent=bounceSymbols[bounceCount%bounceSymbols.length];
           bounceCount++;
-          if(bounceCount<6) setTimeout(bounce, 120);
-          else { reel.style.transform='translateX(0)'; resolve(); }
-        }
-        bounce();
+          if(bounceCount>=6){
+            clearInterval(bounce);
+            reel.style.transform='translateX(0)';
+            resolve();
+          }
+        },120);
       }
-    }
-    step();
+    }, interval);
   });
 }
 
@@ -194,8 +193,7 @@ function animateToIndex(winningIndex,saldoFinal,resultadoTexto,numeroEscolhido=n
   const segmentAngle=(2*Math.PI)/segments.length;
   let targetAngle=2*Math.PI*6 + winningIndex*segmentAngle;
   let currentAngle=angle;
-  let speed=0.2;
-  let deceleration=0.995;
+  let speed=0.25;
 
   function animate(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -211,13 +209,13 @@ function animateToIndex(winningIndex,saldoFinal,resultadoTexto,numeroEscolhido=n
 
     if(currentAngle<targetAngle){
       currentAngle+=speed;
-      speed*=deceleration;
+      speed*=0.995; // desaceleração lenta
       requestAnimationFrame(animate);
     } else {
       angle=targetAngle%(2*Math.PI);
       spinning=false;
 
-      let numeroFinal=winningIndex;
+      const numeroFinal=winningIndex;
       let resultadoFinal=`Número: ${numeroFinal} → Caiu ${numeroFinal}. ${resultadoTexto.split('→')[1]?resultadoTexto.split('→')[1].trim():resultadoTexto}`;
       if(numeroEscolhido!==null && aposta!==null && numeroFinal===numeroEscolhido){
         const premio=aposta*36;
@@ -226,8 +224,6 @@ function animateToIndex(winningIndex,saldoFinal,resultadoTexto,numeroEscolhido=n
 
       document.getElementById("rouletteResult").innerText=resultadoFinal;
       document.getElementById("saldoBox").innerText="R$ "+saldoFinal.toFixed(2);
-
-      setTimeout(()=>drawRoulette(),3000);
     }
   }
   animate();
