@@ -42,8 +42,8 @@
           <form id="formRoleta">
             <input type="number" name="aposta_roleta" id="apostaRoleta" step="0.01"
               value="{{ last_aposta_roleta }}" placeholder="Valor da aposta" required class="form-control mb-2">
-            <input type="number" name="numero_roleta" id="numeroAposta" min="0" max="36"
-              value="{{ last_numero_aposta }}" placeholder="Número apostado (0-36)" class="form-control mb-3">
+            <input type="number" name="numero_roleta" id="numeroAposta" min="0" max="20"
+              value="{{ last_numero_aposta }}" placeholder="Número apostado (0-20)" class="form-control mb-3">
 
             <button type="submit" class="btn btn-neon w-100">Rodar 🎡</button>
           </form>
@@ -139,7 +139,8 @@ document.getElementById("formCaca").addEventListener("submit", async e => {
 // -------------------- ROLETA --------------------
 const canvas = document.getElementById("rouletteCanvas");
 const ctx = canvas.getContext("2d");
-const segments = Array.from({length:37},(_,i)=>i);
+// Apenas 21 números (0 a 20)
+const segments = Array.from({length:21},(_,i)=>i);
 let angle=0, spinning=false;
 
 function drawRoulette(){
@@ -175,10 +176,8 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
   const segmentAngle = (2*Math.PI)/segments.length;
 
   // Calcula o ângulo correto para parar o número na seta
-  // Ajuste para alinhar com a seta no topo
- const numberAngle = (segments.length - winningIndex) * segmentAngle - (segmentAngle/2) - Math.PI/2;
- const targetAngle = (2*Math.PI*6) + numberAngle; // 6 voltas completas
-
+  const numberAngle = (segments.length - winningIndex) * segmentAngle - (segmentAngle/2) - Math.PI/2;
+  const targetAngle = (2*Math.PI*6) + numberAngle; // 6 voltas completas
 
   let currentAngle = angle;
   let speed = 0.5;
@@ -211,6 +210,12 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
 
       document.getElementById("rouletteResult").innerText = "Número: " + winningIndex + " → " + resultadoFinal;
       document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
+
+      // Volta para posição inicial após 3 segundos
+      setTimeout(() => {
+        angle = 0;
+        drawRoulette();
+      }, 3000);
     }
   }
 
@@ -237,4 +242,3 @@ document.getElementById("formRoleta").addEventListener("submit", async e => {
 </script>
 
 {% endblock %}
-
