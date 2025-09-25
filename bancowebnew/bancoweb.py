@@ -770,19 +770,22 @@ def delete_jogo(jogo_id):
 
 @app.route("/futebol", methods=["GET", "POST"])
 def futebol():
-    usuario = session.get("usuario")  # pega o usuário logado
+    if "usuario" not in session:
+        return redirect(url_for("login"))
 
-    # conecta no banco
+    usuario = session.get("usuario")
+
+    # Conecta ao banco
     conn = psycopg2.connect(DB_URL)
     cur = conn.cursor()
 
-    # pega o saldo do usuário diretamente do banco
+    # Pega o saldo real do banco
     cur.execute("SELECT saldo FROM usuarios WHERE username = %s", (usuario,))
     resultado = cur.fetchone()
     saldo = float(resultado[0]) if resultado else 0
-    session["saldo"] = saldo  # atualiza a session também
+    session["saldo"] = saldo  # atualiza a sessão com o saldo real
 
-    # pega só os jogos ativos
+    # Pega só os jogos ativos
     cur.execute("SELECT * FROM jogos_futebol WHERE ativo = TRUE")
     jogos = cur.fetchall()
 
@@ -793,26 +796,31 @@ def futebol():
 
         if valor_aposta <= 0 or valor_aposta > saldo:
             flash("Valor inválido ou saldo insuficiente!", "danger")
+            cur.close()
+            conn.close()
             return redirect(url_for("futebol"))
 
-        # subtrai do saldo
+        # Subtrai do saldo do usuário
         saldo -= valor_aposta
         session["saldo"] = saldo
         cur.execute("UPDATE usuarios SET saldo = %s WHERE username = %s", (saldo, usuario))
 
-        # salva a aposta no banco
+        # Salva a aposta no banco
         cur.execute(
             "INSERT INTO apostas (usuario, jogo_id, valor, resultado) VALUES (%s, %s, %s, %s)",
             (usuario, jogo_id, valor_aposta, resultado_aposta)
         )
         conn.commit()
 
-        flash(f"Aposta de {valor_aposta} realizada com sucesso!", "success")
+        flash(f"Aposta de R$ {valor_aposta:.2f} em '{resultado_aposta}' realizada com sucesso!", "success")
+        cur.close()
+        conn.close()
         return redirect(url_for("futebol"))
 
     cur.close()
     conn.close()
     return render_template("futebol.html", usuario=usuario, saldo=saldo, jogos=jogos)
+
 
 
 
@@ -905,6 +913,7 @@ criar_coluna_resultado()
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
