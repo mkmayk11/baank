@@ -139,21 +139,8 @@ def dashboard():
     saldo = dados["clientes"][usuario]["saldo"]
     return render_template("dashboard.html", usuario=usuario, saldo=saldo, dados=dados)
 
-# -------------------- Página Futebol --------------------
-@app.route("/futebol")
-def futebol():
-    if "usuario" not in session or session["usuario"] == "admin":
-        return redirect(url_for("login"))
-    usuario = session["usuario"]
-    saldo = carregar_dados()["clientes"][usuario]["saldo"]
 
-    conn = get_connection()
-    c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    c.execute("SELECT * FROM jogos_futebol ORDER BY id ASC")
-    jogos = [dict(row) for row in c.fetchall()]
-    conn.close()
 
-    return render_template("futebol.html", usuario=usuario, saldo=saldo, jogos=jogos)
 
 # -------------------- Apostar Futebol --------------------
 @app.route("/apostar_futebol", methods=["POST"])
@@ -818,6 +805,7 @@ def futebol():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
