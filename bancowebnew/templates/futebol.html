@@ -4,22 +4,23 @@
     <div class="card shadow border-0 rounded-4 p-4">
         <h2 class="fw-bold mb-4">⚽ Jogos Disponíveis para Aposta</h2>
 
-        <!-- Saldo do usuário -->
-        <p class="fw-bold">Saldo disponível: <span class="text-success">{{ saldo }}</span></p>
+        <!-- Mostra o saldo do usuário -->
+        <div class="mb-3">
+            Saldo disponível: <strong>{{ saldo }}</strong>
+        </div>
 
-        <!-- Mensagens de flash -->
         {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
         {% endwith %}
 
-        <!-- Lista de jogos ativos -->
+        <!-- Lista de jogos -->
         <table class="table table-striped align-middle">
             <thead>
                 <tr>
@@ -33,21 +34,18 @@
                 <tr>
                     <td>{{ jogo.time1 }} x {{ jogo.time2 }}</td>
                     <td>
-                        {{ jogo.odds1 }} / Empate: {{ jogo.odds_empate }} / {{ jogo.odds2 }}
+                        {{ jogo.odds1 }} / {{ jogo.odds2 }} / Empate: {{ jogo.odds_empate }}
                     </td>
                     <td>
-                        <form method="POST">
+                        <form method="POST" action="{{ url_for('futebol') }}" class="d-flex gap-1">
                             <input type="hidden" name="jogo_id" value="{{ jogo.id }}">
-                            <div class="input-group">
-                                <input type="number" step="0.01" name="valor_aposta" class="form-control" placeholder="Valor" max="{{ saldo }}" required>
-                                <button type="submit" class="btn btn-success">Apostar</button>
-                            </div>
+                            <input type="number" step="0.01" name="valor_aposta" placeholder="Valor" class="form-control form-control-sm" required>
+
+                            <button type="submit" name="resultado" value="time1" class="btn btn-sm btn-primary">Time 1</button>
+                            <button type="submit" name="resultado" value="time2" class="btn btn-sm btn-success">Time 2</button>
+                            <button type="submit" name="resultado" value="empate" class="btn btn-sm btn-warning">Empate</button>
                         </form>
                     </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="3" class="text-center">Nenhum jogo ativo disponível no momento.</td>
                 </tr>
                 {% endfor %}
             </tbody>
