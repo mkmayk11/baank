@@ -367,6 +367,51 @@ def jogos():
                 "saldo": saldo,
                 "rodadas_gratis": rodadas_gratis_usuario
             })
+                  # -------- ROLETA --------
+        elif tipo == "roleta":
+            try:
+                aposta = float(data.get("aposta", 0))
+                numero = int(data.get("numero"))
+            except:
+                return jsonify({"erro": "Aposta ou número inválido"}), 400
+
+            if aposta <= 0 or aposta > saldo:
+                return jsonify({"erro": "Aposta inválida ou saldo insuficiente"}), 400
+
+            numero_sorteado = random.randint(0, 20)
+            saldo_real = saldo
+            resultado = f"Caiu {numero_sorteado}."
+
+            if numero == numero_sorteado:
+                premio = aposta * 36
+                saldo_real += premio
+                resultado += f" 🎉 Acertou! Prêmio x36 = R$ {premio:.2f}"
+                registrar_historico(usuario, f"Roleta acerto {numero_sorteado}", premio)
+            else:
+                saldo_real -= aposta
+                registrar_historico(usuario, f"Roleta erro {numero_sorteado}", -aposta)
+
+            saldo = saldo_real
+            salvar_cliente(usuario, saldo=saldo)
+
+            return jsonify({
+                "numero": numero_sorteado,
+                "resultado": resultado,
+                "saldo": saldo
+            })
+
+    # -------- GET normal --------
+    rodadas_gratis = dados["clientes"][usuario].get("rodadas_gratis", 0)
+    return render_template(
+        "jogos.html",
+        saldo=saldo,
+        last_aposta_caca="",
+        last_aposta_roleta="",
+        last_lote="",
+        last_numero_aposta="",
+        rodadas_gratis=rodadas_gratis
+    )
+  
 
 
 
@@ -553,6 +598,7 @@ def deletar_historico_selecionados():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
