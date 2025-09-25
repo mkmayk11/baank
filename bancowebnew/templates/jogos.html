@@ -175,8 +175,10 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
   const segmentAngle = (2*Math.PI)/segments.length;
 
   // Calcula o ângulo correto para parar o número na seta
-  const numberAngle = (segments.length - winningIndex) * segmentAngle - (segmentAngle/2);
-  const targetAngle = (2*Math.PI*6) + numberAngle; // 6 voltas completas
+  // Ajuste para alinhar com a seta no topo
+ const numberAngle = (segments.length - winningIndex) * segmentAngle - (segmentAngle/2) - Math.PI/2;
+ const targetAngle = (2*Math.PI*6) + numberAngle; // 6 voltas completas
+
 
   let currentAngle = angle;
   let speed = 0.5;
@@ -235,3 +237,4 @@ document.getElementById("formRoleta").addEventListener("submit", async e => {
 </script>
 
 {% endblock %}
+
