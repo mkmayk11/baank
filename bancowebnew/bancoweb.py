@@ -114,19 +114,7 @@ def registrar_historico(usuario, acao, valor=0, destino=None):
     conn.close()
 
 # -------------------- Rotas básicas --------------------
-@app.route("/", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        usuario = request.form["usuario"]
-        senha = request.form["senha"]
-        dados = carregar_dados()
-        if usuario in dados["clientes"] and dados["clientes"][usuario]["senha"] == senha:
-            session["usuario"] = usuario
-            if usuario == "admin":
-                return redirect(url_for("admin_depositos"))
-            return redirect(url_for("dashboard"))
-        flash("Login inválido")
-    return render_template("login.html")
+
 
 @app.route("/cadastro", methods=["GET", "POST"])
 def cadastro():
@@ -819,6 +807,7 @@ def delete_jogo(jogo_id):
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
