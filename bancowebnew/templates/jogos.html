@@ -137,12 +137,13 @@ document.getElementById("formCaca").addEventListener("submit", async e => {
 });
 
 // -------------------- ROLETA --------------------
+// -------------------- ROLETA --------------------
 const canvas = document.getElementById("rouletteCanvas");
 const ctx = canvas.getContext("2d");
-// Apenas 21 números (0 a 20)
-const segments = Array.from({length:21},(_,i)=>i);
+const segments = Array.from({length:21},(_,i)=>i); // 21 números
 let angle=0, spinning=false;
 
+// Desenha a roleta
 function drawRoulette(){
   const radius = canvas.width/2;
   const segmentAngle = (2*Math.PI)/segments.length;
@@ -157,6 +158,8 @@ function drawRoulette(){
     ctx.arc(radius,radius,radius,i*segmentAngle,(i+1)*segmentAngle);
     ctx.strokeStyle="#0f0"; ctx.stroke();
     ctx.fillStyle="#111"; ctx.fill();
+
+    // desenha número
     ctx.save();
     ctx.translate(radius,radius);
     ctx.rotate(i*segmentAngle + segmentAngle/2);
@@ -169,14 +172,14 @@ function drawRoulette(){
   ctx.restore();
 }
 
-// -------------------- FUNÇÃO DE ANIMAÇÃO DA ROLETA --------------------
+// Animação da roleta
 function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhido=null, aposta=null){
   if(spinning) return;
   spinning = true;
   const segmentAngle = (2*Math.PI)/segments.length;
 
-  // Calcula o ângulo correto para parar o número na seta
-  const numberAngle = (segments.length - winningIndex) * segmentAngle - (segmentAngle/2) - Math.PI/2;
+  // cálculo do ângulo correto para a seta no topo
+  const numberAngle = (winningIndex * segmentAngle) + (segmentAngle/2) - Math.PI/2;
   const targetAngle = (2*Math.PI*6) + numberAngle; // 6 voltas completas
 
   let currentAngle = angle;
@@ -193,7 +196,7 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
 
     if(currentAngle < targetAngle){
       currentAngle += speed;
-      speed *= 0.995;
+      speed *= 0.995; // desacelera
       requestAnimationFrame(animate);
     } else {
       angle = targetAngle % (2*Math.PI);
@@ -211,7 +214,7 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
       document.getElementById("rouletteResult").innerText = "Número: " + winningIndex + " → " + resultadoFinal;
       document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
 
-      // Volta para posição inicial após 3 segundos
+      // volta à posição inicial após 3 segundos
       setTimeout(() => {
         angle = 0;
         drawRoulette();
@@ -239,6 +242,8 @@ document.getElementById("formRoleta").addEventListener("submit", async e => {
   const data = await resp.json();
   animateToIndex(data.numero, data.saldo, data.resultado, numero, aposta);
 });
+
 </script>
 
 {% endblock %}
+
