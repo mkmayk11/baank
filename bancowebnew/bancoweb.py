@@ -330,34 +330,48 @@ def jogos():
             return jsonify({"rolos": rolos, "resultado": resultado, "saldo": saldo})
 
         # -------- ROLETA --------
-        elif data.get("tipo") == "roleta":
-            try:
-                aposta = float(data.get("aposta", 0))
-                numero = int(data.get("numero", 0))
-            except:
-                return jsonify({"erro":"Aposta inválida"}), 400
+        # --- o seu código todo acima permanece igual ---
 
-            if aposta <= 0:
-                resultado = "Digite um valor válido de aposta!"
-                numero_sorteado = 0
-            elif aposta > saldo:
-                resultado = "Saldo insuficiente!"
-                numero_sorteado = 0
-            else:
-                numero_sorteado = random.randint(0,20)
+# -------- ROLETA --------
+elif data.get("tipo") == "roleta":
+    try:
+        aposta = float(data.get("aposta", 0))
+        numero = int(data.get("numero", 0))
+    except:
+        return jsonify({"erro":"Aposta inválida"}), 400
 
-                if numero == numero_sorteado:
-                    ganho = aposta * 36
-                    saldo += ganho
-                    resultado = f"🎉 Número {numero_sorteado}! Você ganhou R$ {ganho:.2f}!"
-                    registrar_historico(usuario, f"Roleta (Vitória no número {numero_sorteado})", ganho)
-                else:
-                    saldo -= aposta
-                    resultado = f"❌ Caiu {numero_sorteado}. Você perdeu R$ {aposta:.2f}."
-                    registrar_historico(usuario, f"Roleta (Derrota no número {numero_sorteado})", -aposta)
+    if aposta <= 0:
+        resultado = "Digite um valor válido de aposta!"
+        numero_sorteado = 0
+    elif aposta > saldo:
+        resultado = "Saldo insuficiente!"
+        numero_sorteado = 0
+    else:
+        # Agora sempre de 0 até 20 (21 setores)
+        numero_sorteado = random.randint(0,20)
 
-            salvar_cliente(usuario, saldo=saldo)
-            return jsonify({"numero": numero_sorteado, "resultado": resultado, "saldo": saldo})
+        if numero == numero_sorteado:
+            ganho = aposta * 36
+            saldo += ganho
+            resultado = f"🎉 Número {numero_sorteado}! Você ganhou R$ {ganho:.2f}!"
+            registrar_historico(usuario, f"Roleta (Vitória no número {numero_sorteado})", ganho)
+        else:
+            saldo -= aposta
+            resultado = f"❌ Caiu {numero_sorteado}. Você perdeu R$ {aposta:.2f}."
+            registrar_historico(usuario, f"Roleta (Derrota no número {numero_sorteado})", -aposta)
+
+    salvar_cliente(usuario, saldo=saldo)
+
+    # devolve tanto o número quanto o índice/ângulo esperado
+    return jsonify({
+        "numero": numero_sorteado,
+        "resultado": resultado,
+        "saldo": saldo,
+        "indice": numero_sorteado  # <-- usado pelo JS para alinhar com a seta
+    })
+
+# --- o resto do seu código continua igual ---
+
 
     # GET normal
     return render_template(
@@ -435,6 +449,7 @@ def recusar_deposito(id):
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
