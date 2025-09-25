@@ -30,7 +30,7 @@
             <div class="reel" id="reel3">❔</div>
           </div>
           <div id="slotResultado" class="alert alert-info mt-3" style="display:none;"></div>
-          <!-- Campo para mostrar jogadas restantes -->
+          <!-- Novo campo para mostrar jogadas restantes -->
           <div id="rodadasRestantes" class="text-white mt-2" style="font-size:0.9rem;"></div>
         </div>
       </div>
@@ -124,7 +124,6 @@ async function runSlots(aposta, lote){
     });
     const data = await resp.json();
     await startSlot(data.rolos, data.resultado, data.saldo, lote-i-1);
-    // espera 4s entre rodadas
     await new Promise(res => setTimeout(res, 4000));
   }
 }
@@ -169,13 +168,15 @@ function drawRoulette(){
   ctx.restore();
 }
 
-function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhido){
+// -------------------- FUNÇÃO DE ANIMAÇÃO DA ROLETA --------------------
+function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhido=null, aposta=null){
   if(spinning) return;
   spinning = true;
   const segmentAngle = (2*Math.PI)/segments.length;
 
-  const targetAngle = (2*Math.PI*6) - (winningIndex * segmentAngle) - segmentAngle/2; 
-
+  // Calcula o ângulo correto para parar o número na seta
+  const numberAngle = (segments.length - winningIndex) * segmentAngle - (segmentAngle/2);
+  const targetAngle = (2*Math.PI*6) + numberAngle; // 6 voltas completas
 
   let currentAngle = angle;
   let speed = 0.5;
@@ -197,18 +198,20 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
       angle = targetAngle % (2*Math.PI);
       spinning = false;
 
-      // Multiplicador x200 se acertou o número
-      let premio = resultadoTexto;
-      if(numeroEscolhido !== null && numeroEscolhido === winningIndex){
-        premio = (parseFloat(resultadoTexto) * 200).toFixed(2);
-        document.getElementById("rouletteResult").innerText = `Acertou! Número: ${winningIndex} → Prêmio x200: R$ ${premio}`;
-      } else {
-        document.getElementById("rouletteResult").innerText = `Número: ${winningIndex} → Prêmio: ${resultadoTexto}`;
+      // Verifica se acertou o número escolhido
+      let resultadoFinal = resultadoTexto;
+      if(numeroEscolhido !== null && aposta !== null){
+        if(winningIndex === numeroEscolhido){
+          const premio = aposta * 200;
+          resultadoFinal += ` 🎉 Acertou! Prêmio x200 = R$ ${premio.toFixed(2)}`;
+        }
       }
 
+      document.getElementById("rouletteResult").innerText = "Número: " + winningIndex + " → " + resultadoFinal;
       document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
     }
   }
+
   animate();
 }
 
@@ -218,16 +221,17 @@ drawRoulette();
 document.getElementById("formRoleta").addEventListener("submit", async e => {
   e.preventDefault();
   const aposta = parseFloat(document.getElementById("apostaRoleta").value);
-  const numeroEscolhido = parseInt(document.getElementById("numeroAposta").value);
+  const numero = parseInt(document.getElementById("numeroAposta").value);
+
   const resp = await fetch("{{ url_for('jogos') }}",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({tipo:"roleta", aposta, numero: numeroEscolhido})
+    body:JSON.stringify({tipo:"roleta", aposta, numero})
   });
+
   const data = await resp.json();
-  animateToIndex(data.numero, data.saldo, data.resultado, numeroEscolhido);
+  animateToIndex(data.numero, data.saldo, data.resultado, numero, aposta);
 });
 </script>
 
 {% endblock %}
-
