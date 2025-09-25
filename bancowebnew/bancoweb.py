@@ -253,6 +253,8 @@ def exportar_csv():
 # -------------------- Roleta --------------------
 # -------------------- Roleta --------------------
 # -------------------- ROLETA --------------------
+from flask import jsonify
+
 @app.route("/jogos", methods=["GET", "POST"])
 def jogos():
     if "usuario" not in session or session["usuario"] == "admin":
@@ -262,150 +264,110 @@ def jogos():
     dados = carregar_dados()
     saldo = dados["clientes"][usuario]["saldo"]
 
-    resultado_roleta = None
-    resultado_caca = None
-    rolos = []
-
-    # Variáveis para lembrar as últimas apostas (para preencher os campos)
-    last_aposta_caca = ""
-    last_aposta_roleta = ""
-    last_lote = ""
-
-    # símbolos do caça-níquel (inclui estrelas e dados)
+    # símbolos do caça-níquel
     simbolos = [
         "🍒", "🍋", "🔔", "⭐", "💎", "🍀", "🍉", "🥭",
         "🍇", "🍌", "🍓", "🍑", "🍍", "🥝", "🥥", "🍈", "🌈", "🎲"
     ]
 
     if request.method == "POST":
-        # guarda últimos valores enviados (úteis para manter no input)
-        last_aposta_caca = request.form.get("aposta_caca", "") or ""
-        last_aposta_roleta = request.form.get("aposta_roleta", "") or ""
-        last_lote = request.form.get("lote", "") or ""
+        data = request.get_json()  # <-- pega JSON do AJAX
 
         # -------- CAÇA-NÍQUEL --------
-        if "aposta_caca" in request.form:
+        if data.get("tipo") == "caca":
             try:
-                aposta = float(request.form.get("aposta_caca", 0))
-            except (ValueError, TypeError):
-                flash("Aposta inválida!", "danger")
-                return redirect(url_for("jogos"))
+                aposta = float(data.get("aposta", 0))
+                lote = int(data.get("lote", 1))
+            except:
+                return jsonify({"erro":"Aposta inválida"}), 400
 
             if aposta <= 0:
-                resultado_caca = "Digite um valor válido de aposta!"
+                resultado = "Digite um valor válido de aposta!"
+                rolos = ["❔","❔","❔"]
             elif aposta > saldo:
-                resultado_caca = "Saldo insuficiente!"
+                resultado = "Saldo insuficiente!"
+                rolos = ["❔","❔","❔"]
             else:
-                # sorteio dos 3 rolos
                 rolos = [random.choice(simbolos) for _ in range(3)]
-
-                # --- Regras especiais (prioridade alta) ---
+                # --- regras especiais ---
                 if rolos.count("⭐") == 3:
                     ganho = aposta * 200
                     saldo += ganho
-                    resultado_caca = f"🌟🌟🌟 JACKPOT SUPREMO! {rolos} Você ganhou R$ {ganho:.2f}!"
+                    resultado = f"🌟🌟🌟 JACKPOT SUPREMO! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (Jackpot Estrelas {rolos})", ganho)
                 elif rolos.count("⭐") == 2:
                     ganho = aposta * 50
                     saldo += ganho
-                    resultado_caca = f"🌟 Duas estrelas! {rolos} Você ganhou R$ {ganho:.2f}!"
+                    resultado = f"🌟 Duas estrelas! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (2 Estrelas {rolos})", ganho)
                 elif rolos.count("🎲") == 3:
                     ganho = aposta * 80
                     saldo += ganho
-                    resultado_caca = f"🎲🎲🎲 TRIPLO DADOS! {rolos} Você ganhou R$ {ganho:.2f}!"
+                    resultado = f"🎲🎲🎲 TRIPLO DADOS! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (3 Dados {rolos})", ganho)
                 elif rolos.count("🎲") == 2:
                     ganho = aposta * 20
                     saldo += ganho
-                    resultado_caca = f"🎲🎲 Dois dados! {rolos} Você ganhou R$ {ganho:.2f}!"
+                    resultado = f"🎲🎲 Dois dados! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (2 Dados {rolos})", ganho)
-
-                # --- Regras padrão ---
-                elif rolos[0] == rolos[1] == rolos[2]:
+                # --- regras padrão ---
+                elif rolos[0]==rolos[1]==rolos[2]:
                     ganho = aposta * 30
                     saldo += ganho
-                    resultado_caca = f"🎉 Jackpot! {rolos} Você ganhou R$ {ganho:.2f}!"
+                    resultado = f"🎉 Jackpot! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (Jackpot {rolos})", ganho)
-                elif rolos[0] == rolos[1] or rolos[1] == rolos[2] or rolos[0] == rolos[2]:
+                elif rolos[0]==rolos[1] or rolos[1]==rolos[2] or rolos[0]==rolos[2]:
                     ganho = aposta * 6
                     saldo += ganho
-                    resultado_caca = f"✨ Par! {rolos} Você ganhou R$ {ganho:.2f}!"
+                    resultado = f"✨ Par! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (Par {rolos})", ganho)
                 else:
                     saldo -= aposta
-                    resultado_caca = f"❌ {rolos} Você perdeu R$ {aposta:.2f}."
+                    resultado = f"❌ {rolos} Você perdeu R$ {aposta:.2f}."
                     registrar_historico(usuario, f"Caça-níquel (Derrota {rolos})", -aposta)
 
-                # salva saldo atualizado no banco
-                salvar_cliente(usuario, saldo=saldo)
+            salvar_cliente(usuario, saldo=saldo)
+            return jsonify({"rolos": rolos, "resultado": resultado, "saldo": saldo})
 
         # -------- ROLETA --------
-        elif "aposta_roleta" in request.form:
+        elif data.get("tipo") == "roleta":
             try:
-                aposta = float(request.form.get("aposta_roleta", 0))
-            except (ValueError, TypeError):
-                flash("Aposta inválida!", "danger")
-                return redirect(url_for("jogos"))
+                aposta = float(data.get("aposta", 0))
+                numero = int(data.get("numero", 0))
+            except:
+                return jsonify({"erro":"Aposta inválida"}), 400
 
             if aposta <= 0:
-                resultado_roleta = "Digite um valor válido de aposta!"
+                resultado = "Digite um valor válido de aposta!"
+                numero_sorteado = 0
             elif aposta > saldo:
-                resultado_roleta = "Saldo insuficiente!"
+                resultado = "Saldo insuficiente!"
+                numero_sorteado = 0
             else:
-                # número sorteado (0-36)
-                numero_sorteado = random.randint(0, 36)
+                numero_sorteado = random.randint(0,36)
 
-                # se usuário apostou num número específico (numero_roleta)
-                if "numero_roleta" in request.form and request.form.get("numero_roleta", "") != "":
-                    try:
-                        escolhido = int(request.form.get("numero_roleta"))
-                    except (ValueError, TypeError):
-                        escolhido = None
-
-                    if escolhido is not None and escolhido == numero_sorteado:
-                        ganho = aposta * 36  # pagamento por número (ex: 35:1 + stake)
-                        saldo += ganho
-                        resultado_roleta = f"🎉 Número {numero_sorteado}! Você ganhou R$ {ganho:.2f}!"
-                        registrar_historico(usuario, f"Roleta (Vitória no número {numero_sorteado})", ganho)
-                    else:
-                        saldo -= aposta
-                        resultado_roleta = f"❌ Caiu {numero_sorteado}. Você perdeu R$ {aposta:.2f}."
-                        registrar_historico(usuario, f"Roleta (Derrota no número {numero_sorteado})", -aposta)
-
-                # senão, aposta por cor (cor_roleta)
+                if numero == numero_sorteado:
+                    ganho = aposta * 36
+                    saldo += ganho
+                    resultado = f"🎉 Número {numero_sorteado}! Você ganhou R$ {ganho:.2f}!"
+                    registrar_historico(usuario, f"Roleta (Vitória no número {numero_sorteado})", ganho)
                 else:
-                    cor_aposta = (request.form.get("cor_roleta") or "").lower()
-                    # definição simplificada: 0 = casa (verde), números pares = vermelho, ímpares = preto
-                    if numero_sorteado == 0:
-                        cor_real = "verde"
-                    else:
-                        cor_real = "vermelho" if numero_sorteado % 2 == 0 else "preto"
+                    saldo -= aposta
+                    resultado = f"❌ Caiu {numero_sorteado}. Você perdeu R$ {aposta:.2f}."
+                    registrar_historico(usuario, f"Roleta (Derrota no número {numero_sorteado})", -aposta)
 
-                    if cor_aposta == cor_real:
-                        ganho = aposta * 2
-                        saldo += ganho
-                        resultado_roleta = f"🎉 Número {numero_sorteado} ({cor_real})! Você ganhou R$ {ganho:.2f}!"
-                        registrar_historico(usuario, f"Roleta (Vitória {numero_sorteado} {cor_real})", ganho)
-                    else:
-                        saldo -= aposta
-                        resultado_roleta = f"❌ Número {numero_sorteado} ({cor_real}). Você perdeu R$ {aposta:.2f}."
-                        registrar_historico(usuario, f"Roleta (Derrota {numero_sorteado} {cor_real})", -aposta)
+            salvar_cliente(usuario, saldo=saldo)
+            return jsonify({"numero": numero_sorteado, "resultado": resultado, "saldo": saldo})
 
-                # salva saldo atualizado
-                salvar_cliente(usuario, saldo=saldo)
-
-    # renderiza a página (mantendo últimos valores para preencher inputs)
+    # GET normal
     return render_template(
         "jogos.html",
         saldo=saldo,
-        resultado_caca=resultado_caca,
-        resultado_roleta=resultado_roleta,
-        rolos=rolos,
-        last_aposta_caca=last_aposta_caca,
-        last_aposta_roleta=last_aposta_roleta,
-        last_lote=last_lote
+        last_aposta_caca="",
+        last_aposta_roleta="",
+        last_lote=""
     )
+
 
 
 
@@ -473,6 +435,7 @@ def recusar_deposito(id):
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
