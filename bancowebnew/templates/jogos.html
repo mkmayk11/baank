@@ -132,7 +132,7 @@ document.getElementById("formCaca").addEventListener("submit", async e => {
   runSlots(aposta, lote);
 });
 
-// -------------------- ROLETA --------------------
+// -------------------- ROLETA CORRIGIDA --------------------
 const canvas = document.getElementById("rouletteCanvas");
 const ctx = canvas.getContext("2d");
 const segments = Array.from({length:21},(_,i)=>i);
@@ -144,7 +144,7 @@ function drawRoulette() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
     ctx.translate(radius, radius);
-    ctx.rotate(angle - Math.PI/2);
+    ctx.rotate(angle - segmentAngle/2 - Math.PI/2); // corrige 0 no topo
 
     for (let i = 0; i < segments.length; i++) {
         ctx.beginPath();
@@ -161,7 +161,7 @@ function drawRoulette() {
         ctx.font = "16px Arial";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(segments[i].toString(), radius * 0.75, 0);
+        ctx.fillText(segments[i].toString(), radius * 0.65, 0);
         ctx.restore();
     }
 
@@ -172,8 +172,6 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
     if(spinning) return;
     spinning = true;
     const segmentAngle = (2*Math.PI)/segments.length;
-
-    // Ajusta para que o número sorteado fique sob a seta (0 no topo)
     const targetAngle = (2*Math.PI*6) + winningIndex * segmentAngle; // 6 voltas
 
     let currentAngle = angle;
@@ -183,7 +181,7 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
         ctx.translate(canvas.width/2, canvas.height/2);
-        ctx.rotate(currentAngle - Math.PI/2);
+        ctx.rotate(currentAngle - segmentAngle/2 - Math.PI/2);
         ctx.translate(-canvas.width/2, -canvas.height/2);
         drawRoulette();
         ctx.restore();
@@ -196,11 +194,10 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
             angle = targetAngle % (2*Math.PI);
             spinning = false;
 
-            // Calcula qual número está exatamente sob a seta
-            const normalizedAngle = (2*Math.PI - angle + Math.PI/2 + segmentAngle/2) % (2*Math.PI);
+            // calcula número sob a seta
+            const normalizedAngle = (2*Math.PI - angle + segmentAngle/2 + Math.PI/2) % (2*Math.PI);
             const indexUnderPointer = Math.floor(normalizedAngle / segmentAngle) % segments.length;
             const numeroFinal = segments[indexUnderPointer];
-
 
             let resultadoFinal = resultadoTexto;
             if(numeroEscolhido !== null && aposta !== null){
@@ -223,7 +220,6 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
     animate();
 }
 
-
 drawRoulette();
 
 document.getElementById("formRoleta").addEventListener("submit", async e => {
@@ -243,6 +239,3 @@ document.getElementById("formRoleta").addEventListener("submit", async e => {
 </script>
 
 {% endblock %}
-
-
-
