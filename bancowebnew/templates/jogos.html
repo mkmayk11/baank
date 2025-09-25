@@ -78,7 +78,8 @@
 const symbols = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲","🏺","💸"];
 
 // -------------------- SLOTS --------------------
-let rodadasGratis = {{ dados["clientes"][usuario].get("rodadas_gratis", 0) }};
+let rodadasGratis = {{ rodadas_gratis }};
+
 
 async function spinReel(reelId, finalSymbol) {
   return new Promise(resolve => {
@@ -247,3 +248,4 @@ document.getElementById("formRoleta").addEventListener("submit", async e => {
 </script>
 
 {% endblock %}
+
