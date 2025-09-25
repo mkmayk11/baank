@@ -30,6 +30,8 @@
             <div class="reel" id="reel3">❔</div>
           </div>
           <div id="slotResultado" class="alert alert-info mt-3" style="display:none;"></div>
+          <!-- Novo campo para mostrar jogadas restantes -->
+          <div id="rodadasRestantes" class="text-white mt-2" style="font-size:0.9rem;"></div>
         </div>
       </div>
 
@@ -93,7 +95,7 @@ async function spinReel(reelId, finalSymbol) {
   });
 }
 
-async function startSlot(rolos, resultado, saldoFinal){
+async function startSlot(rolos, resultado, saldoFinal, rodadasRestantes){
   document.getElementById("slotResultado").style.display="none";
   await spinReel("reel1", rolos[0]);
   await spinReel("reel2", rolos[1]);
@@ -101,6 +103,7 @@ async function startSlot(rolos, resultado, saldoFinal){
   document.getElementById("slotResultado").style.display="block";
   document.getElementById("slotResultado").innerText = resultado;
   document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
+  document.getElementById("rodadasRestantes").innerText = rodadasRestantes > 0 ? `Jogadas restantes: ${rodadasRestantes}` : "";
 
   // volta pra ❔ depois de 3s
   setTimeout(() => {
@@ -120,7 +123,7 @@ async function runSlots(aposta, lote){
       body:JSON.stringify({tipo:"caca", aposta, lote:1})
     });
     const data = await resp.json();
-    await startSlot(data.rolos, data.resultado, data.saldo);
+    await startSlot(data.rolos, data.resultado, data.saldo, lote-i-1);
     // espera 4s entre rodadas
     await new Promise(res => setTimeout(res, 4000));
   }
@@ -170,7 +173,9 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto){
   if(spinning) return;
   spinning = true;
   const segmentAngle = (2*Math.PI)/segments.length;
-  const targetAngle = (2*Math.PI*6) + (winningIndex * segmentAngle); // 6 voltas + posição correta
+  // calcula o ângulo final pra parar o número exato na seta
+  const targetAngle = (2*Math.PI*6) - (winningIndex * segmentAngle) + (segmentAngle/2); // 6 voltas, ajusta posição
+
   let currentAngle = angle;
   let speed = 0.5;
 
@@ -190,7 +195,6 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto){
     } else {
       angle = targetAngle % (2*Math.PI);
       spinning = false;
-      // mostra número real
       document.getElementById("rouletteResult").innerText = "Número: " + winningIndex + " → " + resultadoTexto;
       document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
     }
@@ -216,4 +220,3 @@ document.getElementById("formRoleta").addEventListener("submit", async e => {
 </script>
 
 {% endblock %}
-
