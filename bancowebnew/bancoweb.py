@@ -54,11 +54,166 @@ def init_db():
         )
     """)
 
+    # Tabela de jogos de futebol (admin define odds)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS jogos_futebol (
+            id SERIAL PRIMARY KEY,
+            time1 TEXT NOT NULL,
+            time2 TEXT NOT NULL,
+            odds1 REAL NOT NULL,
+            odds_empate REAL NOT NULL,
+            odds2 REAL NOT NULL
+        )
+    """)
+
     conn.commit()
     conn.close()
 
 # Inicializa o banco
 init_db()
+
+# -------------------- Funções de persistência --------------------
+def carregar_dados():
+    conn = get_connection()
+    c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    # Clientes
+    c.execute("SELECT * FROM clientes")
+    clientes = {row["usuario"]: {"senha": row["senha"], "saldo": row["saldo"]} for row in c.fetchall()}
+
+    # Histórico
+    c.execute("SELECT * FROM historico")
+    historico = [dict(row) for row in c.fetchall()]
+
+    conn.close()
+    return {"clientes": clientes, "historico": historico}
+
+def salvar_cliente(usuario, senha=None, saldo=None):
+    conn = get_connection()
+    c = conn.cursor()
+
+    if senha is not None and saldo is not None:
+        c.execute("""
+            INSERT INTO clientes (usuario, senha, saldo) VALUES (%s, %s, %s)
+            ON CONFLICT (usuario) DO UPDATE SET senha = EXCLUDED.senha, saldo = EXCLUDED.saldo
+        """, (usuario, senha, saldo))
+    elif saldo is not None:
+        c.execute("UPDATE clientes SET saldo = %s WHERE usuario = %s", (saldo, usuario))
+    elif senha is not None:
+        c.execute("UPDATE clientes SET senha = %s WHERE usuario = %s", (senha, usuario))
+
+    conn.commit()
+    conn.close()
+
+def registrar_historico(usuario, acao, valor=0, destino=None):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("INSERT INTO historico (usuario, acao, valor, destino, data) VALUES (%s, %s, %s, %s, %s)",
+              (usuario, acao, valor, destino, datetime.now().strftime("%d/%m/%Y %H:%M:%S")))
+    conn.commit()
+    conn.close()
+
+# -------------------- Rotas básicas --------------------
+@app.route("/", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        usuario = request.form["usuario"]
+        senha = request.form["senha"]
+        dados = carregar_dados()
+        if usuario in dados["clientes"] and dados["clientes"][usuario]["senha"] == senha:
+            session["usuario"] = usuario
+            if usuario == "admin":
+                return redirect(url_for("admin_depositos"))
+            return redirect(url_for("dashboard"))
+        flash("Login inválido")
+    return render_template("login.html")
+
+@app.route("/cadastro", methods=["GET", "POST"])
+def cadastro():
+    if request.method == "POST":
+        usuario = request.form["usuario"]
+        senha = request.form["senha"]
+        dados = carregar_dados()
+        if usuario in dados["clientes"]:
+            flash("Usuário já existe!")
+        else:
+            salvar_cliente(usuario, senha=senha, saldo=0)
+            flash("Cadastro realizado!")
+            return redirect(url_for("login"))
+    return render_template("cadastro.html")
+
+@app.route("/dashboard")
+def dashboard():
+    if "usuario" not in session or session["usuario"] == "admin":
+        return redirect(url_for("login"))
+    usuario = session["usuario"]
+    dados = carregar_dados()
+    saldo = dados["clientes"][usuario]["saldo"]
+    return render_template("dashboard.html", usuario=usuario, saldo=saldo, dados=dados)
+
+# -------------------- Página Futebol --------------------
+@app.route("/futebol")
+def futebol():
+    if "usuario" not in session or session["usuario"] == "admin":
+        return redirect(url_for("login"))
+    usuario = session["usuario"]
+    saldo = carregar_dados()["clientes"][usuario]["saldo"]
+
+    conn = get_connection()
+    c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    c.execute("SELECT * FROM jogos_futebol ORDER BY id ASC")
+    jogos = [dict(row) for row in c.fetchall()]
+    conn.close()
+
+    return render_template("futebol.html", usuario=usuario, saldo=saldo, jogos=jogos)
+
+# -------------------- Apostar Futebol --------------------
+@app.route("/apostar_futebol", methods=["POST"])
+def apostar_futebol():
+    if "usuario" not in session or session["usuario"] == "admin":
+        return jsonify({"success": False, "mensagem": "Não logado."})
+
+    data = request.get_json()
+    usuario = session["usuario"]
+    jogo_id = int(data.get("jogo_id"))
+    vencedor = data.get("vencedor")
+    valor = float(data.get("valor"))
+
+    # Busca saldo atual
+    saldo = carregar_dados()["clientes"][usuario]["saldo"]
+    if valor <= 0 or valor > saldo:
+        return jsonify({"success": False, "mensagem": "Saldo insuficiente."})
+
+    # Deduz saldo
+    saldo -= valor
+    salvar_cliente(usuario, saldo=saldo)
+
+    # Busca o jogo e odds
+    conn = get_connection()
+    c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    c.execute("SELECT * FROM jogos_futebol WHERE id = %s", (jogo_id,))
+    jogo = c.fetchone()
+    conn.close()
+    if not jogo:
+        return jsonify({"success": False, "mensagem": "Jogo não encontrado."})
+
+    # Define a odd escolhida
+    if vencedor == "time1":
+        odds = jogo["odds1"]
+    elif vencedor == "time2":
+        odds = jogo["odds2"]
+    elif vencedor == "empate":
+        odds = jogo["odds_empate"]
+    else:
+        return jsonify({"success": False, "mensagem": "Seleção inválida."})
+
+    # Registrar aposta (em produção: salvar em tabela de apostas)
+    registrar_historico(usuario, f"Aposta Futebol: {jogo['time1']} x {jogo['time2']} - Escolha: {vencedor}", valor)
+
+    return jsonify({"success": True, "saldo": saldo, "mensagem": f"Aposta registrada! Odds: {odds}"})
+
+
+
 
 # -------------------- Funções de persistência --------------------
 def carregar_dados():
@@ -598,6 +753,7 @@ def deletar_historico_selecionados():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
