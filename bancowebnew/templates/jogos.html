@@ -186,14 +186,15 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
 
         const remaining = targetAngle - currentAngle;
         if(remaining > 0.001){
-            // Aqui usamos desaceleração proporcional à distância restante
-            currentAngle += remaining * 0.05; 
+            // desaceleração suave proporcional à distância restante
+            currentAngle += remaining * 0.05;
             requestAnimationFrame(animate);
         } else {
             angle = targetAngle % (2*Math.PI);
             spinning = false;
 
-            const numeroFinal = winningIndex; // agora garante que bate com o número oficial
+            // Número final vindo diretamente do servidor
+            const numeroFinal = winningIndex;
 
             let resultadoFinal = `Número: ${numeroFinal}`;
             if(resultadoTexto.includes("Você ganhou") || resultadoTexto.includes("Você perdeu")){
@@ -221,6 +222,7 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
 
 
 
+
 drawRoulette();
 
 document.getElementById("formRoleta").addEventListener("submit", async e=>{
@@ -240,5 +242,6 @@ document.getElementById("formRoleta").addEventListener("submit", async e=>{
 </script>
 
 {% endblock %}
+
 
 
