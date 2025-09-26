@@ -913,7 +913,7 @@ def setup_db():
 
 import psycopg2
 
-conn = psycopg2.connect("postgresql://usuario:senha@host:porta/banco")
+conn = psycopg2.connect("postgresql://savesite_user:5X70ctnMmv1jfWVuCQssRvmQUjW0D56p@dpg-d37hgjjuibrs7392ou1g-a/savesite")
 c = conn.cursor()
 c.execute("""
 CREATE TABLE IF NOT EXISTS apostas (
@@ -936,6 +936,7 @@ criar_coluna_resultado()
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
