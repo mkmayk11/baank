@@ -10,6 +10,55 @@ app.secret_key = "segredo_super_seguro"
 # -------------------- Banco de dados --------------------
 DB_URL = os.getenv("DATABASE_URL", "postgresql://savesite_user:5X70ctnMmv1jfWVuCQssRvmQUjW0D56p@dpg-d37hgjjuibrs7392ou1g-a/savesite")
 
+def criar_tabelas():
+    conn = psycopg2.connect(DB_URL)
+    c = conn.cursor()
+
+    # Tabela de usuários (se ainda não existir)
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS usuarios (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(100) UNIQUE NOT NULL,
+        saldo NUMERIC(12,2) DEFAULT 0
+    );
+    """)
+
+    # Tabela de jogos
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS jogos (
+        id SERIAL PRIMARY KEY,
+        time1 VARCHAR(100) NOT NULL,
+        time2 VARCHAR(100) NOT NULL,
+        odds1 NUMERIC(10,2) NOT NULL,
+        odds2 NUMERIC(10,2) NOT NULL,
+        odds_empate NUMERIC(10,2) NOT NULL,
+        ativo BOOLEAN DEFAULT TRUE
+    );
+    """)
+
+    # Tabela de apostas
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS apostas (
+        id SERIAL PRIMARY KEY,
+        usuario VARCHAR(100) REFERENCES usuarios(nome),
+        jogo_id INT REFERENCES jogos(id),
+        valor NUMERIC(12,2) NOT NULL,
+        escolha VARCHAR(20) NOT NULL,
+        resultado VARCHAR(20),  -- pendente, vitoria, derrota
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """)
+
+    conn.commit()
+    c.close()
+    conn.close()
+    print("Tabelas criadas/verificadas com sucesso!")
+
+# Chamar a função quando iniciar o Flask
+criar_tabelas()
+
+
+
 def get_connection():
     conn = psycopg2.connect(DB_URL, sslmode="require")
     return conn
@@ -1157,6 +1206,7 @@ def atualizar_resultado(aposta_id, resultado):
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
