@@ -893,21 +893,6 @@ def admin_futebol():
 
     return render_template('admin_futebol.html', jogos=jogos, apostas=apostas)
 
-@app.route('/admin/futebol/atualizar/<int:aposta_id>/<resultado>')
-def atualizar_resultado(aposta_id, resultado):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("UPDATE apostas SET resultado = %s WHERE id = %s", (resultado, aposta_id))
-    conn.commit()
-    cur.close()
-    conn.close()
-    flash('Resultado atualizado!', 'success')
-    return redirect(url_for('admin_futebol'))
-
-
-
-
-
 
 
 @app.route("/admin/futebol/toggle/<int:jogo_id>", methods=["POST"])
@@ -1230,6 +1215,7 @@ def atualizar_resultado(aposta_id, resultado):
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
