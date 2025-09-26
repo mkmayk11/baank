@@ -861,7 +861,6 @@ def admin_futebol():
                 )
                 jogo_row = cur.fetchone()
                 jogo_id = jogo_row["id"] if jogo_row and "id" in jogo_row else None
-
                 if not jogo_id:
                     raise Exception("Não foi possível obter ID do jogo inserido.")
 
@@ -880,26 +879,17 @@ def admin_futebol():
                 )
 
                 # insere mercados extras
-                if odd_resultado:
-                    cur.execute(
-                        "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
-                        (jogo_id, "Odd Resultado", odd_resultado),
-                    )
-                if odd_gols:
-                    cur.execute(
-                        "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
-                        (jogo_id, "Gols", odd_gols),
-                    )
-                if odd_cartoes:
-                    cur.execute(
-                        "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
-                        (jogo_id, "Cartões", odd_cartoes),
-                    )
-                if odd_expulsoes:
-                    cur.execute(
-                        "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
-                        (jogo_id, "Expulsões", odd_expulsoes),
-                    )
+                for nome, valor in [
+                    ("Odd Resultado", odd_resultado),
+                    ("Gols", odd_gols),
+                    ("Cartões", odd_cartoes),
+                    ("Expulsões", odd_expulsoes)
+                ]:
+                    if valor:
+                        cur.execute(
+                            "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
+                            (jogo_id, nome, valor),
+                        )
 
                 conn.commit()
                 flash("Jogo e mercados adicionados com sucesso!", "success")
@@ -909,7 +899,6 @@ def admin_futebol():
             finally:
                 cur.close()
                 conn.close()
-
             return redirect(url_for("admin_futebol"))
 
         # ---------- GET: buscar jogos e apostas ----------
@@ -929,67 +918,32 @@ def admin_futebol():
         """)
         jogos = cur.fetchall()
 
-        # Colunas disponíveis na tabela apostas
+        # Saldo do usuário (assumindo que existe session['usuario_id'])
+        saldo_usuario = 0
+        if "usuario_id" in session:
+            cur.execute("SELECT saldo FROM usuarios WHERE id = %s", (session["usuario_id"],))
+            saldo_row = cur.fetchone()
+            saldo_usuario = saldo_row["saldo"] if saldo_row else 0
+
+        # Apostas dos usuários
         cur.execute("""
-            SELECT column_name
-            FROM information_schema.columns
-            WHERE table_schema = 'public' AND table_name = 'apostas'
+            SELECT a.id, a.usuario, a.valor, 
+                   COALESCE(a.resultado, NULL) AS resultado, 
+                   COALESCE(a.criado_em, a.data_aposta, a.id) AS criado_em,
+                   aj.jogo_id, j.time1, j.time2, aj.escolha, aj.resultado AS resultado_jogo
+            FROM apostas a
+            LEFT JOIN apostas_jogos aj ON a.id = aj.aposta_id
+            LEFT JOIN jogos_futebol j ON aj.jogo_id = j.id
+            ORDER BY criado_em DESC
+            LIMIT 500
         """)
-        cols_rows = cur.fetchall()
-        cols = {r["column_name"] for r in cols_rows} if cols_rows else set()
-
-        # verifica tabela apostas_jogos
-        cur.execute("SELECT to_regclass('public.apostas_jogos') AS exists")
-        aj_row = cur.fetchone()
-        has_apostas_jogos = bool(aj_row and aj_row.get("exists"))
-
-        # monta campos dinamicamente
-        select_fields = ["a.id", "a.usuario", "a.valor"]
-        if "resultado" in cols:
-            select_fields.append("a.resultado")
-        elif "status" in cols:
-            select_fields.append("a.status AS resultado")
-        else:
-            select_fields.append("NULL AS resultado")
-
-        # coluna de data
-        if "criado_em" in cols:
-            select_fields.append("a.criado_em")
-            date_field = "a.criado_em"
-        elif "data_aposta" in cols:
-            select_fields.append("a.data_aposta AS criado_em")
-            date_field = "a.data_aposta"
-        else:
-            select_fields.append("a.id AS criado_em")
-            date_field = "a.id"
-
-        if has_apostas_jogos:
-            select_fields.extend([
-                "aj.jogo_id", "j.time1", "j.time2", "aj.escolha", "aj.resultado AS resultado_jogo"
-            ])
-            join_clause = "JOIN apostas_jogos aj ON a.id = aj.aposta_id JOIN jogos_futebol j ON aj.jogo_id = j.id"
-        else:
-            if "jogo_id" in cols:
-                select_fields.extend(["a.jogo_id", "j.time1", "j.time2"])
-                if "escolha" in cols:
-                    select_fields.append("a.escolha")
-                else:
-                    select_fields.append("NULL AS escolha")
-                join_clause = "JOIN jogos_futebol j ON a.jogo_id = j.id"
-            else:
-                join_clause = ""
-
-        sql = f"SELECT {', '.join(select_fields)} FROM apostas a {join_clause} ORDER BY {date_field} DESC LIMIT 500"
-        cur.execute(sql)
         apostas = cur.fetchall()
 
         # normaliza para template
         from datetime import datetime
         for ap in apostas:
-            if "resultado" not in ap:
-                ap["resultado"] = ap.get("resultado_jogo") or None
-            if "escolha" not in ap:
-                ap["escolha"] = ap.get("escolha") or ""
+            ap["resultado"] = ap.get("resultado") or ap.get("resultado_jogo")
+            ap["escolha"] = ap.get("escolha") or ""
             created = ap.get("criado_em")
             if isinstance(created, datetime):
                 ap["criado_em_fmt"] = created.strftime("%d/%m/%Y %H:%M")
@@ -1000,7 +954,7 @@ def admin_futebol():
 
     except Exception as e:
         flash(f"Erro ao carregar admin_futebol: {e}", "danger")
-        jogos, apostas = [], []
+        jogos, apostas, saldo_usuario = [], [], 0
     finally:
         try:
             cur.close()
@@ -1008,7 +962,8 @@ def admin_futebol():
         except:
             pass
 
-    return render_template("admin_futebol.html", jogos=jogos, apostas=apostas)
+    return render_template("admin_futebol.html", jogos=jogos, apostas=apostas, saldo_usuario=saldo_usuario)
+
 
 
 
@@ -1562,6 +1517,7 @@ def apostar():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
