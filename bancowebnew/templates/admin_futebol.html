@@ -1,143 +1,101 @@
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        <div class="mb-4">
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endfor %}
-        </div>
-    {% endif %}
-{% endwith %}
-
-<!-- Adicionar jogo -->
-<div class="card shadow-lg border-0 rounded-4 p-4 mb-5">
-    <h2 class="text-center mb-4">⚽ Administração de Jogos de Futebol</h2>
-    <form method="POST" action="{{ url_for('admin_futebol') }}">
-        <div class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label">Time 1</label>
-                <input type="text" class="form-control" name="time1" required>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Time 2</label>
-                <input type="text" class="form-control" name="time2" required>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Odds Time 1</label>
-                <input type="number" step="0.01" min="1" class="form-control" name="odds1" required>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Odds Empate</label>
-                <input type="number" step="0.01" min="1" class="form-control" name="odds_empate" required>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Odds Time 2</label>
-                <input type="number" step="0.01" min="1" class="form-control" name="odds2" required>
-            </div>
-        </div>
-        <div class="text-center mt-4">
-            <button type="submit" class="btn btn-success px-4">➕ Adicionar Jogo</button>
-        </div>
-    </form>
+<!-- Título -->
+<div class="text-center mb-5">
+    <h1 class="fw-bold text-primary">Painel de Administração - Futebol</h1>
+    <p class="text-muted">Gerencie os jogos, odds e visualize as apostas</p>
 </div>
 
-<!-- Jogos cadastrados -->
-<div class="card shadow-lg border-0 rounded-4 p-4 mb-5">
-    <h4 class="mb-3">📋 Jogos cadastrados</h4>
-    {% if jogos %}
-    <div class="table-responsive">
-        <table class="table table-dark table-striped rounded-3 overflow-hidden">
-            <thead>
+<!-- Formulário para adicionar novo jogo -->
+<div class="card shadow-lg border-0 mb-5">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Adicionar Novo Jogo</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('adicionar_jogo') }}">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Time 1</label>
+                    <input type="text" name="time1" class="form-control" placeholder="Ex: Flamengo" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Time 2</label>
+                    <input type="text" name="time2" class="form-control" placeholder="Ex: Vasco" required>
+                </div>
+
+                <!-- Odds principais -->
+                <div class="col-md-4">
+                    <label class="form-label">Odd Vitória Time 1</label>
+                    <input type="number" step="0.01" name="odds1" class="form-control" placeholder="Ex: 1.80" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Odd Empate</label>
+                    <input type="number" step="0.01" name="odds_empate" class="form-control" placeholder="Ex: 3.20" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Odd Vitória Time 2</label>
+                    <input type="number" step="0.01" name="odds2" class="form-control" placeholder="Ex: 2.10" required>
+                </div>
+
+                <!-- Odds extras -->
+                <div class="col-md-4">
+                    <label class="form-label">Odd +2.5 Gols</label>
+                    <input type="number" step="0.01" name="odds_gols" class="form-control" placeholder="Ex: 1.90">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Odd Cartões</label>
+                    <input type="number" step="0.01" name="odds_cartoes" class="form-control" placeholder="Ex: 2.50">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Odd Expulsões</label>
+                    <input type="number" step="0.01" name="odds_expulsoes" class="form-control" placeholder="Ex: 4.00">
+                </div>
+            </div>
+
+            <div class="text-end mt-4">
+                <button type="submit" class="btn btn-success px-4">Adicionar Jogo</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista de jogos -->
+<div class="card shadow-lg border-0">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0">Jogos Ativos</h5>
+    </div>
+    <div class="card-body">
+        {% if jogos %}
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
                 <tr>
-                    <th>Time 1</th>
-                    <th>Time 2</th>
-                    <th>Odds 1</th>
-                    <th>Odds Empate</th>
-                    <th>Odds 2</th>
-                    <th>Status</th>
+                    <th>ID</th>
+                    <th>Times</th>
+                    <th>Odds</th>
                     <th>Ações</th>
                 </tr>
             </thead>
             <tbody>
                 {% for jogo in jogos %}
                 <tr>
-                    <td>{{ jogo["time1"] }}</td>
-                    <td>{{ jogo["time2"] }}</td>
-                    <td>{{ jogo["odds1"] }}</td>
-                    <td>{{ jogo["odds_empate"] }}</td>
-                    <td>{{ jogo["odds2"] }}</td>
-                    <td>{% if jogo["ativo"] %} ✅ Ativo {% else %} ❌ Inativo {% endif %}</td>
+                    <td>{{ jogo.id }}</td>
+                    <td><strong>{{ jogo.time1 }}</strong> vs <strong>{{ jogo.time2 }}</strong></td>
                     <td>
-                        <a href="{{ url_for('deletar_jogo', jogo_id=jogo['id']) }}"
-                           class="btn btn-danger btn-sm"
-                           onclick="return confirm('Tem certeza que deseja deletar este jogo?')">
-                           🗑️ Deletar
-                        </a>
+                        1: {{ jogo.odds1 or '-' }} |
+                        X: {{ jogo.odds_empate or '-' }} |
+                        2: {{ jogo.odds2 or '-' }}
+                        {% if jogo.odds_gols %} | Gols: {{ jogo.odds_gols }}{% endif %}
+                        {% if jogo.odds_cartoes %} | Cartões: {{ jogo.odds_cartoes }}{% endif %}
+                        {% if jogo.odds_expulsoes %} | Expulsões: {{ jogo.odds_expulsoes }}{% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('deletar_jogo', jogo_id=jogo.id) }}" 
+                           class="btn btn-sm btn-danger">Excluir</a>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+        {% else %}
+        <p class="text-muted">Nenhum jogo cadastrado.</p>
+        {% endif %}
     </div>
-    {% else %}
-    <p class="text-muted">Nenhum jogo cadastrado ainda.</p>
-    {% endif %}
 </div>
-
-<!-- Apostas dos usuários -->
-<div class="card shadow-lg border-0 rounded-4 p-4 mb-5">
-    <h4 class="mb-3">🎯 Apostas dos Usuários</h4>
-    {% if apostas %}
-    <div class="table-responsive">
-        <table class="table table-dark table-striped rounded-3 overflow-hidden">
-            <thead>
-                <tr>
-                    <th>Usuário</th>
-                    <th>Jogo</th>
-                    <th>Valor</th>
-                    <th>Escolha</th>
-                    <th>Resultado</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for aposta in apostas %}
-                <tr>
-                    <td>{{ aposta["usuario"] }}</td>
-                    <td>{{ aposta["time1"] }} vs {{ aposta["time2"] }}</td>
-                    <td>{{ aposta["valor"] }}</td>
-                    <td>{{ aposta["escolha"] }}</td>
-                    <td>
-                        {% if aposta["resultado"] %}
-                            {% if aposta["resultado"] == 'vitoria' %}✅ Vitória{% else %}❌ Derrota{% endif %}
-                        {% else %}
-                            Pendente
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if not aposta["resultado"] %}
-                            <a href="{{ url_for('atualizar_resultado', aposta_id=aposta['id'], resultado='vitoria') }}" class="btn btn-success btn-sm">✅ Vitória</a>
-                            <a href="{{ url_for('atualizar_resultado', aposta_id=aposta['id'], resultado='derrota') }}" class="btn btn-danger btn-sm">❌ Derrota</a>
-                        {% endif %}
-                        <a href="{{ url_for('deletar_aposta', aposta_id=aposta['id']) }}"
-                           class="btn btn-warning btn-sm"
-                           onclick="return confirm('Tem certeza que deseja deletar esta aposta?')">
-                           🗑️ Deletar
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% else %}
-    <p class="text-muted">Nenhuma aposta registrada ainda.</p>
-    {% endif %}
-</div>
-
-<input type="number" step="0.01" name="odd_resultado">
-<input type="number" step="0.01" name="odd_gols">
-<input type="number" step="0.01" name="odd_cartoes">
-<input type="number" step="0.01" name="odd_expulsoes">
