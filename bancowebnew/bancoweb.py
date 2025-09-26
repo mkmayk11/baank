@@ -1204,7 +1204,21 @@ def atualizar_resultado(aposta_id, resultado):
     finally:
         conn.close()
 
+@app.route("/deletar_jogo/<int:jogo_id>")
+def deletar_jogo(jogo_id):
+    cur = conn.cursor()
+    cur.execute("DELETE FROM jogos WHERE id = %s", (jogo_id,))
+    conn.commit()
+    flash("Jogo deletado com sucesso!", "success")
+    return redirect(url_for("admin_futebol"))
 
+@app.route("/deletar_aposta/<int:aposta_id>")
+def deletar_aposta(aposta_id):
+    cur = conn.cursor()
+    cur.execute("DELETE FROM apostas WHERE id = %s", (aposta_id,))
+    conn.commit()
+    flash("Aposta deletada com sucesso!", "success")
+    return redirect(url_for("admin_futebol"))
 
 
 
@@ -1215,6 +1229,7 @@ def atualizar_resultado(aposta_id, resultado):
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
