@@ -911,7 +911,7 @@ def futebol():
 @app.route('/atualizar_aposta', methods=['POST'])
 def atualizar_aposta():
     aposta_id = request.form.get('aposta_id')
-    novo_status = request.form.get('novo_status')  # "vitoria" ou "derrota"
+    novo_status = request.form.get('resultado')  # "vitoria" ou "derrota"
 
     if not aposta_id or novo_status not in ['vitoria', 'derrota']:
         flash("Erro ao atualizar aposta.", "danger")
@@ -928,7 +928,7 @@ def atualizar_aposta():
         conn.commit()
         cursor.close()
         conn.close()
-        flash(f"Aposta atualizada para '{novo_status}'.", "success")
+        flash(f"Aposta atualizada para '{resultado}'.", "success")
     except Exception as e:
         flash(f"Erro ao atualizar aposta: {str(e)}", "danger")
 
@@ -1082,6 +1082,7 @@ def fixar_apostas():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
