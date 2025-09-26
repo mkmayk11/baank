@@ -1197,6 +1197,29 @@ def deletar_aposta(aposta_id):
     return redirect(url_for("admin_futebol"))
 
 
+# -------------------- Criar tabela pelo Flask --------------------
+@app.route("/criar_tabela_apostas")
+def criar_tabela_apostas():
+    try:
+        conn = psycopg2.connect(DB_URL)
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS apostas_futebol (
+                id SERIAL PRIMARY KEY,
+                usuario VARCHAR(100) NOT NULL,
+                time1 VARCHAR(100) NOT NULL,
+                time2 VARCHAR(100) NOT NULL,
+                valor NUMERIC(10,2) NOT NULL,
+                escolha VARCHAR(50) NOT NULL,
+                resultado VARCHAR(20)
+            );
+        """)
+        conn.commit()
+        cur.close()
+        conn.close()
+        return "✅ Tabela 'apostas_futebol' criada com sucesso!"
+    except Exception as e:
+        return f"❌ Erro ao criar tabela: {e}"
 
 
 
@@ -1205,6 +1228,7 @@ def deletar_aposta(aposta_id):
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
