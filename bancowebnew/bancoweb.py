@@ -59,8 +59,8 @@ criar_tabelas()
 
 
 
-def get_connection():
-    conn = psycopg2.connect(DB_URL, sslmode="require")
+def get_db_connection():
+    conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
     return conn
 
 def init_db():
@@ -840,55 +840,70 @@ def deletar_historico_selecionados():
 
 # -------------------- ADMIN FUTEBOL --------------------
 
-@app.route("/admin_futebol", methods=["GET", "POST"])
+@from flask import Flask, render_template, request, redirect, url_for, flash
+import psycopg2, psycopg2.extras
+import os
+
+app = Flask(__name__)
+app.secret_key = "segredo_super_seguro"
+
+DB_URL = os.getenv("DATABASE_URL", "postgresql://user:senha@localhost:5432/meubanco")
+
+def get_db_connection():
+    conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
+    return conn
+
+@app.route('/admin/futebol', methods=['GET', 'POST'])
 def admin_futebol():
-    conn = psycopg2.connect(DB_URL)
+    conn = get_db_connection()
     cur = conn.cursor()
 
-    if request.method == "POST":
-        # aqui cadastra os jogos
-        time1 = request.form["time1"]
-        time2 = request.form["time2"]
-        odds1 = float(request.form["odds1"])
-        odds_empate = float(request.form["odds_empate"])
-        odds2 = float(request.form["odds2"])
+    # Adicionar jogo
+    if request.method == 'POST':
+        time1 = request.form['time1']
+        time2 = request.form['time2']
+        odds1 = float(request.form['odds1'])
+        odds_empate = float(request.form['odds_empate'])
+        odds2 = float(request.form['odds2'])
 
-        cur.execute(
-            "INSERT INTO jogos_futebol (time1, time2, odds1, odds2, odds_empate, ativo) VALUES (%s, %s, %s, %s, %s, TRUE)",
-            (time1, time2, odds1, odds2, odds_empate),
-        )
+        cur.execute("""
+            INSERT INTO jogos (time1, time2, odds1, odds2, odds_empate, ativo)
+            VALUES (%s, %s, %s, %s, %s, TRUE)
+        """, (time1, time2, odds1, odds2, odds_empate))
         conn.commit()
-
-    # 🔥 SELECT atualizado para incluir resultado
-    cur.execute("""
-        SELECT a.id, a.usuario, a.valor, a.escolha, j.time1, j.time2, j.odds1, j.odds2, j.odds_empate, a.resultado
-        FROM apostas a
-        JOIN jogos_futebol j ON a.jogo_id = j.id
-    """)
-    apostas = [
-        {
-            "id": row[0],
-            "usuario": row[1],
-            "valor": float(row[2]),
-            "escolha": row[3],
-            "time1": row[4],
-            "time2": row[5],
-            "odds1": float(row[6]),
-            "odds2": float(row[7]),
-            "odds_empate": float(row[8]),
-            "resultado": row[9],  # pode ser 'pendente', 'vitoria' ou 'derrota'
-        }
-        for row in cur.fetchall()
-    ]
+        flash('Jogo adicionado com sucesso!', 'success')
+        return redirect(url_for('admin_futebol'))
 
     # Buscar jogos
-    cur.execute("SELECT * FROM jogos_futebol ORDER BY id DESC")
-    jogos = cur.fetchall()
+    cur.execute("SELECT * FROM jogos ORDER BY id DESC")
+    jogos = cur.fetchall()  # agora cada jogo é um dict
+
+    # Buscar apostas
+    cur.execute("""
+        SELECT a.id, u.username AS usuario, j.time1, j.time2, a.valor, a.escolha, a.resultado
+        FROM apostas a
+        JOIN usuarios u ON a.usuario_id = u.id
+        JOIN jogos j ON a.jogo_id = j.id
+        ORDER BY a.id DESC
+    """)
+    apostas = cur.fetchall()  # cada aposta é um dict
 
     cur.close()
     conn.close()
 
-    return render_template("admin_futebol.html", jogos=jogos, apostas=apostas)
+    return render_template('admin_futebol.html', jogos=jogos, apostas=apostas)
+
+@app.route('/admin/futebol/atualizar/<int:aposta_id>/<resultado>')
+def atualizar_resultado(aposta_id, resultado):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("UPDATE apostas SET resultado = %s WHERE id = %s", (resultado, aposta_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+    flash('Resultado atualizado!', 'success')
+    return redirect(url_for('admin_futebol'))
+
 
 
 
@@ -1215,6 +1230,7 @@ def atualizar_resultado(aposta_id, resultado):
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
