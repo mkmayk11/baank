@@ -823,7 +823,31 @@ def futebol():
 
     return render_template("futebol.html", usuario=usuario, saldo=saldo, jogos=jogos)
 
+@app.route('/atualizar_aposta', methods=['POST'])
+def atualizar_aposta():
+    aposta_id = request.form.get('aposta_id')
+    novo_status = request.form.get('novo_status')  # "vitoria" ou "derrota"
 
+    if not aposta_id or novo_status not in ['vitoria', 'derrota']:
+        flash("Erro ao atualizar aposta.", "danger")
+        return redirect(url_for('admin_futebol'))
+
+    # Atualiza o status no banco
+    try:
+        conn = psycopg2.connect(DB_URL)
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE apostas SET status = %s WHERE id = %s",
+            (novo_status, aposta_id)
+        )
+        conn.commit()
+        cursor.close()
+        conn.close()
+        flash(f"Aposta atualizada para '{novo_status}'.", "success")
+    except Exception as e:
+        flash(f"Erro ao atualizar aposta: {str(e)}", "danger")
+
+    return redirect(url_for('admin_futebol'))
 
 
 
@@ -909,6 +933,7 @@ criar_coluna_resultado()
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
