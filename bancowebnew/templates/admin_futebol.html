@@ -1,10 +1,24 @@
 {% extends "base.html" %}
 {% block conteudo %}
 <div class="container py-5">
-    <div class="card shadow-lg border-0 rounded-4 p-4">
-        <h2 class="text-center mb-4">⚽ Administração de Jogos de Futebol</h2>
 
-        <!-- Formulário para adicionar jogo -->
+    <!-- Mensagens flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="mb-4">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Card de adicionar jogo -->
+    <div class="card shadow-lg border-0 rounded-4 p-4 mb-5">
+        <h2 class="text-center mb-4">⚽ Administração de Jogos de Futebol</h2>
         <form method="POST" action="{{ url_for('admin_futebol') }}">
             <div class="row g-3">
                 <div class="col-md-4">
@@ -17,15 +31,15 @@
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Odds Time 1</label>
-                    <input type="number" step="0.01" class="form-control" name="odds1" required>
+                    <input type="number" step="0.01" min="1" class="form-control" name="odds1" required>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Odds Empate</label>
-                    <input type="number" step="0.01" class="form-control" name="odds_empate" required>
+                    <input type="number" step="0.01" min="1" class="form-control" name="odds_empate" required>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Odds Time 2</label>
-                    <input type="number" step="0.01" class="form-control" name="odds2" required>
+                    <input type="number" step="0.01" min="1" class="form-control" name="odds2" required>
                 </div>
             </div>
             <div class="text-center mt-4">
@@ -34,83 +48,88 @@
         </form>
     </div>
 
-    <!-- Lista de jogos já cadastrados -->
-    <div class="card shadow-lg border-0 rounded-4 p-4 mt-5">
+    <!-- Card de jogos cadastrados -->
+    <div class="card shadow-lg border-0 rounded-4 p-4 mb-5">
         <h4 class="mb-3">📋 Jogos cadastrados</h4>
         {% if jogos %}
-        <table class="table table-dark table-striped rounded-3 overflow-hidden">
-            <thead>
-                <tr>
-                    <th>Time 1</th>
-                    <th>Time 2</th>
-                    <th>Odds 1</th>
-                    <th>Odds Empate</th>
-                    <th>Odds 2</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for jogo in jogos %}
-                <tr>
-                    <td>{{ jogo[1] }}</td>
-                    <td>{{ jogo[2] }}</td>
-                    <td>{{ jogo[3] }}</td>
-                    <td>{{ jogo[5] }}</td>
-                    <td>{{ jogo[4] }}</td>
-                    <td>{% if jogo[6] %} ✅ Ativo {% else %} ❌ Inativo {% endif %}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="table table-dark table-striped rounded-3 overflow-hidden">
+                <thead>
+                    <tr>
+                        <th>Time 1</th>
+                        <th>Time 2</th>
+                        <th>Odds 1</th>
+                        <th>Odds Empate</th>
+                        <th>Odds 2</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for jogo in jogos %}
+                    <tr>
+                        <td>{{ jogo.time1 }}</td>
+                        <td>{{ jogo.time2 }}</td>
+                        <td>{{ jogo.odds1 }}</td>
+                        <td>{{ jogo.odds_empate }}</td>
+                        <td>{{ jogo.odds2 }}</td>
+                        <td>{% if jogo.ativo %} ✅ Ativo {% else %} ❌ Inativo {% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
         <p class="text-muted">Nenhum jogo cadastrado ainda.</p>
         {% endif %}
     </div>
 
-    <!-- Lista de apostas dos usuários -->
-    <div class="card shadow-lg border-0 rounded-4 p-4 mt-5">
+    <!-- Card de apostas dos usuários -->
+    <div class="card shadow-lg border-0 rounded-4 p-4 mb-5">
         <h4 class="mb-3">🎯 Apostas dos Usuários</h4>
         {% if apostas %}
-        <table class="table table-dark table-striped rounded-3 overflow-hidden">
-            <thead>
-                <tr>
-                    <th>Usuário</th>
-                    <th>Jogo</th>
-                    <th>Valor</th>
-                    <th>Escolha</th>
-                    <th>Resultado</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for aposta in apostas %}
-                <tr>
-                    <td>{{ aposta.usuario }}</td>
-                    <td>{{ aposta.time1 }} vs {{ aposta.time2 }}</td>
-                    <td>{{ aposta.valor }}</td>
-                    <td>{{ aposta.escolha }}</td>
-                    <td>
-                        {% if aposta.resultado %}
-                            {% if aposta.resultado == 'vitoria' %}✅ Vitória{% else %}❌ Derrota{% endif %}
-                        {% else %}
-                            Pendente
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if not aposta.resultado %}
-                        <a href="{{ url_for('atualizar_resultado', aposta_id=aposta.id, resultado='vitoria') }}" class="btn btn-success btn-sm">✅ Vitória</a>
-                        <a href="{{ url_for('atualizar_resultado', aposta_id=aposta.id, resultado='derrota') }}" class="btn btn-danger btn-sm">❌ Derrota</a>
-                        {% else %}
-                            <span class="text-muted">Finalizado</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="table table-dark table-striped rounded-3 overflow-hidden">
+                <thead>
+                    <tr>
+                        <th>Usuário</th>
+                        <th>Jogo</th>
+                        <th>Valor</th>
+                        <th>Escolha</th>
+                        <th>Resultado</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for aposta in apostas %}
+                    <tr>
+                        <td>{{ aposta.usuario }}</td>
+                        <td>{{ aposta.time1 }} vs {{ aposta.time2 }}</td>
+                        <td>{{ aposta.valor }}</td>
+                        <td>{{ aposta.escolha }}</td>
+                        <td>
+                            {% if aposta.resultado %}
+                                {% if aposta.resultado == 'vitoria' %}✅ Vitória{% else %}❌ Derrota{% endif %}
+                            {% else %}
+                                Pendente
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if not aposta.resultado %}
+                            <a href="{{ url_for('atualizar_resultado', aposta_id=aposta.id, resultado='vitoria') }}" class="btn btn-success btn-sm">✅ Vitória</a>
+                            <a href="{{ url_for('atualizar_resultado', aposta_id=aposta.id, resultado='derrota') }}" class="btn btn-danger btn-sm">❌ Derrota</a>
+                            {% else %}
+                                <span class="text-muted">Finalizado</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
         <p class="text-muted">Nenhuma aposta registrada ainda.</p>
         {% endif %}
     </div>
+
 </div>
 {% endblock %}
