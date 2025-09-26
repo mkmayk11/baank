@@ -835,67 +835,95 @@ def deletar_historico_selecionados():
 # -------------------- ADMIN FUTEBOL --------------------
 @app.route("/admin_futebol", methods=["GET", "POST"])
 def admin_futebol():
-    import psycopg2
-    import psycopg2.extras
-    from flask import render_template, request, redirect, url_for, flash, session
-
-    # Conexão com o banco
     conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
     cur = conn.cursor()
 
-    try:
-        if request.method == "POST":
-            # Dados do jogo
-            time1 = request.form.get("time1")
-            time2 = request.form.get("time2")
-            mercados = {
-                "Resultado": request.form.get("odd_resultado", type=float),
-                "Gols": request.form.get("odd_gols", type=float),
-                "Cartões": request.form.get("odd_cartoes", type=float),
-                "Expulsões": request.form.get("odd_expulsoes", type=float)
-            }
+    if request.method == "POST":
+        time1 = request.form["time1"]
+        time2 = request.form["time2"]
+        odds1 = request.form["odds1"]
+        odds_empate = request.form["odds_empate"]
+        odds2 = request.form["odds2"]
 
-            # Inserir jogo
+        odd_resultado = request.form.get("odd_resultado") or None
+        odd_gols = request.form.get("odd_gols") or None
+        odd_cartoes = request.form.get("odd_cartoes") or None
+        odd_expulsoes = request.form.get("odd_expulsoes") or None
+
+        try:
+            # insere jogo
             cur.execute(
                 "INSERT INTO jogos_futebol (time1, time2) VALUES (%s, %s) RETURNING id",
-                (time1, time2)
+                (time1, time2),
             )
             jogo_id = cur.fetchone()["id"]
 
-            # Inserir mercados
-            for nome, odd in mercados.items():
-                if odd:  # Só insere se tiver odd
-                    cur.execute(
-                        "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
-                        (jogo_id, nome, odd)
-                    )
+            # insere mercados
+            cur.execute(
+                "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
+                (jogo_id, "Resultado", odds1),
+            )
+            cur.execute(
+                "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
+                (jogo_id, "Empate", odds_empate),
+            )
+            cur.execute(
+                "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
+                (jogo_id, "Time 2", odds2),
+            )
+
+            if odd_resultado:
+                cur.execute(
+                    "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
+                    (jogo_id, "Odd Resultado", odd_resultado),
+                )
+            if odd_gols:
+                cur.execute(
+                    "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
+                    (jogo_id, "Gols", odd_gols),
+                )
+            if odd_cartoes:
+                cur.execute(
+                    "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
+                    (jogo_id, "Cartões", odd_cartoes),
+                )
+            if odd_expulsoes:
+                cur.execute(
+                    "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
+                    (jogo_id, "Expulsões", odd_expulsoes),
+                )
 
             conn.commit()
-            flash("✅ Jogo e mercados adicionados com sucesso!", "success")
-            return redirect(url_for("admin_futebol"))
+            flash("Jogo e mercados adicionados com sucesso!", "success")
+        except Exception as e:
+            conn.rollback()
+            flash(f"Erro ao adicionar jogo: {e}", "danger")
+        finally:
+            cur.close()
+            conn.close()
 
-        # GET: Listar jogos e mercados
-        cur.execute("SELECT * FROM jogos_futebol ORDER BY id DESC")
-        jogos = cur.fetchall()
-
-        cur.execute("""
-            SELECT mj.id, mj.jogo_id, mj.nome, mj.odd, jf.time1, jf.time2
-            FROM mercados_jogo mj
-            JOIN jogos_futebol jf ON mj.jogo_id = jf.id
-            ORDER BY mj.id DESC
-        """)
-        mercados = cur.fetchall()
-
-        return render_template("admin_futebol.html", jogos=jogos, mercados=mercados)
-
-    except Exception as e:
-        conn.rollback()
-        flash(f"❌ Erro no admin_futebol: {e}", "danger")
+        # redireciona apenas após o POST
         return redirect(url_for("admin_futebol"))
 
-    finally:
-        cur.close()
-        conn.close()
+    # GET → lista jogos e apostas
+    cur.execute("SELECT * FROM jogos_futebol")
+    jogos = cur.fetchall()
+
+    cur.execute(
+        """
+        SELECT a.id, a.usuario, j.time1, j.time2, a.valor, aj.escolha, a.resultado
+        FROM apostas a
+        JOIN apostas_jogos aj ON aj.aposta_id = a.id
+        JOIN jogos_futebol j ON aj.jogo_id = j.id
+        ORDER BY a.id DESC
+        """
+    )
+    apostas = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return render_template("admin_futebol.html", jogos=jogos, apostas=apostas)
 
 
 
@@ -1364,6 +1392,7 @@ def migrar_multijogos():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
