@@ -1053,10 +1053,36 @@ def criar_usuario():
         <button type="submit">Criar</button>
     </form>
     """
+@app.route("/fixar_apostas")
+def fixar_apostas():
+    try:
+        conn = psycopg2.connect(DB_URL)
+        cur = conn.cursor()
+
+        # Adiciona coluna status (caso não exista)
+        cur.execute("""
+            ALTER TABLE apostas
+            ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pendente';
+        """)
+
+        # Adiciona coluna resultado (caso não exista)
+        cur.execute("""
+            ALTER TABLE apostas
+            ADD COLUMN IF NOT EXISTS resultado TEXT DEFAULT 'pendente';
+        """)
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return "✅ Colunas 'status' e 'resultado' foram adicionadas (se não existiam)."
+
+    except Exception as e:
+        return f"❌ Erro: {str(e)}"
 
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
