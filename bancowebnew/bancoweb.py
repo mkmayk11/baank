@@ -309,10 +309,12 @@ def apostar_futebol():
     else:
         return jsonify({"success": False, "mensagem": "Seleção inválida."})
 
-    # Registrar aposta (em produção: salvar em tabela de apostas)
+    # Registrar aposta
+    registrar_aposta(usuario, jogo_id, valor, vencedor)
     registrar_historico(usuario, f"Aposta Futebol: {jogo['time1']} x {jogo['time2']} - Escolha: {vencedor}", valor)
 
     return jsonify({"success": True, "saldo": saldo, "mensagem": f"Aposta registrada! Odds: {odds}"})
+
 
 
 
@@ -1228,6 +1230,7 @@ def criar_tabela_apostas():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
