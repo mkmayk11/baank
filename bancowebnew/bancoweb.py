@@ -1087,9 +1087,47 @@ def fixar_apostas():
     except Exception as e:
         return f"❌ Erro: {str(e)}"
 
+@app.route("/atualizar_resultado/<int:aposta_id>/<status>")
+def atualizar_resultado(aposta_id, status):
+    conn = psycopg2.connect(DB_URL)
+    cur = conn.cursor()
+
+    # Atualiza o resultado da aposta
+    cur.execute("UPDATE apostas SET resultado = %s WHERE id = %s", (status, aposta_id))
+
+    # Se for vitória, devolve a grana multiplicada pelo odd
+    if status == "vitoria":
+        cur.execute("""
+            SELECT a.valor, a.escolha, j.odds1, j.odds_empate, j.odds2, a.usuario
+            FROM apostas a
+            JOIN jogos_futebol j ON a.jogo_id = j.id
+            WHERE a.id = %s
+        """, (aposta_id,))
+        aposta = cur.fetchone()
+        valor, escolha, odds1, odds_empate, odds2, usuario = aposta
+
+        if escolha == "time1":
+            ganho = valor * odds1
+        elif escolha == "empate":
+            ganho = valor * odds_empate
+        else:
+            ganho = valor * odds2
+
+        # credita no saldo do usuário
+        cur.execute("UPDATE usuarios SET saldo = saldo + %s WHERE username = %s", (ganho, usuario))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    flash("Resultado atualizado com sucesso!", "success")
+    return redirect(url_for("admin_futebol"))
+
+
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
