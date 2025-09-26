@@ -839,16 +839,16 @@ def admin_futebol():
     cur = conn.cursor()
 
     if request.method == "POST":
-    time1 = request.form["time1"]
-    time2 = request.form["time2"]
-    odds1 = request.form["odds1"]
-    odds_empate = request.form["odds_empate"]
-    odds2 = request.form["odds2"]
-
-    odd_resultado = request.form.get("odd_resultado") or None
-    odd_gols = request.form.get("odd_gols") or None
-    odd_cartoes = request.form.get("odd_cartoes") or None
-    odd_expulsoes = request.form.get("odd_expulsoes") or None
+        time1 = request.form["time1"]
+        time2 = request.form["time2"]
+        odds1 = request.form["odds1"]
+        odds_empate = request.form["odds_empate"]
+        odds2 = request.form["odds2"]
+    
+        odd_resultado = request.form.get("odd_resultado") or None
+        odd_gols = request.form.get("odd_gols") or None
+        odd_cartoes = request.form.get("odd_cartoes") or None
+        odd_expulsoes = request.form.get("odd_expulsoes") or None
 
     try:
         # insere jogo
@@ -1428,6 +1428,7 @@ def ajustar_tabela():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
