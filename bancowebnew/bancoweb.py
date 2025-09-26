@@ -838,21 +838,45 @@ import psycopg2.extras
 @app.route("/admin_futebol", methods=["GET", "POST"])
 def admin_futebol():
     conn = psycopg2.connect(DB_URL)
-    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur = conn.cursor()
 
-    # Buscar jogos
-    cur.execute("SELECT * FROM jogos_futebol ORDER BY id DESC")
-    jogos = cur.fetchall()
+    if request.method == "POST":
+        # Adicionar novo jogo
+        time1 = request.form["time1"]
+        time2 = request.form["time2"]
+        odds1 = request.form["odds1"]
+        odds_empate = request.form["odds_empate"]
+        odds2 = request.form["odds2"]
 
-    # Buscar apostas
+        try:
+            cur.execute("""
+                INSERT INTO jogos_futebol (time1, time2, odds1, odds_empate, odds2, ativo)
+                VALUES (%s, %s, %s, %s, %s, TRUE)
+            """, (time1, time2, odds1, odds_empate, odds2))
+            conn.commit()
+            flash("Jogo adicionado com sucesso!", "success")
+        except Exception as e:
+            conn.rollback()
+            flash(f"Erro ao adicionar jogo: {e}", "danger")
+
+        return redirect(url_for("admin_futebol"))
+
+    # Puxar jogos cadastrados
     cur.execute("""
-        SELECT a.id, a.usuario, a.valor, a.escolha, a.resultado,
-               j.time1, j.time2
-        FROM apostas_futebol a
+        SELECT id, time1, time2, odds1, odds_empate, odds2, ativo
+        FROM jogos_futebol
+        ORDER BY id DESC
+    """)
+    jogos = cur.fetchall()  # retorna lista de tuplas, combinando com seu template
+
+    # Puxar apostas
+    cur.execute("""
+        SELECT a.id, a.usuario, j.time1, j.time2, a.valor, a.escolha, a.resultado
+        FROM apostas a
         JOIN jogos_futebol j ON a.jogo_id = j.id
         ORDER BY a.id DESC
     """)
-    apostas = cur.fetchall()
+    apostas = cur.fetchall()  # lista de tuplas também
 
     cur.close()
     conn.close()
@@ -1254,6 +1278,7 @@ def migrar_apostas():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
