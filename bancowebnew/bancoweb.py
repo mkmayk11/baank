@@ -59,12 +59,12 @@ criar_tabelas()
 
 
 
-def get_db_connection():
-    conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
+def get_connection():
+    conn = psycopg2.connect(DB_URL, sslmode="require")
     return conn
 
 def init_db():
-    conn = get_db_connection()
+    conn = get_connection()
     c = conn.cursor()
 
     # Tabela de clientes
@@ -143,7 +143,7 @@ def garantir_colunas_apostas():
 
 
 def carregar_dados():
-    conn = get_db_connection()
+    conn = get_connection()
     c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     # Clientes
@@ -158,7 +158,7 @@ def carregar_dados():
     return {"clientes": clientes, "historico": historico}
 
 def salvar_cliente(usuario, senha=None, saldo=None):
-    conn = get_db_connection()
+    conn = get_connection()
     c = conn.cursor()
 
     if senha is not None and saldo is not None:
@@ -175,7 +175,7 @@ def salvar_cliente(usuario, senha=None, saldo=None):
     conn.close()
 
 def registrar_historico(usuario, acao, valor=0, destino=None):
-    conn = get_db_connection()
+    conn = get_connection()
     c = conn.cursor()
     c.execute("INSERT INTO historico (usuario, acao, valor, destino, data) VALUES (%s, %s, %s, %s, %s)",
               (usuario, acao, valor, destino, datetime.now().strftime("%d/%m/%Y %H:%M:%S")))
@@ -291,7 +291,7 @@ def apostar_futebol():
     salvar_cliente(usuario, saldo=saldo)
 
     # Busca o jogo e odds
-    conn = get_db_connection()
+    conn = get_connection()
     c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     c.execute("SELECT * FROM jogos_futebol WHERE id = %s", (jogo_id,))
     jogo = c.fetchone()
@@ -319,7 +319,7 @@ def apostar_futebol():
 
 # -------------------- Funções de persistência --------------------
 def carregar_dados():
-    conn = get_db_connection()
+    conn = get_connection()
     c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     # Clientes
@@ -334,7 +334,7 @@ def carregar_dados():
     return {"clientes": clientes, "historico": historico}
 
 def salvar_cliente(usuario, senha=None, saldo=None):
-    conn = get_db_connection()
+    conn = get_connection()
     c = conn.cursor()
 
     if senha is not None and saldo is not None:
@@ -351,7 +351,7 @@ def salvar_cliente(usuario, senha=None, saldo=None):
     conn.close()
 
 def registrar_historico(usuario, acao, valor=0, destino=None):
-    conn = get_db_connection()
+    conn = get_connection()
     c = conn.cursor()
     c.execute("INSERT INTO historico (usuario, acao, valor, destino, data) VALUES (%s, %s, %s, %s, %s)",
               (usuario, acao, valor, destino, datetime.now().strftime("%d/%m/%Y %H:%M:%S")))
@@ -359,7 +359,7 @@ def registrar_historico(usuario, acao, valor=0, destino=None):
     conn.close()
 
 def registrar_aposta(usuario, jogo_id, valor, escolha):
-    conn = get_db_connection()
+    conn = get_connection()
     c = conn.cursor()
     c.execute("""
         INSERT INTO apostas (usuario, jogo_id, valor, escolha)
@@ -394,7 +394,7 @@ def deposito():
     usuario = session["usuario"]
     if request.method == "POST":
         valor = float(request.form["valor"])
-        conn = get_db_connection()
+        conn = get_connection()
         c = conn.cursor()
         c.execute("INSERT INTO depositos_pendentes (usuario, valor, data, aprovado) VALUES (%s, %s, %s, 0)",
                   (usuario, valor, datetime.now().strftime("%d/%m/%Y %H:%M:%S")))
@@ -418,7 +418,7 @@ def saque():
             salvar_cliente(usuario, saldo=saldo_atual)
             registrar_historico(usuario, "Saque", valor)
 
-            conn = get_db_connection()
+            conn = get_connection()
             c = conn.cursor()
             c.execute("INSERT INTO depositos_pendentes (usuario, valor, data, aprovado) VALUES (%s, %s, %s, -1)",
                       (usuario, valor, datetime.now().strftime("%d/%m/%Y %H:%M:%S")))
@@ -472,7 +472,7 @@ def historico():
     if "usuario" not in session or session["usuario"] == "admin":
         return redirect(url_for("login"))
     usuario = session["usuario"]
-    conn = get_db_connection()
+    conn = get_connection()
     c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     c.execute("SELECT * FROM historico WHERE usuario = %s", (usuario,))
     historico_user = [dict(row) for row in c.fetchall()]
@@ -484,7 +484,7 @@ def exportar_csv():
     if "usuario" not in session or session["usuario"] == "admin":
         return redirect(url_for("login"))
     usuario = session["usuario"]
-    conn = get_db_connection()
+    conn = get_connection()
     c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     c.execute("SELECT * FROM historico WHERE usuario = %s", (usuario,))
     historico_user = [dict(row) for row in c.fetchall()]
@@ -674,7 +674,7 @@ def logout():
 def admin_depositos():
     if "usuario" not in session or session["usuario"] != "admin":
         return redirect(url_for("login"))
-    conn = get_db_connection()
+    conn = get_connection()
     c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     c.execute("SELECT * FROM depositos_pendentes ORDER BY aprovado ASC, data DESC")
     depositos = [dict(row) for row in c.fetchall()]
@@ -685,7 +685,7 @@ def admin_depositos():
 def aprovar_deposito(id):
     if "usuario" not in session or session["usuario"] != "admin":
         return redirect(url_for("login"))
-    conn = get_db_connection()
+    conn = get_connection()
     c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     c.execute("SELECT * FROM depositos_pendentes WHERE id = %s", (id,))
@@ -705,7 +705,7 @@ def aprovar_deposito(id):
 def recusar_deposito(id):
     if "usuario" not in session or session["usuario"] != "admin":
         return redirect(url_for("login"))
-    conn = get_db_connection()
+    conn = get_connection()
     c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     c.execute("SELECT * FROM depositos_pendentes WHERE id = %s", (id,))
@@ -725,7 +725,7 @@ def recusar_deposito(id):
 def aprovar_saque(id):
     if "usuario" not in session or session["usuario"] != "admin":
         return redirect(url_for("login"))
-    conn = get_db_connection()
+    conn = get_connection()
     c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     c.execute("SELECT * FROM depositos_pendentes WHERE id = %s", (id,))
@@ -746,7 +746,7 @@ def aprovar_saque(id):
 def recusar_saque(id):
     if "usuario" not in session or session["usuario"] != "admin":
         return redirect(url_for("login"))
-    conn = get_db_connection()
+    conn = get_connection()
     c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     c.execute("SELECT * FROM depositos_pendentes WHERE id = %s", (id,))
@@ -772,7 +772,7 @@ def deletar_historico():
     if "usuario" not in session or session["usuario"] != "admin":
         return redirect(url_for("login"))
 
-    conn = get_db_connection()
+    conn = get_connection()
     c = conn.cursor()
     c.execute("DELETE FROM depositos_pendentes")
     conn.commit()
@@ -789,7 +789,7 @@ def deletar_todo_historico():
 
     if session["usuario"] == "admin":
         # Admin apaga geral
-        conn = get_db_connection()
+        conn = get_connection()
         c = conn.cursor()
         c.execute("DELETE FROM historico")
         conn.commit()
@@ -798,7 +798,7 @@ def deletar_todo_historico():
     else:
         # Usuário comum apaga só o dele
         usuario = session["usuario"]
-        conn = get_db_connection()
+        conn = get_connection()
         c = conn.cursor()
         c.execute("DELETE FROM historico WHERE usuario = %s", (usuario,))
         conn.commit()
@@ -819,7 +819,7 @@ def deletar_historico_selecionados():
         flash("Nenhum item selecionado para deletar.")
         return redirect(url_for("historico"))
 
-    conn = get_db_connection()
+    conn = get_connection()
     c = conn.cursor()
 
     if session["usuario"] == "admin":
@@ -840,58 +840,58 @@ def deletar_historico_selecionados():
 
 # -------------------- ADMIN FUTEBOL --------------------
 
-from flask import Flask, render_template, request, redirect, url_for, flash
-import psycopg2, psycopg2.extras
-import os
-
-app = Flask(__name__)
-app.secret_key = "segredo_super_seguro"
-
-DB_URL = os.getenv("DATABASE_URL", "postgresql://user:senha@localhost:5432/meubanco")
-
-def get_db_connection():
-    conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
-    return conn
-
-@app.route('/admin/futebol', methods=['GET', 'POST'])
+@app.route("/admin_futebol", methods=["GET", "POST"])
 def admin_futebol():
-    conn = get_db_connection()
+    conn = psycopg2.connect(DB_URL)
     cur = conn.cursor()
 
-    # Adicionar jogo
-    if request.method == 'POST':
-        time1 = request.form['time1']
-        time2 = request.form['time2']
-        odds1 = float(request.form['odds1'])
-        odds_empate = float(request.form['odds_empate'])
-        odds2 = float(request.form['odds2'])
+    if request.method == "POST":
+        # aqui cadastra os jogos
+        time1 = request.form["time1"]
+        time2 = request.form["time2"]
+        odds1 = float(request.form["odds1"])
+        odds_empate = float(request.form["odds_empate"])
+        odds2 = float(request.form["odds2"])
 
-        cur.execute("""
-            INSERT INTO jogos (time1, time2, odds1, odds2, odds_empate, ativo)
-            VALUES (%s, %s, %s, %s, %s, TRUE)
-        """, (time1, time2, odds1, odds2, odds_empate))
+        cur.execute(
+            "INSERT INTO jogos_futebol (time1, time2, odds1, odds2, odds_empate, ativo) VALUES (%s, %s, %s, %s, %s, TRUE)",
+            (time1, time2, odds1, odds2, odds_empate),
+        )
         conn.commit()
-        flash('Jogo adicionado com sucesso!', 'success')
-        return redirect(url_for('admin_futebol'))
+
+    # 🔥 SELECT atualizado para incluir resultado
+    cur.execute("""
+        SELECT a.id, a.usuario, a.valor, a.escolha, j.time1, j.time2, j.odds1, j.odds2, j.odds_empate, a.resultado
+        FROM apostas a
+        JOIN jogos_futebol j ON a.jogo_id = j.id
+    """)
+    apostas = [
+        {
+            "id": row[0],
+            "usuario": row[1],
+            "valor": float(row[2]),
+            "escolha": row[3],
+            "time1": row[4],
+            "time2": row[5],
+            "odds1": float(row[6]),
+            "odds2": float(row[7]),
+            "odds_empate": float(row[8]),
+            "resultado": row[9],  # pode ser 'pendente', 'vitoria' ou 'derrota'
+        }
+        for row in cur.fetchall()
+    ]
 
     # Buscar jogos
-    cur.execute("SELECT * FROM jogos ORDER BY id DESC")
-    jogos = cur.fetchall()  # agora cada jogo é um dict
-
-    # Buscar apostas
-    cur.execute("""
-        SELECT a.id, u.username AS usuario, j.time1, j.time2, a.valor, a.escolha, a.resultado
-        FROM apostas a
-        JOIN usuarios u ON a.usuario_id = u.id
-        JOIN jogos j ON a.jogo_id = j.id
-        ORDER BY a.id DESC
-    """)
-    apostas = cur.fetchall()  # cada aposta é um dict
+    cur.execute("SELECT * FROM jogos_futebol ORDER BY id DESC")
+    jogos = cur.fetchall()
 
     cur.close()
     conn.close()
 
-    return render_template('admin_futebol.html', jogos=jogos, apostas=apostas)
+    return render_template("admin_futebol.html", jogos=jogos, apostas=apostas)
+
+
+
 
 
 
@@ -939,7 +939,7 @@ def futebol():
     saldo = float(cliente["saldo"]) if cliente else 0
 
     # Pega jogos ativos
-    conn = get_db_connection()
+    conn = get_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     cur.execute("SELECT * FROM jogos_futebol WHERE ativo = TRUE")
     jogos = cur.fetchall()
@@ -1215,12 +1215,6 @@ def atualizar_resultado(aposta_id, resultado):
 
 if __name__ == "__main__":
     app.run(debug=True)
-
-
-
-
-
-
 
 
 
