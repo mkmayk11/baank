@@ -161,17 +161,26 @@ def garantir_usuario(usuario):
 
 # Registrar aposta (exemplo adaptado)
 def registrar_aposta(usuario, jogo_id, valor, escolha):
-    # Garante que o usuário existe antes de registrar a aposta
-    garantir_usuario(usuario)
-    
     conn = psycopg2.connect(DB_URL)
     c = conn.cursor()
+    
+    # Verifica se o usuário existe
+    c.execute("SELECT 1 FROM usuarios WHERE username = %s", (usuario,))
+    if not c.fetchone():
+        # Se não existe, cria ou lança erro
+        raise ValueError(f"Usuário {usuario} não existe!")
+        # ou, se quiser criar automaticamente:
+        # c.execute("INSERT INTO usuarios (username) VALUES (%s)", (usuario,))
+    
+    # Insere a aposta
     c.execute("""
         INSERT INTO apostas (usuario, jogo_id, valor, escolha)
         VALUES (%s, %s, %s, %s)
     """, (usuario, jogo_id, valor, escolha))
+    
     conn.commit()
     conn.close()
+
 
 
 # Chame isso no início do seu app para garantir coluna
@@ -1000,6 +1009,7 @@ criar_coluna_resultado()
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
