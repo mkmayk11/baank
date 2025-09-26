@@ -907,16 +907,18 @@ def admin_futebol():
                 conn.rollback()
                 flash(f"Erro ao adicionar jogo: {e}", "danger")
             finally:
+                # fechar a conexão antes de redirecionar (mantém o padrão que você já vinha usando)
                 cur.close()
                 conn.close()
 
             return redirect(url_for("admin_futebol"))
 
         # ---------- GET: buscar jogos e apostas ----------
-        # Busca jogos + mercados agregados (usando json_agg)
+        # Busca jogos + mercados agregados como JSON
         cur.execute("""
             SELECT j.id, j.time1, j.time2, j.ativo,
-                   json_agg(json_build_object('nome', m.nome, 'odd', m.odd)) FILTER (WHERE m.id IS NOT NULL) AS mercados
+                   json_agg(json_build_object('nome', m.nome, 'odd', m.odd)) 
+                       FILTER (WHERE m.id IS NOT NULL) AS mercados
             FROM jogos_futebol j
             LEFT JOIN mercados_jogo m ON j.id = m.jogo_id
             GROUP BY j.id
@@ -924,26 +926,73 @@ def admin_futebol():
         """)
         jogos = cur.fetchall()
 
-        # Busca apostas dos usuários
+        # Detecta colunas e existência de tabelas para montar a query de apostas dinamicamente
         cur.execute("""
-            SELECT a.id, a.usuario, a.valor, a.resultado,
-                   aj.jogo_id, j.time1, j.time2, aj.escolha, aj.resultado AS resultado_jogo
-            FROM apostas a
-            JOIN apostas_jogos aj ON a.id = aj.aposta_id
-            JOIN jogos_futebol j ON aj.jogo_id = j.id
-            ORDER BY a.id DESC
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'public' AND table_name = 'apostas'
         """)
+        cols_rows = cur.fetchall()
+        cols = {r["column_name"] for r in cols_rows} if cols_rows else set()
+
+        # verifica se existe tabela apostas_jogos
+        cur.execute("SELECT to_regclass('public.apostas_jogos') AS exists")
+        aj_row = cur.fetchone()
+        has_apostas_jogos = bool(aj_row and aj_row.get("exists"))
+
+        # monta campos selecionados conforme as colunas disponíveis
+        select_fields = ["a.id", "a.usuario", "a.valor"]
+        if "resultado" in cols:
+            select_fields.append("a.resultado")
+        elif "status" in cols:
+            select_fields.append("a.status AS resultado")
+        else:
+            select_fields.append("NULL AS resultado")
+
+        if "criado_em" in cols:
+            select_fields.append("a.criado_em")
+            date_field = "a.criado_em"
+        elif "data_aposta" in cols:
+            select_fields.append("a.data_aposta AS criado_em")
+            date_field = "a.data_aposta"
+        else:
+            select_fields.append("NULL AS criado_em")
+            date_field = "a.id"
+
+        if has_apostas_jogos:
+            select_fields.extend([
+                "aj.jogo_id", "j.time1", "j.time2", "aj.escolha", "aj.resultado AS resultado_jogo"
+            ])
+            join_clause = "JOIN apostas_jogos aj ON a.id = aj.aposta_id JOIN jogos_futebol j ON aj.jogo_id = j.id"
+        else:
+            # fallback: aposta pode ter jogo_id direto na mesma tabela
+            if "jogo_id" in cols:
+                select_fields.extend(["a.jogo_id", "j.time1", "j.time2"])
+                if "escolha" in cols:
+                    select_fields.append("a.escolha")
+                else:
+                    select_fields.append("NULL AS escolha")
+                join_clause = "JOIN jogos_futebol j ON a.jogo_id = j.id"
+            else:
+                # sem referência a jogo — traz apenas apostas simples
+                join_clause = ""
+
+        sql = f"SELECT {', '.join(select_fields)} FROM apostas a {join_clause} ORDER BY {date_field} DESC LIMIT 500"
+        cur.execute(sql)
         apostas = cur.fetchall()
 
-        # normaliza resultados para o template
+        # normaliza resultados para o template (cria campos previsíveis)
         from datetime import datetime
         for ap in apostas:
-            if "resultado" not in ap or ap["resultado"] is None:
+            # garante chave 'resultado'
+            if "resultado" not in ap:
                 ap["resultado"] = ap.get("resultado_jogo") or None
 
-            if "escolha" not in ap or not ap["escolha"]:
+            # garante 'escolha'
+            if "escolha" not in ap:
                 ap["escolha"] = ap.get("escolha") or ""
 
+            # formata data para evitar erros no template (template deve usar criado_em_fmt)
             created = ap.get("criado_em")
             if isinstance(created, datetime):
                 ap["criado_em_fmt"] = created.strftime("%d/%m/%Y %H:%M")
@@ -956,12 +1005,14 @@ def admin_futebol():
         flash(f"Erro ao carregar admin_futebol: {e}", "danger")
         jogos, apostas = [], []
     finally:
+        # tenta fechar recursos se ainda estiverem abertos
         try:
             cur.close()
             conn.close()
         except:
             pass
 
+    # Renderiza (template atualizado para usar aposta.criado_em_fmt)
     return render_template("admin_futebol.html", jogos=jogos, apostas=apostas)
 
 
@@ -1515,6 +1566,7 @@ def apostar():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
