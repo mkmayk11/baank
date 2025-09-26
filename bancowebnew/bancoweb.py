@@ -849,9 +849,9 @@ def admin_futebol():
         # aqui cadastra os jogos
         time1 = request.form["time1"]
         time2 = request.form["time2"]
-        odds1 = request.form["odds1"]
-        odds_empate = request.form["odds_empate"]
-        odds2 = request.form["odds2"]
+        odds1 = float(request.form["odds1"])
+        odds_empate = float(request.form["odds_empate"])
+        odds2 = float(request.form["odds2"])
 
         cur.execute(
             "INSERT INTO jogos_futebol (time1, time2, odds1, odds2, odds_empate, ativo) VALUES (%s, %s, %s, %s, %s, TRUE)",
@@ -859,9 +859,9 @@ def admin_futebol():
         )
         conn.commit()
 
-    # 🔥 É AQUI que você deve colar o SELECT novo:
+    # 🔥 SELECT atualizado para incluir resultado
     cur.execute("""
-        SELECT a.id, a.usuario, a.valor, a.escolha, j.time1, j.time2, a.resultado
+        SELECT a.id, a.usuario, a.valor, a.escolha, j.time1, j.time2, j.odds1, j.odds2, j.odds_empate, a.resultado
         FROM apostas a
         JOIN jogos_futebol j ON a.jogo_id = j.id
     """)
@@ -869,23 +869,27 @@ def admin_futebol():
         {
             "id": row[0],
             "usuario": row[1],
-            "valor": row[2],
+            "valor": float(row[2]),
             "escolha": row[3],
             "time1": row[4],
             "time2": row[5],
-            "resultado": row[6],
+            "odds1": float(row[6]),
+            "odds2": float(row[7]),
+            "odds_empate": float(row[8]),
+            "resultado": row[9],  # pode ser 'pendente', 'vitoria' ou 'derrota'
         }
         for row in cur.fetchall()
     ]
 
-    # jogos
-    cur.execute("SELECT * FROM jogos_futebol")
+    # Buscar jogos
+    cur.execute("SELECT * FROM jogos_futebol ORDER BY id DESC")
     jogos = cur.fetchall()
 
     cur.close()
     conn.close()
 
     return render_template("admin_futebol.html", jogos=jogos, apostas=apostas)
+
 
 
 
@@ -1206,6 +1210,7 @@ def atualizar_resultado(aposta_id, resultado):
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
