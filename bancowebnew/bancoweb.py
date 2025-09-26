@@ -1136,67 +1136,55 @@ def fixar_apostas():
 
 from decimal import Decimal
 
-@app.route("/atualizar_resultado/<int:aposta_id>/<resultado>", methods=["GET"])
+@app.route("/atualizar_resultado/<int:aposta_id>/<resultado>")
 def atualizar_resultado(aposta_id, resultado):
+    conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
+    cur = conn.cursor()
     try:
-        conn = psycopg2.connect(DB_URL)
-        c = conn.cursor()
-
-        # Pega os dados da aposta e do jogo
-        c.execute("""
-            SELECT a.valor, a.escolha, j.odds1, j.odds_empate, j.odds2, a.usuario
+        # Pegar aposta e jogo
+        cur.execute("""
+            SELECT a.usuario, a.valor, a.escolha, j.odds1, j.odds_empate, j.odds2
             FROM apostas a
             JOIN jogos_futebol j ON a.jogo_id = j.id
             WHERE a.id = %s
         """, (aposta_id,))
-        aposta = c.fetchone()
+        aposta = cur.fetchone()
+
         if not aposta:
             flash("Aposta não encontrada.", "danger")
             return redirect(url_for("admin_futebol"))
 
-        valor, escolha, odds1, odds_empate, odds2, usuario = aposta
+        usuario = aposta['usuario']
+        valor = aposta['valor']
+        escolha = aposta['escolha']
 
-        # Converte para Decimal
-        valor = Decimal(valor)
-        odds1 = Decimal(odds1)
-        odds_empate = Decimal(odds_empate)
-        odds2 = Decimal(odds2)
+        # Determinar odds corretas
+        if escolha.lower() == 'time1':
+            odds = aposta['odds1']
+        elif escolha.lower() == 'empate':
+            odds = aposta['odds_empate']
+        else:  # time2
+            odds = aposta['odds2']
 
-        ganho = Decimal("0")
-        if resultado == "vitoria":
-            # Calcula ganho de acordo com a escolha
-            if escolha == "time1":
-                ganho = valor * odds1
-            elif escolha == "empate":
-                ganho = valor * odds_empate
-            else:  # time2
-                ganho = valor * odds2
+        # Atualizar resultado da aposta
+        cur.execute("UPDATE apostas SET resultado = %s WHERE id = %s", (resultado, aposta_id))
 
-            # Atualiza saldo do usuário: soma o valor total ganho
-            c.execute("""
-                UPDATE usuarios
-                SET saldo = saldo + %s
-                WHERE username = %s
-            """, (float(ganho), usuario))  # converte para float antes de enviar para SQL
-
-        # Atualiza resultado da aposta
-        c.execute("""
-            UPDATE apostas
-            SET resultado = %s
-            WHERE id = %s
-        """, (resultado, aposta_id))
+        # Se vitória, creditar lucro no saldo
+        if resultado.lower() == 'vitoria':
+            lucro = valor * odds
+            cur.execute("UPDATE clientes SET saldo = saldo + %s WHERE usuario = %s", (lucro, usuario))
 
         conn.commit()
-        flash(f"Aposta atualizada para '{resultado}'.", "success")
-        return redirect(url_for("admin_futebol"))
-
+        flash("Resultado atualizado com sucesso!", "success")
     except Exception as e:
-        print(e)
-        flash("Erro ao atualizar a aposta.", "danger")
-        return redirect(url_for("admin_futebol"))
-
+        conn.rollback()
+        flash(f"Erro ao atualizar resultado: {e}", "danger")
     finally:
+        cur.close()
         conn.close()
+
+    return redirect(url_for("admin_futebol"))
+
 
 @app.route("/deletar_jogo/<int:jogo_id>")
 def deletar_jogo(jogo_id):
@@ -1292,6 +1280,7 @@ def migrar_apostas():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
