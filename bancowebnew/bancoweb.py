@@ -840,7 +840,7 @@ def deletar_historico_selecionados():
 
 # -------------------- ADMIN FUTEBOL --------------------
 
-@from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash
 import psycopg2, psycopg2.extras
 import os
 
@@ -1230,6 +1230,7 @@ def atualizar_resultado(aposta_id, resultado):
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
