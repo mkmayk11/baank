@@ -91,13 +91,14 @@
                     <td>{{ aposta.escolha }}</td>
                     <td>{{ aposta.resultado }}</td>
                     <td>
-                        {% if aposta.resultado == 'pendente' %}
-                        <a href="{{ url_for('atualizar_resultado', aposta_id=aposta.id, resultado='vitoria') }}" class="btn btn-success btn-sm">✅ Vitória</a>
-                        <a href="{{ url_for('atualizar_resultado', aposta_id=aposta.id, resultado='derrota') }}" class="btn btn-danger btn-sm">❌ Derrota</a>
-                        {% else %}
-                            <span class="text-muted">Finalizado</span>
-                        {% endif %}
-                    </td>
+    {% if not aposta.resultado or aposta.resultado == 'pendente' %}
+        <a href="{{ url_for('atualizar_resultado', aposta_id=aposta.id, resultado='vitoria') }}" class="btn btn-success btn-sm">✅ Vitória</a>
+        <a href="{{ url_for('atualizar_resultado', aposta_id=aposta.id, resultado='derrota') }}" class="btn btn-danger btn-sm">❌ Derrota</a>
+    {% else %}
+        <span class="text-muted">Finalizado</span>
+    {% endif %}
+</td>
+
                 </tr>
                 {% endfor %}
             </tbody>
