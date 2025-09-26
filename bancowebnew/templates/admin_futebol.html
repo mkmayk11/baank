@@ -34,7 +34,7 @@
         </form>
     </div>
 
-    <!-- Lista de jogos -->
+    <!-- Lista de jogos já cadastrados -->
     <div class="card shadow-lg border-0 rounded-4 p-4 mt-5">
         <h4 class="mb-3">📋 Jogos cadastrados</h4>
         {% if jogos %}
@@ -67,7 +67,7 @@
         {% endif %}
     </div>
 
-    <!-- Lista de apostas -->
+    <!-- Lista de apostas dos usuários -->
     <div class="card shadow-lg border-0 rounded-4 p-4 mt-5">
         <h4 class="mb-3">🎯 Apostas dos Usuários</h4>
         {% if apostas %}
@@ -89,13 +89,19 @@
                     <td>{{ aposta.time1 }} vs {{ aposta.time2 }}</td>
                     <td>{{ aposta.valor }}</td>
                     <td>{{ aposta.escolha }}</td>
-                    <td>{{ aposta.resultado or 'pendente' }}</td>
+                    <td>
+                        {% if aposta.resultado %}
+                            {% if aposta.resultado == 'vitoria' %}✅ Vitória{% else %}❌ Derrota{% endif %}
+                        {% else %}
+                            Pendente
+                        {% endif %}
+                    </td>
                     <td>
                         {% if not aposta.resultado %}
                         <a href="{{ url_for('atualizar_resultado', aposta_id=aposta.id, resultado='vitoria') }}" class="btn btn-success btn-sm">✅ Vitória</a>
                         <a href="{{ url_for('atualizar_resultado', aposta_id=aposta.id, resultado='derrota') }}" class="btn btn-danger btn-sm">❌ Derrota</a>
                         {% else %}
-                        <span class="text-muted">Finalizado</span>
+                            <span class="text-muted">Finalizado</span>
                         {% endif %}
                     </td>
                 </tr>
