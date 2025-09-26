@@ -127,6 +127,32 @@ def criar_coluna_resultado():
     conn.commit()
     conn.close()
 
+def garantir_colunas_apostas():
+    conn = psycopg2.connect(DB_URL)
+    c = conn.cursor()
+    
+    # Lista de colunas que você quer garantir na tabela (nome e tipo)
+    colunas = [
+        ("usuario", "TEXT"),
+        ("jogo_id", "INTEGER"),
+        ("valor", "NUMERIC"),
+        ("escolha", "TEXT"),
+        ("resultado", "TEXT DEFAULT 'pendente'"),
+        ("data", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    ]
+    
+    for nome, tipo in colunas:
+        c.execute(f"""
+            ALTER TABLE apostas
+            ADD COLUMN IF NOT EXISTS {nome} {tipo};
+        """)
+    
+    conn.commit()
+    conn.close()
+
+# Chame essa função uma vez no início do seu app
+garantir_colunas_apostas()
+
 
 
 # -------------------- Rotas básicas --------------------
@@ -947,6 +973,7 @@ criar_coluna_resultado()
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
