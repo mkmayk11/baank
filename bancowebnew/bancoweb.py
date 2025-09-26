@@ -1203,9 +1203,12 @@ def deletar_jogo(jogo_id):
     conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
     cur = conn.cursor()
     try:
+        # Deletar todas as apostas ligadas a esse jogo
+        cur.execute("DELETE FROM apostas WHERE jogo_id = %s", (jogo_id,))
+        # Deletar o jogo
         cur.execute("DELETE FROM jogos_futebol WHERE id = %s", (jogo_id,))
         conn.commit()
-        flash("Jogo deletado com sucesso!", "success")
+        flash("Jogo e apostas associadas deletados com sucesso!", "success")
     except Exception as e:
         conn.rollback()
         flash(f"Erro ao deletar jogo: {e}", "danger")
@@ -1213,6 +1216,9 @@ def deletar_jogo(jogo_id):
         cur.close()
         conn.close()
     return redirect(url_for("admin_futebol"))
+
+
+
 
 @app.route("/deletar_aposta/<int:aposta_id>")
 def deletar_aposta(aposta_id):
@@ -1286,6 +1292,7 @@ def migrar_apostas():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
