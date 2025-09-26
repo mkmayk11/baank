@@ -236,6 +236,17 @@ def registrar_historico(usuario, acao, valor=0, destino=None):
     conn.commit()
     conn.close()
 
+def registrar_aposta(usuario, jogo_id, valor, escolha):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("""
+        INSERT INTO apostas (usuario, jogo_id, valor, escolha)
+        VALUES (%s, %s, %s, %s)
+    """, (usuario, jogo_id, valor, escolha))
+    conn.commit()
+    conn.close()
+
+
 # -------------------- Rotas --------------------
 @app.route("/", methods=["GET", "POST"])
 def login():
@@ -875,27 +886,22 @@ def setup_db():
 
 import psycopg2
 
-def criar_coluna_resultado():
-    conn = psycopg2.connect(DB_URL)
-    cur = conn.cursor()
+conn = psycopg2.connect("postgresql://usuario:senha@host:porta/banco")
+c = conn.cursor()
+c.execute("""
+CREATE TABLE IF NOT EXISTS apostas (
+    id SERIAL PRIMARY KEY,
+    usuario TEXT REFERENCES clientes(usuario),
+    jogo_id INT REFERENCES jogos_futebol(id),
+    valor NUMERIC NOT NULL,
+    escolha TEXT NOT NULL,
+    status TEXT DEFAULT 'pendente',
+    data_aposta TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+""")
+conn.commit()
+conn.close()
 
-    # Verifica se a coluna "resultado" já existe
-    cur.execute("""
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name='apostas' AND column_name='resultado'
-    """)
-    existe = cur.fetchone()
-
-    if not existe:
-        cur.execute("ALTER TABLE apostas ADD COLUMN resultado TEXT")
-        conn.commit()
-        print("Coluna 'resultado' criada com sucesso!")
-    else:
-        print("Coluna 'resultado' já existe.")
-
-    cur.close()
-    conn.close()
 
 # Chame essa função uma vez no seu Flask antes de começar a usar apostas
 criar_coluna_resultado()
@@ -903,6 +909,7 @@ criar_coluna_resultado()
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
