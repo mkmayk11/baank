@@ -839,56 +839,32 @@ def deletar_historico_selecionados():
     return redirect(url_for("historico"))
 
 # -------------------- ADMIN FUTEBOL --------------------
+import psycopg2.extras
 
 @app.route("/admin_futebol", methods=["GET", "POST"])
 def admin_futebol():
     conn = psycopg2.connect(DB_URL)
-    cur = conn.cursor()
-
-    if request.method == "POST":
-        # aqui cadastra os jogos
-        time1 = request.form["time1"]
-        time2 = request.form["time2"]
-        odds1 = float(request.form["odds1"])
-        odds_empate = float(request.form["odds_empate"])
-        odds2 = float(request.form["odds2"])
-
-        cur.execute(
-            "INSERT INTO jogos_futebol (time1, time2, odds1, odds2, odds_empate, ativo) VALUES (%s, %s, %s, %s, %s, TRUE)",
-            (time1, time2, odds1, odds2, odds_empate),
-        )
-        conn.commit()
-
-    # 🔥 SELECT atualizado para incluir resultado
-    cur.execute("""
-        SELECT a.id, a.usuario, a.valor, a.escolha, j.time1, j.time2, j.odds1, j.odds2, j.odds_empate, a.resultado
-        FROM apostas a
-        JOIN jogos_futebol j ON a.jogo_id = j.id
-    """)
-    apostas = [
-        {
-            "id": row[0],
-            "usuario": row[1],
-            "valor": float(row[2]),
-            "escolha": row[3],
-            "time1": row[4],
-            "time2": row[5],
-            "odds1": float(row[6]),
-            "odds2": float(row[7]),
-            "odds_empate": float(row[8]),
-            "resultado": row[9],  # pode ser 'pendente', 'vitoria' ou 'derrota'
-        }
-        for row in cur.fetchall()
-    ]
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     # Buscar jogos
     cur.execute("SELECT * FROM jogos_futebol ORDER BY id DESC")
     jogos = cur.fetchall()
 
+    # Buscar apostas
+    cur.execute("""
+        SELECT a.id, a.usuario, a.valor, a.escolha, a.resultado,
+               j.time1, j.time2
+        FROM apostas_futebol a
+        JOIN jogos_futebol j ON a.jogo_id = j.id
+        ORDER BY a.id DESC
+    """)
+    apostas = cur.fetchall()
+
     cur.close()
     conn.close()
 
     return render_template("admin_futebol.html", jogos=jogos, apostas=apostas)
+
 
 
 
@@ -1229,6 +1205,7 @@ def deletar_aposta(aposta_id):
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
