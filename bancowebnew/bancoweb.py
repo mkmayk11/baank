@@ -1283,8 +1283,73 @@ def migrar_apostas():
     return msg
 
 
+
+@app.route("/migrar_multijogos")
+def migrar_multijogos():
+    import psycopg2
+    import psycopg2.extras
+
+    conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
+    cur = conn.cursor()
+    try:
+        # Criar tabela de jogos de futebol
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS jogos_futebol (
+                id SERIAL PRIMARY KEY,
+                time1 TEXT NOT NULL,
+                time2 TEXT NOT NULL,
+                ativo BOOLEAN DEFAULT TRUE
+            );
+        """)
+
+        # Criar tabela de mercados do jogo
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS mercados_jogo (
+                id SERIAL PRIMARY KEY,
+                jogo_id INT REFERENCES jogos_futebol(id) ON DELETE CASCADE,
+                nome TEXT NOT NULL,
+                odd NUMERIC(12,2) NOT NULL
+            );
+        """)
+
+        # Criar tabela de apostas principal
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS apostas (
+                id SERIAL PRIMARY KEY,
+                usuario TEXT REFERENCES clientes(usuario),
+                valor NUMERIC(12,2) NOT NULL,
+                resultado TEXT DEFAULT 'pendente',
+                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+
+        # Criar tabela de jogos dentro da aposta (apostas múltiplas)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS apostas_jogos (
+                id SERIAL PRIMARY KEY,
+                aposta_id INT REFERENCES apostas(id) ON DELETE CASCADE,
+                jogo_id INT REFERENCES jogos_futebol(id),
+                mercado_id INT REFERENCES mercados_jogo(id),
+                escolha TEXT NOT NULL,
+                resultado TEXT DEFAULT 'pendente'
+            );
+        """)
+
+        conn.commit()
+        return "✅ Tabelas de múltiplos jogos e mercados criadas com sucesso!"
+    except Exception as e:
+        conn.rollback()
+        return f"❌ Erro ao criar tabelas: {e}"
+    finally:
+        cur.close()
+        conn.close()
+
+
+
+
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
