@@ -793,44 +793,44 @@ def deletar_historico_selecionados():
 
 @app.route("/admin_futebol", methods=["GET", "POST"])
 def admin_futebol():
-    if "usuario" not in session or session["usuario"] != "admin":
-        flash("Acesso restrito ao administrador!", "danger")
-        return redirect(url_for("dashboard"))
+    if request.method == "POST":
+        time1 = request.form.get("time1")
+        time2 = request.form.get("time2")
+        odds1 = request.form.get("odds1")
+        odds2 = request.form.get("odds2")
+        odds_empate = request.form.get("odds_empate")
 
+        conn = psycopg2.connect(DB_URL)
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO jogos_futebol (time1, time2, odds1, odds2, odds_empate, ativo)
+            VALUES (%s, %s, %s, %s, %s, TRUE)
+        """, (time1, time2, odds1, odds2, odds_empate))
+        conn.commit()
+        conn.close()
+        flash("Jogo adicionado com sucesso!", "success")
+        return redirect(url_for("admin_futebol"))
+
+    # Buscar jogos e apostas
     conn = psycopg2.connect(DB_URL)
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-    # Se admin julgou aposta
-    if request.method == "POST":
-        aposta_id = int(request.form.get("aposta_id"))
-        resultado = request.form.get("resultado")  # 'vitoria' ou 'derrota'
+    # Jogos cadastrados
+    cur.execute("SELECT * FROM jogos_futebol")
+    jogos = cur.fetchall()
 
-        # Atualiza status da aposta
-        cur.execute("UPDATE apostas SET status = %s WHERE id = %s", (resultado, aposta_id))
-
-        # Se vitória → credita saldo pro usuário
-        if resultado == "vitoria":
-            cur.execute("SELECT usuario, valor FROM apostas WHERE id = %s", (aposta_id,))
-            aposta = cur.fetchone()
-            if aposta:
-                user, valor = aposta["usuario"], float(aposta["valor"])
-                cur.execute("UPDATE usuarios SET saldo = saldo + %s WHERE username = %s",
-                            (valor * 2, user))
-
-        conn.commit()
-        flash("Aposta julgada com sucesso!", "success")
-
-    # Buscar apostas pendentes com info dos jogos
+    # Apostas (agora usando 'resultado' no lugar de 'status')
     cur.execute("""
-        SELECT a.id, a.usuario, a.valor, a.escolha, j.time1, j.time2
+        SELECT a.id, a.usuario, a.valor, a.escolha, a.resultado, j.time1, j.time2
         FROM apostas a
         JOIN jogos_futebol j ON a.jogo_id = j.id
-        WHERE a.status = 'pendente'
+        WHERE a.resultado = 'pendente'
     """)
     apostas = cur.fetchall()
     conn.close()
 
-    return render_template("admin_futebol.html", apostas=apostas)
+    return render_template("admin_futebol.html", jogos=jogos, apostas=apostas)
+
 
 
 
@@ -1057,6 +1057,7 @@ def criar_usuario():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
