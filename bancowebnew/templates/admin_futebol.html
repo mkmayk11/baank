@@ -89,13 +89,13 @@
                     <td>{{ aposta.time1 }} vs {{ aposta.time2 }}</td>
                     <td>{{ aposta.valor }}</td>
                     <td>{{ aposta.escolha }}</td>
-                    <td>{{ aposta.resultado if aposta.resultado else "Pendente" }}</td>
+                    <td>{{ aposta.resultado }}</td>
                     <td>
-                        {% if aposta.resultado is none %}
-                        <a href="{{ url_for('atualizar_resultado', aposta_id=aposta.id, status='vitoria') }}" class="btn btn-success btn-sm">✅ Vitória</a>
-                        <a href="{{ url_for('atualizar_resultado', aposta_id=aposta.id, status='derrota') }}" class="btn btn-danger btn-sm">❌ Derrota</a>
+                        {% if aposta.resultado == 'pendente' %}
+                        <a href="{{ url_for('atualizar_resultado', aposta_id=aposta.id, resultado='vitoria') }}" class="btn btn-success btn-sm">✅ Vitória</a>
+                        <a href="{{ url_for('atualizar_resultado', aposta_id=aposta.id, resultado='derrota') }}" class="btn btn-danger btn-sm">❌ Derrota</a>
                         {% else %}
-                        <span class="text-muted">Finalizado</span>
+                            <span class="text-muted">Finalizado</span>
                         {% endif %}
                     </td>
                 </tr>
