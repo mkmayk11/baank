@@ -1,55 +1,48 @@
 {% extends "base.html" %}
 {% block conteudo %}
-<div class="container py-5">
-    <div class="card shadow border-0 rounded-4 p-4">
-        <h2 class="fw-bold mb-4">⚽ Jogos Disponíveis para Aposta</h2>
+<div class="container py-4">
+    <h2 class="mb-4">⚽ Jogos Disponíveis para Aposta</h2>
+    <p>Saldo disponível: {{ saldo_usuario }}</p>
 
-        <!-- Mostra o saldo do usuário -->
-        <div class="mb-3">
-            Saldo disponível: <strong>{{ saldo }}</strong>
-        </div>
+    {% if jogos %}
+        {% for jogo in jogos %}
+            <div class="card mb-3 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">{{ jogo.time1 }} x {{ jogo.time2 }}</h5>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            {% for category, message in messages %}
-              <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-              </div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
+                    <!-- Exibe mercados disponíveis -->
+                    <form method="POST" action="{{ url_for('apostar') }}">
+                        <input type="hidden" name="jogo_id" value="{{ jogo.id }}">
+                        <div class="row g-2">
+                            {% for mercado in jogo.mercados %}
+                                <div class="col-md-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" 
+                                               name="mercado_id" 
+                                               value="{{ mercado.id }}" 
+                                               id="m{{ mercado.id }}" required>
+                                        <label class="form-check-label" for="m{{ mercado.id }}">
+                                            {{ mercado.nome }}: {{ mercado.odd }}
+                                        </label>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
 
-        <!-- Lista de jogos -->
-        <table class="table table-striped align-middle">
-            <thead>
-                <tr>
-                    <th>Times</th>
-                    <th>Odds</th>
-                    <th>Apostar</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for jogo in jogos %}
-                <tr>
-                    <td>{{ jogo.time1 }} x {{ jogo.time2 }}</td>
-                    <td>
-                        {{ jogo.odds1 }} / {{ jogo.odds2 }} / Empate: {{ jogo.odds_empate }}
-                    </td>
-                    <td>
-                        <form method="POST" action="{{ url_for('futebol') }}" class="d-flex gap-1">
-                            <input type="hidden" name="jogo_id" value="{{ jogo.id }}">
-                            <input type="number" step="0.01" name="valor_aposta" placeholder="Valor" class="form-control form-control-sm" required>
-
-                            <button type="submit" name="resultado" value="time1" class="btn btn-sm btn-primary">Time 1</button>
-                            <button type="submit" name="resultado" value="time2" class="btn btn-sm btn-success">Time 2</button>
-                            <button type="submit" name="resultado" value="empate" class="btn btn-sm btn-warning">Empate</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+                        <div class="row mt-2">
+                            <div class="col-md-3">
+                                <input type="number" step="0.01" min="1" name="valor" class="form-control" placeholder="Valor da aposta" required>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary">Apostar</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="text-muted">Nenhum jogo disponível no momento.</p>
+    {% endif %}
 </div>
 {% endblock %}
