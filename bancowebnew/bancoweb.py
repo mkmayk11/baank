@@ -210,23 +210,15 @@ def garantir_usuario(usuario):
 
 # Registrar aposta (exemplo adaptado)
 def registrar_aposta(usuario, jogo_id, valor, escolha):
-    conn = psycopg2.connect(DB_URL)
+    conn = get_connection()
     c = conn.cursor()
-
-    # Verifica se o usuário existe
-    c.execute("SELECT 1 FROM usuarios WHERE username = %s", (usuario,))
-    if not c.fetchone():
-        # Se não existir, cria com saldo inicial 0
-        c.execute("INSERT INTO usuarios (username, saldo) VALUES (%s, %s)", (usuario, 0))
-
-    # Agora insere a aposta
     c.execute("""
         INSERT INTO apostas (usuario, jogo_id, valor, escolha)
         VALUES (%s, %s, %s, %s)
     """, (usuario, jogo_id, valor, escolha))
-
     conn.commit()
     conn.close()
+
 
 
 
@@ -1230,6 +1222,7 @@ def criar_tabela_apostas():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
