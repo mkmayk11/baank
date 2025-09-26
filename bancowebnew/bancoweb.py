@@ -127,28 +127,35 @@ def criar_coluna_resultado():
     conn.commit()
     conn.close()
 
-def garantir_colunas_apostas():
+
+# Garante que o usuário exista na tabela usuarios
+def garantir_usuario(usuario):
     conn = psycopg2.connect(DB_URL)
     c = conn.cursor()
+    c.execute("SELECT usuario FROM usuarios WHERE usuario = %s", (usuario,))
+    if not c.fetchone():
+        c.execute("INSERT INTO usuarios (usuario) VALUES (%s)", (usuario,))
+        conn.commit()
+    conn.close()
+
+
+# Registrar aposta (exemplo adaptado)
+def registrar_aposta(usuario, jogo_id, valor, escolha):
+    # Garante que o usuário existe antes de registrar a aposta
+    garantir_usuario(usuario)
     
-    # Lista de colunas que você quer garantir na tabela (nome e tipo)
-    colunas = [
-        ("usuario", "TEXT"),
-        ("jogo_id", "INTEGER"),
-        ("valor", "NUMERIC"),
-        ("escolha", "TEXT"),
-        ("resultado", "TEXT DEFAULT 'pendente'"),
-        ("data", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
-    ]
-    
-    for nome, tipo in colunas:
-        c.execute(f"""
-            ALTER TABLE apostas
-            ADD COLUMN IF NOT EXISTS {nome} {tipo};
-        """)
-    
+    conn = psycopg2.connect(DB_URL)
+    c = conn.cursor()
+    c.execute("""
+        INSERT INTO apostas (usuario, jogo_id, valor, escolha)
+        VALUES (%s, %s, %s, %s)
+    """, (usuario, jogo_id, valor, escolha))
     conn.commit()
     conn.close()
+
+
+# Chame isso no início do seu app para garantir coluna
+criar_coluna_resultado()
 
 # Chame essa função uma vez no início do seu app
 garantir_colunas_apostas()
@@ -973,6 +980,7 @@ criar_coluna_resultado()
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
