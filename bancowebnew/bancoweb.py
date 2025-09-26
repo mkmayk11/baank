@@ -1498,9 +1498,66 @@ def ajustar_tabela():
     return redirect(url_for("admin_futebol"))
 
 
+@app.route("/apostar", methods=["POST"])
+def apostar():
+    # abre conexão
+    conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
+    cur = conn.cursor()
+
+    try:
+        usuario = session.get("usuario")  # garante que o usuário está logado
+        if not usuario:
+            flash("Você precisa estar logado para apostar.", "warning")
+            return redirect(url_for("login"))
+
+        jogo_id = request.form.get("jogo_id")
+        mercado_id = request.form.get("mercado_id")
+        valor = request.form.get("valor")
+
+        if not jogo_id or not mercado_id or not valor:
+            flash("Dados incompletos para registrar a aposta.", "danger")
+            return redirect(url_for("futebol"))
+
+        # pega o nome do mercado para registrar
+        cur.execute("SELECT nome, odd FROM mercados_jogo WHERE id=%s", (mercado_id,))
+        mercado = cur.fetchone()
+        if not mercado:
+            flash("Mercado selecionado inválido.", "danger")
+            return redirect(url_for("futebol"))
+
+        # insere na tabela apostas
+        cur.execute(
+            "INSERT INTO apostas (usuario, valor, resultado) VALUES (%s, %s, %s) RETURNING id",
+            (usuario, valor, "pendente")
+        )
+        aposta_row = cur.fetchone()
+        aposta_id = aposta_row["id"] if aposta_row and "id" in aposta_row else None
+        if not aposta_id:
+            raise Exception("Erro ao obter ID da aposta.")
+
+        # insere na tabela apostas_jogos
+        cur.execute(
+            "INSERT INTO apostas_jogos (aposta_id, jogo_id, mercado_id, escolha) VALUES (%s, %s, %s, %s)",
+            (aposta_id, jogo_id, mercado_id, mercado["nome"])
+        )
+
+        conn.commit()
+        flash(f"Aposta registrada com sucesso no mercado '{mercado['nome']}'!", "success")
+    except Exception as e:
+        conn.rollback()
+        flash(f"Erro ao registrar aposta: {e}", "danger")
+    finally:
+        cur.close()
+        conn.close()
+
+    return redirect(url_for("futebol"))
+
+
+
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
