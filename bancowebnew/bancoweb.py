@@ -793,43 +793,51 @@ def deletar_historico_selecionados():
 
 @app.route("/admin_futebol", methods=["GET", "POST"])
 def admin_futebol():
-    if request.method == "POST":
-        time1 = request.form.get("time1")
-        time2 = request.form.get("time2")
-        odds1 = request.form.get("odds1")
-        odds2 = request.form.get("odds2")
-        odds_empate = request.form.get("odds_empate")
-
-        conn = psycopg2.connect(DB_URL)
-        cur = conn.cursor()
-        cur.execute("""
-            INSERT INTO jogos_futebol (time1, time2, odds1, odds2, odds_empate, ativo)
-            VALUES (%s, %s, %s, %s, %s, TRUE)
-        """, (time1, time2, odds1, odds2, odds_empate))
-        conn.commit()
-        conn.close()
-        flash("Jogo adicionado com sucesso!", "success")
-        return redirect(url_for("admin_futebol"))
-
-    # Buscar jogos e apostas
     conn = psycopg2.connect(DB_URL)
-    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cur = conn.cursor()
 
-    # Jogos cadastrados
+    if request.method == "POST":
+        # aqui cadastra os jogos
+        time1 = request.form["time1"]
+        time2 = request.form["time2"]
+        odds1 = request.form["odds1"]
+        odds_empate = request.form["odds_empate"]
+        odds2 = request.form["odds2"]
+
+        cur.execute(
+            "INSERT INTO jogos_futebol (time1, time2, odds1, odds2, odds_empate, ativo) VALUES (%s, %s, %s, %s, %s, TRUE)",
+            (time1, time2, odds1, odds2, odds_empate),
+        )
+        conn.commit()
+
+    # 🔥 É AQUI que você deve colar o SELECT novo:
+    cur.execute("""
+        SELECT a.id, a.usuario, a.valor, a.escolha, j.time1, j.time2, a.resultado
+        FROM apostas a
+        JOIN jogos_futebol j ON a.jogo_id = j.id
+    """)
+    apostas = [
+        {
+            "id": row[0],
+            "usuario": row[1],
+            "valor": row[2],
+            "escolha": row[3],
+            "time1": row[4],
+            "time2": row[5],
+            "resultado": row[6],
+        }
+        for row in cur.fetchall()
+    ]
+
+    # jogos
     cur.execute("SELECT * FROM jogos_futebol")
     jogos = cur.fetchall()
 
-    # Apostas (agora usando 'resultado' no lugar de 'status')
-    cur.execute("""
-        SELECT a.id, a.usuario, a.valor, a.escolha, a.resultado, j.time1, j.time2
-        FROM apostas a
-        JOIN jogos_futebol j ON a.jogo_id = j.id
-        WHERE a.resultado = 'pendente'
-    """)
-    apostas = cur.fetchall()
+    cur.close()
     conn.close()
 
     return render_template("admin_futebol.html", jogos=jogos, apostas=apostas)
+
 
 
 
@@ -1082,6 +1090,7 @@ def fixar_apostas():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
