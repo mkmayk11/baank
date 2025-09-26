@@ -167,8 +167,8 @@ def registrar_aposta(usuario, jogo_id, valor, escolha):
     # Verifica se o usuário existe
     c.execute("SELECT 1 FROM usuarios WHERE username = %s", (usuario,))
     if not c.fetchone():
-        # Se não existir, cria o usuário automaticamente
-        c.execute("INSERT INTO usuarios (username) VALUES (%s)", (usuario,))
+        # Se não existir, cria com saldo inicial 0
+        c.execute("INSERT INTO usuarios (username, saldo) VALUES (%s, %s)", (usuario, 0))
 
     # Agora insere a aposta
     c.execute("""
@@ -178,6 +178,7 @@ def registrar_aposta(usuario, jogo_id, valor, escolha):
 
     conn.commit()
     conn.close()
+
 
 
 
@@ -1008,6 +1009,7 @@ criar_coluna_resultado()
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
