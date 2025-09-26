@@ -1136,12 +1136,17 @@ def fixar_apostas():
 
 from decimal import Decimal
 
+from flask import Flask, redirect, url_for, flash
+import psycopg2
+import psycopg2.extras
+from decimal import Decimal
+
 @app.route("/atualizar_resultado/<int:aposta_id>/<resultado>")
 def atualizar_resultado(aposta_id, resultado):
     conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
     cur = conn.cursor()
     try:
-        # Pegar aposta e jogo
+        # Buscar dados da aposta
         cur.execute("""
             SELECT a.usuario, a.valor, a.escolha, j.odds1, j.odds_empate, j.odds2
             FROM apostas a
@@ -1154,25 +1159,24 @@ def atualizar_resultado(aposta_id, resultado):
             flash("Aposta não encontrada.", "danger")
             return redirect(url_for("admin_futebol"))
 
-        usuario = aposta['usuario']
-        valor = aposta['valor']
-        escolha = aposta['escolha']
-
-        # Determinar odds corretas
-        if escolha.lower() == 'time1':
-            odds = aposta['odds1']
-        elif escolha.lower() == 'empate':
-            odds = aposta['odds_empate']
-        else:  # time2
-            odds = aposta['odds2']
-
         # Atualizar resultado da aposta
         cur.execute("UPDATE apostas SET resultado = %s WHERE id = %s", (resultado, aposta_id))
 
-        # Se vitória, creditar lucro no saldo
-        if resultado.lower() == 'vitoria':
+        # Se vitória, calcular lucro e atualizar saldo do usuário
+        if resultado.lower() == "vitoria":
+            valor = aposta['valor']  # já é Decimal
+            escolha = aposta['escolha']
+            # Determinar odds corretas e converter para Decimal
+            if escolha.lower() == 'time1':
+                odds = Decimal(aposta['odds1'])
+            elif escolha.lower() == 'empate':
+                odds = Decimal(aposta['odds_empate'])
+            else:
+                odds = Decimal(aposta['odds2'])
+
             lucro = valor * odds
-            cur.execute("UPDATE clientes SET saldo = saldo + %s WHERE usuario = %s", (lucro, usuario))
+
+            cur.execute("UPDATE clientes SET saldo = saldo + %s WHERE usuario = %s", (lucro, aposta['usuario']))
 
         conn.commit()
         flash("Resultado atualizado com sucesso!", "success")
@@ -1184,6 +1188,7 @@ def atualizar_resultado(aposta_id, resultado):
         conn.close()
 
     return redirect(url_for("admin_futebol"))
+
 
 
 @app.route("/deletar_jogo/<int:jogo_id>")
@@ -1280,6 +1285,7 @@ def migrar_apostas():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
