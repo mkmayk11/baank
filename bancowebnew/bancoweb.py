@@ -117,6 +117,17 @@ def carregar_cliente(usuario):
     dados = carregar_dados()
     return dados["clientes"].get(usuario)
 
+def criar_coluna_resultado():
+    conn = psycopg2.connect(DB_URL)
+    c = conn.cursor()
+    c.execute("""
+        ALTER TABLE apostas
+        ADD COLUMN IF NOT EXISTS resultado TEXT DEFAULT 'pendente';
+    """)
+    conn.commit()
+    conn.close()
+
+
 
 # -------------------- Rotas básicas --------------------
 
@@ -936,6 +947,7 @@ criar_coluna_resultado()
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
