@@ -835,81 +835,89 @@ def deletar_historico_selecionados():
 # -------------------- ADMIN FUTEBOL --------------------
 @app.route("/admin_futebol", methods=["GET", "POST"])
 def admin_futebol():
+    # abre conexão
     conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
     cur = conn.cursor()
 
-    if request.method == "POST":
-        time1 = request.form["time1"]
-        time2 = request.form["time2"]
-        odds1 = request.form["odds1"]
-        odds_empate = request.form["odds_empate"]
-        odds2 = request.form["odds2"]
-
-        odd_resultado = request.form.get("odd_resultado") or None
-        odd_gols = request.form.get("odd_gols") or None
-        odd_cartoes = request.form.get("odd_cartoes") or None
-        odd_expulsoes = request.form.get("odd_expulsoes") or None
-
-        try:
-            # insere jogo
-            cur.execute(
-                "INSERT INTO jogos_futebol (time1, time2) VALUES (%s, %s) RETURNING id",
-                (time1, time2),
-            )
-            jogo_id = cur.fetchone()["id"]
-
-            # insere mercados básicos
-            cur.execute(
-                "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
-                (jogo_id, "Time 1", odds1),
-            )
-            cur.execute(
-                "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
-                (jogo_id, "Empate", odds_empate),
-            )
-            cur.execute(
-                "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
-                (jogo_id, "Time 2", odds2),
-            )
-
-            # insere mercados extras
-            if odd_resultado:
-                cur.execute(
-                    "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
-                    (jogo_id, "Odd Resultado", odd_resultado),
-                )
-            if odd_gols:
-                cur.execute(
-                    "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
-                    (jogo_id, "Gols", odd_gols),
-                )
-            if odd_cartoes:
-                cur.execute(
-                    "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
-                    (jogo_id, "Cartões", odd_cartoes),
-                )
-            if odd_expulsoes:
-                cur.execute(
-                    "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
-                    (jogo_id, "Expulsões", odd_expulsoes),
-                )
-
-            conn.commit()
-            flash("Jogo e mercados adicionados com sucesso!", "success")
-        except Exception as e:
-            conn.rollback()
-            flash(f"Erro ao adicionar jogo: {e}", "danger")
-        finally:
-            cur.close()
-            conn.close()
-
-        return redirect(url_for("admin_futebol"))
-
-    # GET -> buscar jogos e apostas
     try:
+        # ---------- POST: inserir jogo e mercados ----------
+        if request.method == "POST":
+            time1 = request.form["time1"]
+            time2 = request.form["time2"]
+            odds1 = request.form["odds1"]
+            odds_empate = request.form["odds_empate"]
+            odds2 = request.form["odds2"]
+
+            odd_resultado = request.form.get("odd_resultado") or None
+            odd_gols = request.form.get("odd_gols") or None
+            odd_cartoes = request.form.get("odd_cartoes") or None
+            odd_expulsoes = request.form.get("odd_expulsoes") or None
+
+            try:
+                # insere jogo
+                cur.execute(
+                    "INSERT INTO jogos_futebol (time1, time2) VALUES (%s, %s) RETURNING id",
+                    (time1, time2),
+                )
+                jogo_row = cur.fetchone()
+                jogo_id = jogo_row["id"] if jogo_row and "id" in jogo_row else None
+
+                if not jogo_id:
+                    raise Exception("Não foi possível obter ID do jogo inserido.")
+
+                # insere mercados básicos (1 X 2 via tabela mercados_jogo)
+                cur.execute(
+                    "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
+                    (jogo_id, "Time 1", odds1),
+                )
+                cur.execute(
+                    "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
+                    (jogo_id, "Empate", odds_empate),
+                )
+                cur.execute(
+                    "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
+                    (jogo_id, "Time 2", odds2),
+                )
+
+                # insere mercados extras só se preenchidos
+                if odd_resultado:
+                    cur.execute(
+                        "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
+                        (jogo_id, "Odd Resultado", odd_resultado),
+                    )
+                if odd_gols:
+                    cur.execute(
+                        "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
+                        (jogo_id, "Gols", odd_gols),
+                    )
+                if odd_cartoes:
+                    cur.execute(
+                        "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
+                        (jogo_id, "Cartões", odd_cartoes),
+                    )
+                if odd_expulsoes:
+                    cur.execute(
+                        "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
+                        (jogo_id, "Expulsões", odd_expulsoes),
+                    )
+
+                conn.commit()
+                flash("Jogo e mercados adicionados com sucesso!", "success")
+            except Exception as e:
+                conn.rollback()
+                flash(f"Erro ao adicionar jogo: {e}", "danger")
+            finally:
+                # fechar a conexão antes de redirecionar (mantém o padrão que você já vinha usando)
+                cur.close()
+                conn.close()
+
+            return redirect(url_for("admin_futebol"))
+
+        # ---------- GET: buscar jogos e apostas ----------
+        # Busca jogos + mercados agregados (funciona mesmo se mercados_jogo estiver vazia)
         cur.execute("""
             SELECT j.id, j.time1, j.time2, j.ativo,
-                   array_agg(m.nome || ': ' || m.odd) as mercados
+                   array_remove(array_agg(m.nome || ': ' || m.odd), NULL) as mercados
             FROM jogos_futebol j
             LEFT JOIN mercados_jogo m ON j.id = m.jogo_id
             GROUP BY j.id
@@ -917,23 +925,94 @@ def admin_futebol():
         """)
         jogos = cur.fetchall()
 
+        # Detecta colunas e existência de tabelas para montar a query de apostas dinamicamente
         cur.execute("""
-            SELECT a.id, a.usuario, a.valor, a.resultado, a.criado_em,
-                   aj.jogo_id, j.time1, j.time2, aj.escolha, aj.resultado AS resultado_jogo
-            FROM apostas a
-            JOIN apostas_jogos aj ON a.id = aj.aposta_id
-            JOIN jogos_futebol j ON aj.jogo_id = j.id
-            ORDER BY a.criado_em DESC
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'public' AND table_name = 'apostas'
         """)
+        cols_rows = cur.fetchall()
+        cols = {r["column_name"] for r in cols_rows} if cols_rows else set()
+
+        # verifica se existe tabela apostas_jogos
+        cur.execute("SELECT to_regclass('public.apostas_jogos') AS exists")
+        aj_row = cur.fetchone()
+        has_apostas_jogos = bool(aj_row and aj_row.get("exists"))
+
+        # monta campos selecionados conforme as colunas disponíveis
+        select_fields = ["a.id", "a.usuario", "a.valor"]
+        if "resultado" in cols:
+            select_fields.append("a.resultado")
+        elif "status" in cols:
+            select_fields.append("a.status AS resultado")
+        else:
+            select_fields.append("NULL AS resultado")
+
+        if "criado_em" in cols:
+            select_fields.append("a.criado_em")
+            date_field = "a.criado_em"
+        elif "data_aposta" in cols:
+            select_fields.append("a.data_aposta AS criado_em")
+            date_field = "a.data_aposta"
+        else:
+            select_fields.append("NULL AS criado_em")
+            date_field = "a.id"
+
+        if has_apostas_jogos:
+            select_fields.extend([
+                "aj.jogo_id", "j.time1", "j.time2", "aj.escolha", "aj.resultado AS resultado_jogo"
+            ])
+            join_clause = "JOIN apostas_jogos aj ON a.id = aj.aposta_id JOIN jogos_futebol j ON aj.jogo_id = j.id"
+        else:
+            # fallback: aposta pode ter jogo_id direto na mesma tabela
+            if "jogo_id" in cols:
+                select_fields.extend(["a.jogo_id", "j.time1", "j.time2"])
+                if "escolha" in cols:
+                    select_fields.append("a.escolha")
+                else:
+                    select_fields.append("NULL AS escolha")
+                join_clause = "JOIN jogos_futebol j ON a.jogo_id = j.id"
+            else:
+                # sem referência a jogo — traz apenas apostas simples
+                join_clause = ""
+
+        sql = f"SELECT {', '.join(select_fields)} FROM apostas a {join_clause} ORDER BY {date_field} DESC LIMIT 500"
+        cur.execute(sql)
         apostas = cur.fetchall()
+
+        # normaliza resultados para o template (cria campos previsíveis)
+        from datetime import datetime
+        for ap in apostas:
+            # garante chave 'resultado'
+            if "resultado" not in ap:
+                ap["resultado"] = ap.get("resultado_jogo") or None
+
+            # garante 'escolha'
+            if "escolha" not in ap:
+                ap["escolha"] = ap.get("escolha") or ""
+
+            # formata data para evitar erros no template (template deve usar criado_em_fmt)
+            created = ap.get("criado_em")
+            if isinstance(created, datetime):
+                ap["criado_em_fmt"] = created.strftime("%d/%m/%Y %H:%M")
+            elif created:
+                # se veio string, usa-a
+                ap["criado_em_fmt"] = str(created)
+            else:
+                ap["criado_em_fmt"] = ""
 
     except Exception as e:
         flash(f"Erro ao carregar admin_futebol: {e}", "danger")
         jogos, apostas = [], []
     finally:
-        cur.close()
-        conn.close()
+        # tenta fechar recursos se ainda estiverem abertos
+        try:
+            cur.close()
+            conn.close()
+        except:
+            pass
 
+    # Renderiza (template atualizado para usar aposta.criado_em_fmt)
     return render_template("admin_futebol.html", jogos=jogos, apostas=apostas)
 
 
@@ -1429,6 +1508,7 @@ def ajustar_tabela():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
