@@ -61,6 +61,7 @@
                         <th>Odds Empate</th>
                         <th>Odds 2</th>
                         <th>Status</th>
+                        <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -72,6 +73,13 @@
                         <td>{{ jogo.odds_empate }}</td>
                         <td>{{ jogo.odds2 }}</td>
                         <td>{% if jogo.ativo %} ✅ Ativo {% else %} ❌ Inativo {% endif %}</td>
+                        <td>
+                            <a href="{{ url_for('deletar_jogo', jogo_id=jogo.id) }}" 
+                               class="btn btn-danger btn-sm"
+                               onclick="return confirm('Tem certeza que deseja deletar este jogo?')">
+                               🗑️ Deletar
+                            </a>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -114,11 +122,14 @@
                         </td>
                         <td>
                             {% if not aposta.resultado %}
-                            <a href="{{ url_for('atualizar_resultado', aposta_id=aposta.id, resultado='vitoria') }}" class="btn btn-success btn-sm">✅ Vitória</a>
-                            <a href="{{ url_for('atualizar_resultado', aposta_id=aposta.id, resultado='derrota') }}" class="btn btn-danger btn-sm">❌ Derrota</a>
-                            {% else %}
-                                <span class="text-muted">Finalizado</span>
+                                <a href="{{ url_for('atualizar_resultado', aposta_id=aposta.id, resultado='vitoria') }}" class="btn btn-success btn-sm">✅ Vitória</a>
+                                <a href="{{ url_for('atualizar_resultado', aposta_id=aposta.id, resultado='derrota') }}" class="btn btn-danger btn-sm">❌ Derrota</a>
                             {% endif %}
+                            <a href="{{ url_for('deletar_aposta', aposta_id=aposta.id) }}" 
+                               class="btn btn-warning btn-sm"
+                               onclick="return confirm('Tem certeza que deseja deletar esta aposta?')">
+                               🗑️ Deletar
+                            </a>
                         </td>
                     </tr>
                     {% endfor %}
