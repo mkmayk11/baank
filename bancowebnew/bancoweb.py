@@ -1141,8 +1141,6 @@ def fixar_apostas():
         return f"❌ Erro: {str(e)}"
 
 from decimal import Decimal
-from flask import redirect, url_for, flash
-import psycopg2
 
 @app.route("/atualizar_resultado/<int:aposta_id>/<resultado>", methods=["GET"])
 def atualizar_resultado(aposta_id, resultado):
@@ -1154,7 +1152,7 @@ def atualizar_resultado(aposta_id, resultado):
         c.execute("""
             SELECT a.valor, a.escolha, j.odds1, j.odds_empate, j.odds2, a.usuario
             FROM apostas a
-            JOIN jogos j ON a.jogo_id = j.id
+            JOIN jogos_futebol j ON a.jogo_id = j.id
             WHERE a.id = %s
         """, (aposta_id,))
         aposta = c.fetchone()
@@ -1164,13 +1162,13 @@ def atualizar_resultado(aposta_id, resultado):
 
         valor, escolha, odds1, odds_empate, odds2, usuario = aposta
 
-        # converte para Decimal
+        # Converte para Decimal
         valor = Decimal(valor)
         odds1 = Decimal(odds1)
         odds_empate = Decimal(odds_empate)
         odds2 = Decimal(odds2)
 
-        # calcula ganho
+        # Calcula ganho
         if resultado == "vitoria":
             if escolha == "time1":
                 ganho = valor * odds1
@@ -1179,14 +1177,14 @@ def atualizar_resultado(aposta_id, resultado):
             else:
                 ganho = valor * odds2
 
-            # adiciona o ganho ao saldo do usuário
+            # Adiciona o ganho ao saldo do usuário
             c.execute("""
                 UPDATE usuarios
                 SET saldo = saldo + %s
-                WHERE username = %s
+                WHERE usuario = %s
             """, (ganho, usuario))
 
-        # atualiza o resultado da aposta
+        # Atualiza o resultado da aposta
         c.execute("""
             UPDATE apostas
             SET resultado = %s
@@ -1208,8 +1206,10 @@ def atualizar_resultado(aposta_id, resultado):
 
 
 
+
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
