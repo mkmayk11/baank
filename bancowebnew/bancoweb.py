@@ -1236,32 +1236,15 @@ def ajustar_apostas():
 
 @app.route("/migrar_apostas")
 def migrar_apostas():
-    import psycopg2
-    import psycopg2.extras
-
-    conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.DictCursor)
+    conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
     cur = conn.cursor()
-
     try:
-        # Verificar se a coluna jogo_id já existe
-        cur.execute("""
-            SELECT column_name
-            FROM information_schema.columns
-            WHERE table_name='apostas' AND column_name='jogo_id';
-        """)
-        coluna = cur.fetchone()
-
-        if coluna:
-            msg = "✅ Coluna 'jogo_id' já existe na tabela 'apostas'."
-        else:
-            cur.execute("ALTER TABLE apostas ADD COLUMN jogo_id INT REFERENCES jogos_futebol(id);")
-            conn.commit()
-            msg = "🚀 Coluna 'jogo_id' adicionada com sucesso na tabela 'apostas'."
-
+        cur.execute("ALTER TABLE apostas ADD COLUMN IF NOT EXISTS jogo_id INT REFERENCES jogos_futebol(id);")
+        conn.commit()
+        return "✅ Coluna jogo_id adicionada na tabela apostas!"
     except Exception as e:
         conn.rollback()
-        msg = f"❌ Erro na migração: {str(e)}"
-
+        return f"❌ Erro na migração: {e}"
     finally:
         cur.close()
         conn.close()
@@ -1271,6 +1254,7 @@ def migrar_apostas():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
