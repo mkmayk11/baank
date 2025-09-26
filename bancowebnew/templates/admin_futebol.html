@@ -74,7 +74,7 @@
                         <td>{{ jogo.odds2 }}</td>
                         <td>{% if jogo.ativo %} ✅ Ativo {% else %} ❌ Inativo {% endif %}</td>
                         <td>
-                            <a href="{{ url_for('deletar_jogo', jogo_id=jogo.id) }}" 
+                            <a href="{{ url_for('deletar_jogo', jogo_id=jogo.id) }}"
                                class="btn btn-danger btn-sm"
                                onclick="return confirm('Tem certeza que deseja deletar este jogo?')">
                                🗑️ Deletar
@@ -125,7 +125,7 @@
                                 <a href="{{ url_for('atualizar_resultado', aposta_id=aposta.id, resultado='vitoria') }}" class="btn btn-success btn-sm">✅ Vitória</a>
                                 <a href="{{ url_for('atualizar_resultado', aposta_id=aposta.id, resultado='derrota') }}" class="btn btn-danger btn-sm">❌ Derrota</a>
                             {% endif %}
-                            <a href="{{ url_for('deletar_aposta', aposta_id=aposta.id) }}" 
+                            <a href="{{ url_for('deletar_aposta', aposta_id=aposta.id) }}"
                                class="btn btn-warning btn-sm"
                                onclick="return confirm('Tem certeza que deseja deletar esta aposta?')">
                                🗑️ Deletar
