@@ -811,11 +811,14 @@ def futebol():
             flash("Valor inválido ou saldo insuficiente!", "danger")
             return redirect(url_for("futebol"))
 
-        # Deduz saldo
+        # Deduz saldo do cliente
         saldo -= valor_aposta
         salvar_cliente(usuario, saldo=saldo)  # atualizar saldo
 
-        # Salva aposta e histórico
+        # Salva aposta no banco de dados
+        registrar_aposta(usuario, jogo_id, valor_aposta, resultado_aposta)
+
+        # Salva no histórico do cliente
         registrar_historico(usuario, f"Aposta em futebol: {resultado_aposta}", valor_aposta)
 
         flash(f"Aposta de R$ {valor_aposta:.2f} em '{resultado_aposta}' realizada!", "success")
@@ -933,6 +936,7 @@ criar_coluna_resultado()
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
