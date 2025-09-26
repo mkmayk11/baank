@@ -835,11 +835,6 @@ def deletar_historico_selecionados():
 # -------------------- ADMIN FUTEBOL --------------------
 @app.route("/admin_futebol", methods=["GET", "POST"])
 def admin_futebol():
-    import psycopg2
-    import psycopg2.extras
-    from flask import render_template, request, flash, redirect, url_for
-    from datetime import datetime
-
     # abre conexão
     conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
     cur = conn.cursor()
@@ -870,7 +865,7 @@ def admin_futebol():
                 if not jogo_id:
                     raise Exception("Não foi possível obter ID do jogo inserido.")
 
-                # insere mercados básicos (1 X 2 via tabela mercados_jogo)
+                # insere mercados básicos
                 cur.execute(
                     "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
                     (jogo_id, "Time 1", odds1),
@@ -914,14 +909,15 @@ def admin_futebol():
             finally:
                 cur.close()
                 conn.close()
+
             return redirect(url_for("admin_futebol"))
 
         # ---------- GET: buscar jogos e apostas ----------
-        # Reabre conexão para GET
+        # reabre conexão para GET
         conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
         cur = conn.cursor()
 
-        # busca jogos e mercados como JSON
+        # Jogos + mercados
         cur.execute("""
             SELECT j.id, j.time1, j.time2, j.ativo,
                    json_agg(json_build_object('id', m.id, 'nome', m.nome, 'odd', m.odd)) 
@@ -932,23 +928,68 @@ def admin_futebol():
             ORDER BY j.id DESC
         """)
         jogos = cur.fetchall()
-        for j in jogos:
-            j["mercados"] = j["mercados"] if j["mercados"] else []
 
-        # busca apostas dos usuários
+        # Colunas disponíveis na tabela apostas
         cur.execute("""
-            SELECT a.id, a.usuario, a.valor,
-                   COALESCE(a.resultado, aj.resultado) AS resultado,
-                   aj.escolha, j.time1, j.time2,
-                   COALESCE(a.criado_em, a.data_aposta) AS criado_em
-            FROM apostas a
-            LEFT JOIN apostas_jogos aj ON a.id = aj.aposta_id
-            LEFT JOIN jogos_futebol j ON aj.jogo_id = j.id
-            ORDER BY criado_em DESC
-            LIMIT 500
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'public' AND table_name = 'apostas'
         """)
+        cols_rows = cur.fetchall()
+        cols = {r["column_name"] for r in cols_rows} if cols_rows else set()
+
+        # verifica tabela apostas_jogos
+        cur.execute("SELECT to_regclass('public.apostas_jogos') AS exists")
+        aj_row = cur.fetchone()
+        has_apostas_jogos = bool(aj_row and aj_row.get("exists"))
+
+        # monta campos dinamicamente
+        select_fields = ["a.id", "a.usuario", "a.valor"]
+        if "resultado" in cols:
+            select_fields.append("a.resultado")
+        elif "status" in cols:
+            select_fields.append("a.status AS resultado")
+        else:
+            select_fields.append("NULL AS resultado")
+
+        # coluna de data
+        if "criado_em" in cols:
+            select_fields.append("a.criado_em")
+            date_field = "a.criado_em"
+        elif "data_aposta" in cols:
+            select_fields.append("a.data_aposta AS criado_em")
+            date_field = "a.data_aposta"
+        else:
+            select_fields.append("a.id AS criado_em")
+            date_field = "a.id"
+
+        if has_apostas_jogos:
+            select_fields.extend([
+                "aj.jogo_id", "j.time1", "j.time2", "aj.escolha", "aj.resultado AS resultado_jogo"
+            ])
+            join_clause = "JOIN apostas_jogos aj ON a.id = aj.aposta_id JOIN jogos_futebol j ON aj.jogo_id = j.id"
+        else:
+            if "jogo_id" in cols:
+                select_fields.extend(["a.jogo_id", "j.time1", "j.time2"])
+                if "escolha" in cols:
+                    select_fields.append("a.escolha")
+                else:
+                    select_fields.append("NULL AS escolha")
+                join_clause = "JOIN jogos_futebol j ON a.jogo_id = j.id"
+            else:
+                join_clause = ""
+
+        sql = f"SELECT {', '.join(select_fields)} FROM apostas a {join_clause} ORDER BY {date_field} DESC LIMIT 500"
+        cur.execute(sql)
         apostas = cur.fetchall()
+
+        # normaliza para template
+        from datetime import datetime
         for ap in apostas:
+            if "resultado" not in ap:
+                ap["resultado"] = ap.get("resultado_jogo") or None
+            if "escolha" not in ap:
+                ap["escolha"] = ap.get("escolha") or ""
             created = ap.get("criado_em")
             if isinstance(created, datetime):
                 ap["criado_em_fmt"] = created.strftime("%d/%m/%Y %H:%M")
@@ -1521,6 +1562,7 @@ def apostar():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
