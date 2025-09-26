@@ -72,7 +72,27 @@ def init_db():
 # Inicializa o banco
 init_db()
 
+
 # -------------------- Funções de persistência --------------------
+
+def garantir_colunas_apostas():
+    conn = psycopg2.connect(DB_URL)
+    c = conn.cursor()
+    # Coluna resultado
+    c.execute("""
+        ALTER TABLE apostas
+        ADD COLUMN IF NOT EXISTS resultado TEXT DEFAULT 'pendente';
+    """)
+    # Coluna escolha (porque você tem erros com ela)
+    c.execute("""
+        ALTER TABLE apostas
+        ADD COLUMN IF NOT EXISTS escolha TEXT;
+    """)
+    conn.commit()
+    conn.close()
+
+
+
 def carregar_dados():
     conn = get_connection()
     c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -980,6 +1000,7 @@ criar_coluna_resultado()
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
