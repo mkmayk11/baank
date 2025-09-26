@@ -1006,9 +1006,49 @@ conn.close()
 # Chame essa função uma vez no seu Flask antes de começar a usar apostas
 criar_coluna_resultado()
 
+@app.route("/criar_usuario", methods=["GET", "POST"])
+def criar_usuario():
+    if request.method == "POST":
+        username = request.form["username"]
+        saldo_inicial = request.form.get("saldo", 0)
+
+        conn = psycopg2.connect(DB_URL)
+        c = conn.cursor()
+
+        # Verifica se já existe
+        c.execute("SELECT 1 FROM usuarios WHERE username = %s", (username,))
+        if c.fetchone():
+            conn.close()
+            flash("Usuário já existe!", "warning")
+            return redirect(url_for("criar_usuario"))
+
+        # Cria novo usuário
+        c.execute(
+            "INSERT INTO usuarios (username, saldo) VALUES (%s, %s)",
+            (username, saldo_inicial),
+        )
+        conn.commit()
+        conn.close()
+
+        flash(f"Usuário {username} criado com saldo {saldo_inicial}", "success")
+        return redirect(url_for("criar_usuario"))
+
+    # Form simples
+    return """
+    <h2>Criar Usuário</h2>
+    <form method="post">
+        <label>Nome:</label><br>
+        <input type="text" name="username" required><br><br>
+        <label>Saldo inicial:</label><br>
+        <input type="number" step="0.01" name="saldo" value="0"><br><br>
+        <button type="submit">Criar</button>
+    </form>
+    """
+
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
