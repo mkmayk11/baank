@@ -64,7 +64,7 @@ def get_db_connection():
     return conn
 
 def init_db():
-    conn = get_connection()
+    conn = get_db_connection()
     c = conn.cursor()
 
     # Tabela de clientes
@@ -1230,6 +1230,7 @@ def atualizar_resultado(aposta_id, resultado):
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
