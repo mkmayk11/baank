@@ -1148,7 +1148,7 @@ def atualizar_resultado(aposta_id, resultado):
         conn = psycopg2.connect(DB_URL)
         c = conn.cursor()
 
-        # Pega os dados da aposta e do jogo
+        # pega os dados da aposta e do jogo
         c.execute("""
             SELECT a.valor, a.escolha, j.odds1, j.odds_empate, j.odds2, a.usuario
             FROM apostas a
@@ -1162,13 +1162,13 @@ def atualizar_resultado(aposta_id, resultado):
 
         valor, escolha, odds1, odds_empate, odds2, usuario = aposta
 
-        # converte para Decimal
+        # converter tudo para Decimal pra não dar problema
         valor = Decimal(valor)
         odds1 = Decimal(odds1)
         odds_empate = Decimal(odds_empate)
         odds2 = Decimal(odds2)
 
-        # calcula ganho total (aposta + lucro)
+        # só atualiza saldo se for vitória
         if resultado == "vitoria":
             if escolha == "time1":
                 ganho_total = valor * odds1
@@ -1177,12 +1177,13 @@ def atualizar_resultado(aposta_id, resultado):
             else:
                 ganho_total = valor * odds2
 
-            # adiciona o ganho total ao saldo do usuário
-            c.execute("""
-                UPDATE usuarios
-                SET saldo = saldo + %s
-                WHERE username = %s
-            """, (ganho_total, usuario))
+            # pega saldo atual do usuário
+            c.execute("SELECT saldo FROM usuarios WHERE username=%s", (usuario,))
+            saldo_atual = Decimal(c.fetchone()[0])
+
+            # soma ganho total ao saldo
+            saldo_novo = saldo_atual + ganho_total
+            c.execute("UPDATE usuarios SET saldo=%s WHERE username=%s", (saldo_novo, usuario))
 
         # atualiza o resultado da aposta
         c.execute("""
@@ -1209,8 +1210,10 @@ def atualizar_resultado(aposta_id, resultado):
 
 
 
+
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
