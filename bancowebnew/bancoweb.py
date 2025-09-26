@@ -1390,8 +1390,33 @@ def migrar_multijogos():
 
 
 
+
+
+@app.route("/ajustar_tabela")
+def ajustar_tabela():
+    conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
+    cur = conn.cursor()
+    try:
+        # Permitir NULL nas odds da tabela original
+        cur.execute("ALTER TABLE jogos_futebol ALTER COLUMN odds1 DROP NOT NULL;")
+        cur.execute("ALTER TABLE jogos_futebol ALTER COLUMN odds2 DROP NOT NULL;")
+        cur.execute("ALTER TABLE jogos_futebol ALTER COLUMN odds_empate DROP NOT NULL;")
+        
+        conn.commit()
+        flash("Tabela ajustada com sucesso!", "success")
+    except Exception as e:
+        conn.rollback()
+        flash(f"Erro ao ajustar tabela: {e}", "danger")
+    finally:
+        cur.close()
+        conn.close()
+    return redirect(url_for("admin_futebol"))
+
+
+
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
