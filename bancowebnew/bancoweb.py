@@ -1201,23 +1201,23 @@ def deletar_aposta(aposta_id):
 @app.route("/criar_tabela_apostas")
 def criar_tabela_apostas():
     try:
-        conn = psycopg2.connect(DB_URL)
+        conn = get_connection()
         cur = conn.cursor()
         cur.execute("""
-            CREATE TABLE IF NOT EXISTS apostas_futebol (
+            CREATE TABLE IF NOT EXISTS apostas (
                 id SERIAL PRIMARY KEY,
-                usuario VARCHAR(100) NOT NULL,
-                time1 VARCHAR(100) NOT NULL,
-                time2 VARCHAR(100) NOT NULL,
-                valor NUMERIC(10,2) NOT NULL,
-                escolha VARCHAR(50) NOT NULL,
-                resultado VARCHAR(20)
+                usuario TEXT REFERENCES clientes(usuario),
+                jogo_id INT REFERENCES jogos_futebol(id),
+                valor NUMERIC(12,2) NOT NULL,
+                escolha TEXT NOT NULL,
+                resultado TEXT DEFAULT 'pendente',
+                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
         conn.commit()
         cur.close()
         conn.close()
-        return "✅ Tabela 'apostas_futebol' criada com sucesso!"
+        return "✅ Tabela 'apostas' criada com sucesso!"
     except Exception as e:
         return f"❌ Erro ao criar tabela: {e}"
 
@@ -1228,6 +1228,7 @@ def criar_tabela_apostas():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
