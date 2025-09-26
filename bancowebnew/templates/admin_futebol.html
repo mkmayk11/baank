@@ -67,14 +67,14 @@
                 <tbody>
                     {% for jogo in jogos %}
                     <tr>
-                        <td>{{ jogo.time1 }}</td>
-                        <td>{{ jogo.time2 }}</td>
-                        <td>{{ jogo.odds1 }}</td>
-                        <td>{{ jogo.odds_empate }}</td>
-                        <td>{{ jogo.odds2 }}</td>
-                        <td>{% if jogo.ativo %} ✅ Ativo {% else %} ❌ Inativo {% endif %}</td>
+                        <td>{{ jogo[1] }}</td>
+                        <td>{{ jogo[2] }}</td>
+                        <td>{{ jogo[3] }}</td>
+                        <td>{{ jogo[4] }}</td>
+                        <td>{{ jogo[5] }}</td>
+                        <td>{% if jogo[6] %} ✅ Ativo {% else %} ❌ Inativo {% endif %}</td>
                         <td>
-                            <a href="{{ url_for('deletar_jogo', jogo_id=jogo.id) }}"
+                            <a href="{{ url_for('deletar_jogo', jogo_id=jogo[0]) }}"
                                class="btn btn-danger btn-sm"
                                onclick="return confirm('Tem certeza que deseja deletar este jogo?')">
                                🗑️ Deletar
@@ -109,23 +109,23 @@
                 <tbody>
                     {% for aposta in apostas %}
                     <tr>
-                        <td>{{ aposta.usuario }}</td>
-                        <td>{{ aposta.time1 }} vs {{ aposta.time2 }}</td>
-                        <td>{{ aposta.valor }}</td>
-                        <td>{{ aposta.escolha }}</td>
+                        <td>{{ aposta[1] }}</td>
+                        <td>{{ aposta[2] }} vs {{ aposta[3] }}</td>
+                        <td>{{ aposta[4] }}</td>
+                        <td>{{ aposta[5] }}</td>
                         <td>
-                            {% if aposta.resultado %}
-                                {% if aposta.resultado == 'vitoria' %}✅ Vitória{% else %}❌ Derrota{% endif %}
+                            {% if aposta[6] %}
+                                {% if aposta[6] == 'vitoria' %}✅ Vitória{% else %}❌ Derrota{% endif %}
                             {% else %}
                                 Pendente
                             {% endif %}
                         </td>
                         <td>
-                            {% if not aposta.resultado %}
-                                <a href="{{ url_for('atualizar_resultado', aposta_id=aposta.id, resultado='vitoria') }}" class="btn btn-success btn-sm">✅ Vitória</a>
-                                <a href="{{ url_for('atualizar_resultado', aposta_id=aposta.id, resultado='derrota') }}" class="btn btn-danger btn-sm">❌ Derrota</a>
+                            {% if not aposta[6] %}
+                                <a href="{{ url_for('atualizar_resultado', aposta_id=aposta[0], resultado='vitoria') }}" class="btn btn-success btn-sm">✅ Vitória</a>
+                                <a href="{{ url_for('atualizar_resultado', aposta_id=aposta[0], resultado='derrota') }}" class="btn btn-danger btn-sm">❌ Derrota</a>
                             {% endif %}
-                            <a href="{{ url_for('deletar_aposta', aposta_id=aposta.id) }}"
+                            <a href="{{ url_for('deletar_aposta', aposta_id=aposta[0]) }}"
                                class="btn btn-warning btn-sm"
                                onclick="return confirm('Tem certeza que deseja deletar esta aposta?')">
                                🗑️ Deletar
