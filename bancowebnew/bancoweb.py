@@ -835,6 +835,9 @@ def deletar_historico_selecionados():
 # -------------------- ADMIN FUTEBOL --------------------
 @app.route("/admin_futebol", methods=["GET", "POST"])
 def admin_futebol():
+    import psycopg2.extras
+    from datetime import datetime
+
     # abre conexão
     conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
     cur = conn.cursor()
@@ -865,7 +868,7 @@ def admin_futebol():
                 if not jogo_id:
                     raise Exception("Não foi possível obter ID do jogo inserido.")
 
-                # insere mercados básicos (1 X 2 via tabela mercados_jogo)
+                # insere mercados básicos
                 cur.execute(
                     "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
                     (jogo_id, "Time 1", odds1),
@@ -907,17 +910,17 @@ def admin_futebol():
                 conn.rollback()
                 flash(f"Erro ao adicionar jogo: {e}", "danger")
             finally:
-                # fechar a conexão antes de redirecionar (mantém o padrão que você já vinha usando)
+                # fechar a conexão antes de redirecionar
                 cur.close()
                 conn.close()
 
             return redirect(url_for("admin_futebol"))
 
         # ---------- GET: buscar jogos e apostas ----------
-        # Busca jogos + mercados agregados (funciona mesmo se mercados_jogo estiver vazia)
+        # Busca jogos + mercados agregados em JSON
         cur.execute("""
             SELECT j.id, j.time1, j.time2, j.ativo,
-                   array_remove(array_agg(m.nome || ': ' || m.odd), NULL) as mercados
+                   json_agg(json_build_object('nome', m.nome, 'odd', m.odd)) FILTER (WHERE m.id IS NOT NULL) AS mercados
             FROM jogos_futebol j
             LEFT JOIN mercados_jogo m ON j.id = m.jogo_id
             GROUP BY j.id
@@ -964,7 +967,6 @@ def admin_futebol():
             ])
             join_clause = "JOIN apostas_jogos aj ON a.id = aj.aposta_id JOIN jogos_futebol j ON aj.jogo_id = j.id"
         else:
-            # fallback: aposta pode ter jogo_id direto na mesma tabela
             if "jogo_id" in cols:
                 select_fields.extend(["a.jogo_id", "j.time1", "j.time2"])
                 if "escolha" in cols:
@@ -973,30 +975,22 @@ def admin_futebol():
                     select_fields.append("NULL AS escolha")
                 join_clause = "JOIN jogos_futebol j ON a.jogo_id = j.id"
             else:
-                # sem referência a jogo — traz apenas apostas simples
                 join_clause = ""
 
         sql = f"SELECT {', '.join(select_fields)} FROM apostas a {join_clause} ORDER BY {date_field} DESC LIMIT 500"
         cur.execute(sql)
         apostas = cur.fetchall()
 
-        # normaliza resultados para o template (cria campos previsíveis)
-        from datetime import datetime
+        # normaliza resultados para o template
         for ap in apostas:
-            # garante chave 'resultado'
             if "resultado" not in ap:
                 ap["resultado"] = ap.get("resultado_jogo") or None
-
-            # garante 'escolha'
             if "escolha" not in ap:
                 ap["escolha"] = ap.get("escolha") or ""
-
-            # formata data para evitar erros no template (template deve usar criado_em_fmt)
             created = ap.get("criado_em")
             if isinstance(created, datetime):
                 ap["criado_em_fmt"] = created.strftime("%d/%m/%Y %H:%M")
             elif created:
-                # se veio string, usa-a
                 ap["criado_em_fmt"] = str(created)
             else:
                 ap["criado_em_fmt"] = ""
@@ -1005,15 +999,14 @@ def admin_futebol():
         flash(f"Erro ao carregar admin_futebol: {e}", "danger")
         jogos, apostas = [], []
     finally:
-        # tenta fechar recursos se ainda estiverem abertos
         try:
             cur.close()
             conn.close()
         except:
             pass
 
-    # Renderiza (template atualizado para usar aposta.criado_em_fmt)
     return render_template("admin_futebol.html", jogos=jogos, apostas=apostas)
+
 
 
 
@@ -1508,6 +1501,7 @@ def ajustar_tabela():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
