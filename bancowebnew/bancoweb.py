@@ -1087,46 +1087,77 @@ def fixar_apostas():
     except Exception as e:
         return f"❌ Erro: {str(e)}"
 
-@app.route("/atualizar_resultado/<int:aposta_id>/<status>")
-def atualizar_resultado(aposta_id, status):
-    conn = psycopg2.connect(DB_URL)
-    cur = conn.cursor()
+from decimal import Decimal
+from flask import redirect, url_for, flash
+import psycopg2
 
-    # Atualiza o resultado da aposta
-    cur.execute("UPDATE apostas SET resultado = %s WHERE id = %s", (status, aposta_id))
+@app.route("/atualizar_resultado/<int:aposta_id>/<resultado>", methods=["GET"])
+def atualizar_resultado(aposta_id, resultado):
+    try:
+        conn = psycopg2.connect(DB_URL)
+        c = conn.cursor()
 
-    # Se for vitória, devolve a grana multiplicada pelo odd
-    if status == "vitoria":
-        cur.execute("""
+        # Pega os dados da aposta e do jogo
+        c.execute("""
             SELECT a.valor, a.escolha, j.odds1, j.odds_empate, j.odds2, a.usuario
             FROM apostas a
-            JOIN jogos_futebol j ON a.jogo_id = j.id
+            JOIN jogos j ON a.jogo_id = j.id
             WHERE a.id = %s
         """, (aposta_id,))
-        aposta = cur.fetchone()
+        aposta = c.fetchone()
+        if not aposta:
+            flash("Aposta não encontrada.", "danger")
+            return redirect(url_for("admin_futebol"))
+
         valor, escolha, odds1, odds_empate, odds2, usuario = aposta
 
-        if escolha == "time1":
-            ganho = valor * odds1
-        elif escolha == "empate":
-            ganho = valor * odds_empate
-        else:
-            ganho = valor * odds2
+        # converte para Decimal
+        valor = Decimal(valor)
+        odds1 = Decimal(odds1)
+        odds_empate = Decimal(odds_empate)
+        odds2 = Decimal(odds2)
 
-        # credita no saldo do usuário
-        cur.execute("UPDATE usuarios SET saldo = saldo + %s WHERE username = %s", (ganho, usuario))
+        # calcula ganho
+        if resultado == "vitoria":
+            if escolha == "time1":
+                ganho = valor * odds1
+            elif escolha == "empate":
+                ganho = valor * odds_empate
+            else:
+                ganho = valor * odds2
 
-    conn.commit()
-    cur.close()
-    conn.close()
+            # adiciona o ganho ao saldo do usuário
+            c.execute("""
+                UPDATE usuarios
+                SET saldo = saldo + %s
+                WHERE username = %s
+            """, (ganho, usuario))
 
-    flash("Resultado atualizado com sucesso!", "success")
-    return redirect(url_for("admin_futebol"))
+        # atualiza o resultado da aposta
+        c.execute("""
+            UPDATE apostas
+            SET resultado = %s
+            WHERE id = %s
+        """, (resultado, aposta_id))
+
+        conn.commit()
+        flash(f"Aposta atualizada para '{resultado}'.", "success")
+        return redirect(url_for("admin_futebol"))
+
+    except Exception as e:
+        print(e)
+        flash("Erro ao atualizar a aposta.", "danger")
+        return redirect(url_for("admin_futebol"))
+
+    finally:
+        conn.close()
+
 
 
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
