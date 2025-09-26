@@ -78,7 +78,7 @@
                     <th>Jogo</th>
                     <th>Valor</th>
                     <th>Escolha</th>
-                    <th>Status</th>
+                    <th>Resultado</th>
                     <th>Ações</th>
                 </tr>
             </thead>
@@ -89,9 +89,9 @@
                     <td>{{ aposta.time1 }} vs {{ aposta.time2 }}</td>
                     <td>{{ aposta.valor }}</td>
                     <td>{{ aposta.escolha }}</td>
-                    <td>{{ aposta.status }}</td>
+                    <td>{{ aposta.resultado }}</td>
                     <td>
-                        {% if aposta.status == 'pendente' %}
+                        {% if aposta.resultado == 'pendente' %}
                         <form method="POST" action="{{ url_for('atualizar_aposta') }}" style="display:inline-block;">
                             <input type="hidden" name="aposta_id" value="{{ aposta.id }}">
                             <button type="submit" name="novo_status" value="vitoria" class="btn btn-success btn-sm">✅ Vitória</button>
