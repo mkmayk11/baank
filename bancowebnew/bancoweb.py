@@ -1162,29 +1162,29 @@ def atualizar_resultado(aposta_id, resultado):
 
         valor, escolha, odds1, odds_empate, odds2, usuario = aposta
 
-        # Converte todos os valores para Decimal para evitar erro de tipo
+        # converte para Decimal
         valor = Decimal(valor)
         odds1 = Decimal(odds1)
         odds_empate = Decimal(odds_empate)
         odds2 = Decimal(odds2)
 
-        # Calcula ganho se for vitória
+        # calcula ganho total (aposta + lucro)
         if resultado == "vitoria":
             if escolha == "time1":
-                ganho = valor * odds1
+                ganho_total = valor * odds1
             elif escolha == "empate":
-                ganho = valor * odds_empate
+                ganho_total = valor * odds_empate
             else:
-                ganho = valor * odds2
+                ganho_total = valor * odds2
 
-            # Adiciona o ganho ao saldo do usuário
+            # adiciona o ganho total ao saldo do usuário
             c.execute("""
                 UPDATE usuarios
                 SET saldo = saldo + %s
                 WHERE username = %s
-            """, (ganho, usuario))
+            """, (ganho_total, usuario))
 
-        # Atualiza o resultado da aposta (vitoria ou derrota)
+        # atualiza o resultado da aposta
         c.execute("""
             UPDATE apostas
             SET resultado = %s
@@ -1208,8 +1208,10 @@ def atualizar_resultado(aposta_id, resultado):
 
 
 
+
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
