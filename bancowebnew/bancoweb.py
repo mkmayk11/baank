@@ -1065,7 +1065,7 @@ def futebol():
         # Preenche apostas de cada usuário para mostrar no mesmo jogo
         for jogo in jogos:
             cur.execute("""
-                SELECT aj.id, m.nome, aj.valor, 
+                SELECT aj.id, m.id AS mercado_id, m.nome, aj.valor, 
                        CASE WHEN a.resultado IS NULL THEN 'Pendente' ELSE a.resultado END AS resultado
                 FROM apostas_jogos aj
                 JOIN apostas a ON aj.aposta_id = a.id
@@ -1073,6 +1073,9 @@ def futebol():
                 WHERE aj.jogo_id = %s AND a.usuario_id = %s
             """, (jogo["id"], usuario_id))
             apostas_usuario = cur.fetchall()
+            # garante que odds e id do mercado fiquem disponíveis
+            for ap in apostas_usuario:
+                ap['odd'] = next((m['odd'] for m in jogo['mercados'] if m['id'] == ap['mercado_id']), None)
             jogo["apostas_usuario"] = apostas_usuario if apostas_usuario else []
 
         # Busca saldo do usuário
@@ -1088,6 +1091,7 @@ def futebol():
         conn.close()
 
     return render_template("futebol.html", jogos=jogos, saldo_usuario=saldo_usuario)
+
 
 
 @app.route('/atualizar_aposta', methods=['POST'])
@@ -1556,6 +1560,7 @@ def apostar():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
