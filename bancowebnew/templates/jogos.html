@@ -66,6 +66,12 @@
 <audio id="rouletteSound" src="{{ url_for('static', filename='sounds/roulette_spin.mp3') }}"></audio>
 <audio id="winSound" src="{{ url_for('static', filename='sounds/win.mp3') }}"></audio>
 
+<!-- BOTÃO DE ATIVAR SOM -->
+<button id="btnSom" 
+        style="position:fixed; top:10px; right:10px; z-index:9999; padding:6px 12px; font-size:14px; border:none; border-radius:6px; background:red; color:white; cursor:pointer;">
+  🔊 Ativar Som
+</button>
+
 <style>
   body { background: radial-gradient(circle at center, #111 0%, #000 100%); color: #fff; }
   .card { border-radius: 20px; background: rgba(20,20,20,0.95); border: 1px solid #444; }
@@ -264,6 +270,16 @@ document.getElementById("formRoleta").addEventListener("submit", async e => {
 
   const data = await resp.json();
   animateToIndex(data.numero, data.saldo, data.resultado, numero, aposta);
+});
+
+// -------------------- BOTÃO DE ATIVAR SOM --------------------
+const btnSom = document.getElementById("btnSom");
+btnSom.addEventListener("click", () => {
+    slotSound.play().catch(()=>{ slotSound.pause(); slotSound.currentTime=0; });
+    rouletteSound.play().catch(()=>{ rouletteSound.pause(); rouletteSound.currentTime=0; });
+    winSound.play().catch(()=>{ winSound.pause(); winSound.currentTime=0; });
+
+    btnSom.style.display = "none";
 });
 </script>
 
