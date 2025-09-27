@@ -879,34 +879,37 @@ def admin_futebol():
                 )
 
                 # insere mercados extras
-                for nome, valor in [
-                    ("Odd Resultado", odd_resultado),
-                    ("Gols", odd_gols),
-                    ("Cartões", odd_cartoes),
-                    ("Expulsões", odd_expulsoes)
-                ]:
-                    if valor:
-                        cur.execute(
-                            "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
-                            (jogo_id, nome, valor),
-                        )
+                if odd_resultado:
+                    cur.execute(
+                        "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
+                        (jogo_id, "Odd Resultado", odd_resultado),
+                    )
+                if odd_gols:
+                    cur.execute(
+                        "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
+                        (jogo_id, "Gols", odd_gols),
+                    )
+                if odd_cartoes:
+                    cur.execute(
+                        "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
+                        (jogo_id, "Cartões", odd_cartoes),
+                    )
+                if odd_expulsoes:
+                    cur.execute(
+                        "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
+                        (jogo_id, "Expulsões", odd_expulsoes),
+                    )
 
                 conn.commit()
                 flash("Jogo e mercados adicionados com sucesso!", "success")
             except Exception as e:
                 conn.rollback()
                 flash(f"Erro ao adicionar jogo: {e}", "danger")
-            finally:
-                cur.close()
-                conn.close()
+
             return redirect(url_for("admin_futebol"))
 
         # ---------- GET: buscar jogos e apostas ----------
-        # reabre conexão para GET
-        conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
-        cur = conn.cursor()
-
-        # Jogos + mercados
+        # Busca jogos + mercados agregados
         cur.execute("""
             SELECT j.id, j.time1, j.time2, j.ativo,
                    json_agg(json_build_object('id', m.id, 'nome', m.nome, 'odd', m.odd)) 
@@ -918,51 +921,27 @@ def admin_futebol():
         """)
         jogos = cur.fetchall()
 
-        # Saldo do usuário (assumindo que existe session['usuario_id'])
-        saldo_usuario = 0
-        if "usuario_id" in session:
-            cur.execute("SELECT saldo FROM usuarios WHERE id = %s", (session["usuario_id"],))
-            saldo_row = cur.fetchone()
-            saldo_usuario = saldo_row["saldo"] if saldo_row else 0
-
-        # Apostas dos usuários
+        # Busca todas apostas, ligadas aos mercados e jogos
         cur.execute("""
-            SELECT a.id, a.usuario, a.valor, 
-                   COALESCE(a.resultado, NULL) AS resultado, 
-                   COALESCE(a.criado_em, a.data_aposta, a.id) AS criado_em,
-                   aj.jogo_id, j.time1, j.time2, aj.escolha, aj.resultado AS resultado_jogo
+            SELECT a.id AS aposta_id, a.usuario_id, u.username AS usuario, a.valor, a.resultado,
+                   aj.jogo_id, j.time1, j.time2, aj.mercado_id, m.nome AS mercado_nome, aj.valor AS valor_mercado
             FROM apostas a
-            LEFT JOIN apostas_jogos aj ON a.id = aj.aposta_id
-            LEFT JOIN jogos_futebol j ON aj.jogo_id = j.id
-            ORDER BY criado_em DESC
-            LIMIT 500
+            JOIN usuarios u ON a.usuario_id = u.id
+            JOIN apostas_jogos aj ON a.id = aj.aposta_id
+            JOIN jogos_futebol j ON aj.jogo_id = j.id
+            JOIN mercados_jogo m ON aj.mercado_id = m.id
+            ORDER BY a.id DESC
         """)
         apostas = cur.fetchall()
 
-        # normaliza para template
-        from datetime import datetime
-        for ap in apostas:
-            ap["resultado"] = ap.get("resultado") or ap.get("resultado_jogo")
-            ap["escolha"] = ap.get("escolha") or ""
-            created = ap.get("criado_em")
-            if isinstance(created, datetime):
-                ap["criado_em_fmt"] = created.strftime("%d/%m/%Y %H:%M")
-            elif created:
-                ap["criado_em_fmt"] = str(created)
-            else:
-                ap["criado_em_fmt"] = ""
-
     except Exception as e:
         flash(f"Erro ao carregar admin_futebol: {e}", "danger")
-        jogos, apostas, saldo_usuario = [], [], 0
+        jogos, apostas = [], []
     finally:
-        try:
-            cur.close()
-            conn.close()
-        except:
-            pass
+        cur.close()
+        conn.close()
 
-    return render_template("admin_futebol.html", jogos=jogos, apostas=apostas, saldo_usuario=saldo_usuario)
+    return render_template("admin_futebol.html", jogos=jogos, apostas=apostas)
 
 
 
@@ -1564,6 +1543,7 @@ def apostar():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
