@@ -1039,6 +1039,89 @@ def admin_futebol():
 
 
 
+@app.route("/futebol", methods=["GET", "POST"])
+def futebol():
+    if "usuario_id" not in session:
+        flash("Você precisa estar logado para apostar.", "warning")
+        return redirect(url_for("login"))
+
+    usuario = session["usuario_id"]  # aqui é string, corresponde à coluna 'usuario'
+
+    conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
+    cur = conn.cursor()
+
+    try:
+        if request.method == "POST":
+            jogo_id = request.form.get("jogo_id")
+            mercado_id = request.form.get("mercado_id")
+            valor = float(request.form.get("valor"))
+
+            # Verifica saldo
+            cur.execute("SELECT saldo FROM usuarios WHERE username = %s", (usuario,))
+            saldo = cur.fetchone()["saldo"]
+
+            if valor > saldo:
+                flash("Saldo insuficiente!", "danger")
+                return redirect(url_for("futebol"))
+
+            # Insere aposta
+            cur.execute(
+                "INSERT INTO apostas (usuario, valor, criado_em) VALUES (%s, %s, NOW()) RETURNING id",
+                (usuario, valor),
+            )
+            aposta_id = cur.fetchone()["id"]
+
+            cur.execute(
+                "INSERT INTO apostas_jogos (aposta_id, jogo_id, mercado_id) VALUES (%s, %s, %s)",
+                (aposta_id, jogo_id, mercado_id),
+            )
+
+            # Atualiza saldo
+            cur.execute("UPDATE usuarios SET saldo = saldo - %s WHERE username = %s", (valor, usuario))
+            conn.commit()
+            flash("Aposta registrada com sucesso!", "success")
+            return redirect(url_for("futebol"))
+
+        # GET: buscar jogos ativos com mercados
+        cur.execute("""
+            SELECT j.id, j.time1, j.time2, j.ativo,
+                   json_agg(json_build_object('id', m.id, 'nome', m.nome, 'odd', m.odd)) 
+                   FILTER (WHERE m.id IS NOT NULL) AS mercados
+            FROM jogos_futebol j
+            LEFT JOIN mercados_jogo m ON j.id = m.jogo_id
+            WHERE j.ativo = TRUE
+            GROUP BY j.id
+            ORDER BY j.id DESC
+        """)
+        jogos = cur.fetchall()
+
+        # Preenche apostas do usuário para cada jogo
+        for jogo in jogos:
+            cur.execute("""
+                SELECT aj.id, m.id AS mercado_id, m.nome, a.valor,
+                       COALESCE(a.resultado,'Pendente') AS resultado
+                FROM apostas_jogos aj
+                JOIN apostas a ON aj.aposta_id = a.id
+                JOIN mercados_jogo m ON aj.mercado_id = m.id
+                WHERE aj.jogo_id = %s AND a.usuario = %s
+            """, (jogo["id"], usuario))
+            apostas_usuario = cur.fetchall()
+            for ap in apostas_usuario:
+                ap['odd'] = next((m['odd'] for m in jogo['mercados'] if m['id'] == ap['mercado_id']), None)
+            jogo["apostas_usuario"] = apostas_usuario if apostas_usuario else []
+
+        # Saldo do usuário
+        cur.execute("SELECT saldo FROM usuarios WHERE username = %s", (usuario,))
+        saldo_usuario = cur.fetchone()["saldo"]
+
+    except Exception as e:
+        flash(f"Erro ao carregar jogos: {e}", "danger")
+        jogos, saldo_usuario = [], 0
+    finally:
+        cur.close()
+        conn.close()
+
+    return render_template("futebol.html", jogos=jogos, saldo_usuario=saldo_usuario)
 
 
 
@@ -1555,6 +1638,7 @@ def apostar():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
