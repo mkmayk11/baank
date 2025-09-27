@@ -10,6 +10,7 @@
                 <div class="card-body">
                     <h5 class="card-title">{{ jogo.time1 }} x {{ jogo.time2 }}</h5>
 
+                    <!-- Exibe mercados disponíveis -->
                     {% if jogo.mercados %}
                         <form method="POST" action="{{ url_for('apostar') }}">
                             <input type="hidden" name="jogo_id" value="{{ jogo.id }}">
@@ -39,14 +40,44 @@
                             </div>
                         </form>
                     {% else %}
-                        <p class="text-muted">Nenhum mercado disponível.</p>
+                        <p class="text-muted">Nenhum mercado disponível para este jogo.</p>
                     {% endif %}
-
                 </div>
             </div>
         {% endfor %}
     {% else %}
         <p class="text-muted">Nenhum jogo disponível no momento.</p>
+    {% endif %}
+
+    <!-- Histórico rápido de apostas do usuário -->
+    <h4 class="mt-5">Suas últimas apostas</h4>
+    {% if apostas_usuario %}
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Jogo</th>
+                    <th>Mercado</th>
+                    <th>Escolha</th>
+                    <th>Valor</th>
+                    <th>Status</th>
+                    <th>Data</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ap in apostas_usuario %}
+                    <tr>
+                        <td>{{ ap.time1 }} x {{ ap.time2 }}</td>
+                        <td>{{ ap.mercado_nome or '—' }}</td>
+                        <td>{{ ap.escolha }}</td>
+                        <td>{{ ap.valor }}</td>
+                        <td>{{ ap.resultado or 'pendente' }}</td>
+                        <td>{{ ap.criado_em_fmt or '' }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="text-muted">Você ainda não fez apostas.</p>
     {% endif %}
 </div>
 {% endblock %}
