@@ -61,6 +61,11 @@
   </div>
 </div>
 
+<!-- AUDIOS -->
+<audio id="slotSound" src="{{ url_for('static', filename='sounds/slot_spin.mp3') }}"></audio>
+<audio id="rouletteSound" src="{{ url_for('static', filename='sounds/roulette_spin.mp3') }}"></audio>
+<audio id="winSound" src="{{ url_for('static', filename='sounds/win.mp3') }}"></audio>
+
 <style>
   body { background: radial-gradient(circle at center, #111 0%, #000 100%); color: #fff; }
   .card { border-radius: 20px; background: rgba(20,20,20,0.95); border: 1px solid #444; }
@@ -77,11 +82,17 @@
 <script>
 const symbols = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲","🏺","💸"];
 
+// SONS
+const slotSound = document.getElementById("slotSound");
+const rouletteSound = document.getElementById("rouletteSound");
+const winSound = document.getElementById("winSound");
+
 // -------------------- SLOTS --------------------
 let rodadasGratis = {{ rodadas_gratis }};
 
-
 async function spinReel(reelId, finalSymbol) {
+  slotSound.currentTime = 0;
+  slotSound.play();
   return new Promise(resolve => {
     const reel = document.getElementById(reelId);
     let i = 0;
@@ -107,6 +118,11 @@ async function startSlot(rolos, resultado, saldoFinal, rodadasRestantes){
   document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
   document.getElementById("rodadasRestantes").innerText = rodadasRestantes > 0 ? `Jogadas restantes: ${rodadasRestantes}` : "";
 
+  if(resultado.includes("Ganhou") || resultado.includes("🎉")){
+    winSound.currentTime = 0;
+    winSound.play();
+  }
+
   setTimeout(() => {
     document.getElementById("reel1").textContent = "❔";
     document.getElementById("reel2").textContent = "❔";
@@ -117,7 +133,7 @@ async function startSlot(rolos, resultado, saldoFinal, rodadasRestantes){
 
 async function runSlots(aposta, lote){
   let totalLote = lote + rodadasGratis;
-  rodadasGratis = 0; // reseta depois de usar
+  rodadasGratis = 0;
   for(let i=0; i<totalLote; i++){
     const resp = await fetch("{{ url_for('jogos') }}", {
       method:"POST",
@@ -176,6 +192,8 @@ function drawRoulette() {
 function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhido=null, aposta=null){
     if(spinning) return;
     spinning = true;
+    rouletteSound.currentTime = 0;
+    rouletteSound.play();
     const segmentAngle = (2*Math.PI)/segments.length;
     const targetAngle = (2*Math.PI*6) + winningIndex * segmentAngle;
 
@@ -213,6 +231,8 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
                 if(numeroFinal === numeroEscolhido){
                     const premio = aposta * 36;
                     resultadoFinal += ` 🎉 Acertou! Prêmio x36 = R$ ${premio.toFixed(2)}`;
+                    winSound.currentTime = 0;
+                    winSound.play();
                 }
             }
 
@@ -248,4 +268,3 @@ document.getElementById("formRoleta").addEventListener("submit", async e => {
 </script>
 
 {% endblock %}
-
