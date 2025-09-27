@@ -835,8 +835,9 @@ def deletar_historico_selecionados():
 # -------------------- ADMIN FUTEBOL --------------------
 @app.route("/admin_futebol", methods=["GET", "POST"])
 def admin_futebol():
-    if "usuario" not in session or session.get("nivel") != "admin":
-        flash("Você precisa estar logado como admin para acessar.", "warning")
+    # verifica sessão de admin
+    if "usuario_id" not in session or not session.get("is_admin"):
+        flash("Acesso negado! Você precisa estar logado como administrador.", "danger")
         return redirect(url_for("login"))
 
     # abre conexão
@@ -865,11 +866,10 @@ def admin_futebol():
                 )
                 jogo_row = cur.fetchone()
                 jogo_id = jogo_row["id"] if jogo_row and "id" in jogo_row else None
-
                 if not jogo_id:
                     raise Exception("Não foi possível obter ID do jogo inserido.")
 
-                # insere mercados básicos (1 X 2 via tabela mercados_jogo)
+                # insere mercados básicos
                 cur.execute(
                     "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
                     (jogo_id, "Time 1", odds1),
@@ -883,7 +883,7 @@ def admin_futebol():
                     (jogo_id, "Time 2", odds2),
                 )
 
-                # insere mercados extras só se preenchidos
+                # insere mercados extras
                 if odd_resultado:
                     cur.execute(
                         "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
@@ -910,20 +910,13 @@ def admin_futebol():
             except Exception as e:
                 conn.rollback()
                 flash(f"Erro ao adicionar jogo: {e}", "danger")
-            finally:
-                cur.close()
-                conn.close()
-                return redirect(url_for("admin_futebol"))
+
+            return redirect(url_for("admin_futebol"))
 
         # ---------- GET: buscar jogos e apostas ----------
-        # abre conexão novamente
-        conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
-        cur = conn.cursor()
-
-        # busca jogos com mercados agregados (JSON para facilitar template)
         cur.execute("""
             SELECT j.id, j.time1, j.time2, j.ativo,
-                   json_agg(json_build_object('id', m.id, 'nome', m.nome, 'odd', m.odd)) 
+                   json_agg(json_build_object('id', m.id, 'nome', 'odd', m.odd)) 
                    FILTER (WHERE m.id IS NOT NULL) AS mercados
             FROM jogos_futebol j
             LEFT JOIN mercados_jogo m ON j.id = m.jogo_id
@@ -932,14 +925,16 @@ def admin_futebol():
         """)
         jogos = cur.fetchall()
 
-        # busca apostas de usuários
+        # Busca apostas recentes
         cur.execute("""
-            SELECT a.id, a.usuario, a.valor, COALESCE(a.resultado, 'pendente') AS resultado,
-                   aj.jogo_id, j.time1, j.time2, aj.mercado_id, aj.escolha, aj.resultado AS resultado_jogo
+            SELECT a.id, a.usuario, a.valor, 
+                   CASE WHEN a.resultado IS NULL THEN 'Pendente' ELSE a.resultado END AS resultado,
+                   a.criado_em, aj.jogo_id, j.time1, j.time2, aj.escolha, aj.resultado AS resultado_jogo
             FROM apostas a
             JOIN apostas_jogos aj ON a.id = aj.aposta_id
             JOIN jogos_futebol j ON aj.jogo_id = j.id
-            ORDER BY a.id DESC
+            ORDER BY COALESCE(a.criado_em, NOW()) DESC
+            LIMIT 500
         """)
         apostas = cur.fetchall()
 
@@ -947,13 +942,11 @@ def admin_futebol():
         flash(f"Erro ao carregar admin_futebol: {e}", "danger")
         jogos, apostas = [], []
     finally:
-        try:
-            cur.close()
-            conn.close()
-        except:
-            pass
+        cur.close()
+        conn.close()
 
     return render_template("admin_futebol.html", jogos=jogos, apostas=apostas)
+
 
 
 
@@ -1562,6 +1555,7 @@ def apostar():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
