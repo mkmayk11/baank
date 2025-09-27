@@ -973,23 +973,20 @@ def delete_jogo(jogo_id):
 # ---------- Rota futebol ----------
 @app.route("/futebol", methods=["GET", "POST"])
 def futebol():
-    # verifica sessão
     if "usuario_id" not in session:
         flash("Você precisa estar logado para apostar.", "warning")
         return redirect(url_for("login"))
 
     usuario_id = session["usuario_id"]
 
-    # abre conexão
-    conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
+    conn = get_connection()
     cur = conn.cursor()
 
     try:
-        # ---------- POST: criar aposta ----------
         if request.method == "POST":
             jogo_id = request.form.get("jogo_id")
             mercado_id = request.form.get("mercado_id")
-            valor = float(request.form.get("valor"))
+            valor = Decimal(request.form.get("valor"))
 
             # Verifica saldo
             cur.execute("SELECT saldo FROM usuarios WHERE id = %s", (usuario_id,))
@@ -1000,16 +997,12 @@ def futebol():
                 return redirect(url_for("futebol"))
 
             # Insere aposta
-            cur.execute(
-                "INSERT INTO apostas (usuario_id, valor, criado_em) VALUES (%s, %s, NOW()) RETURNING id",
-                (usuario_id, valor),
-            )
+            cur.execute("INSERT INTO apostas (usuario_id, valor, criado_em) VALUES (%s, %s, NOW()) RETURNING id",
+                        (usuario_id, valor))
             aposta_id = cur.fetchone()["id"]
 
-            cur.execute(
-                "INSERT INTO apostas_jogos (aposta_id, jogo_id, mercado_id, valor) VALUES (%s, %s, %s, %s)",
-                (aposta_id, jogo_id, mercado_id, valor),
-            )
+            cur.execute("INSERT INTO apostas_jogos (aposta_id, jogo_id, mercado_id, valor) VALUES (%s, %s, %s, %s)",
+                        (aposta_id, jogo_id, mercado_id, valor))
 
             # Atualiza saldo
             novo_saldo = saldo - valor
@@ -1019,7 +1012,7 @@ def futebol():
             flash("Aposta registrada com sucesso!", "success")
             return redirect(url_for("futebol"))
 
-        # ---------- GET: buscar jogos e mercados ----------
+        # GET: busca jogos ativos
         cur.execute("""
             SELECT j.id, j.time1, j.time2, j.ativo,
                    json_agg(json_build_object('id', m.id, 'nome', m.nome, 'odd', m.odd)) 
@@ -1032,23 +1025,22 @@ def futebol():
         """)
         jogos = cur.fetchall()
 
-        # Preenche apostas de cada usuário para mostrar no mesmo jogo
+        # Preenche apostas do usuário
         for jogo in jogos:
             cur.execute("""
                 SELECT aj.id, m.id AS mercado_id, m.nome, aj.valor, 
-                       CASE WHEN a.resultado IS NULL THEN 'Pendente' ELSE a.resultado END AS resultado
+                       COALESCE(a.resultado, 'Pendente') AS resultado
                 FROM apostas_jogos aj
                 JOIN apostas a ON aj.aposta_id = a.id
                 JOIN mercados_jogo m ON aj.mercado_id = m.id
                 WHERE aj.jogo_id = %s AND a.usuario_id = %s
             """, (jogo["id"], usuario_id))
             apostas_usuario = cur.fetchall()
-            # associa odds corretas
             for ap in apostas_usuario:
                 ap['odd'] = next((m['odd'] for m in jogo['mercados'] if m['id'] == ap['mercado_id']), None)
             jogo["apostas_usuario"] = apostas_usuario if apostas_usuario else []
 
-        # Busca saldo do usuário
+        # Saldo
         cur.execute("SELECT saldo FROM usuarios WHERE id = %s", (usuario_id,))
         usuario = cur.fetchone()
         saldo_usuario = usuario["saldo"] if usuario else 0
@@ -1531,6 +1523,7 @@ def apostar():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
