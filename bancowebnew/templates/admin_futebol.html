@@ -1,86 +1,73 @@
 {% extends "base.html" %}
 {% block conteudo %}
 <div class="container py-4">
+    <h2 class="mb-4">Administração Futebol ⚽</h2>
 
-    <h2 class="mb-4">⚽ Admin Futebol</h2>
-
-    <!-- Formulário para adicionar jogo -->
+    <!-- Formulário para criar novo jogo -->
     <div class="card mb-4 shadow-sm">
         <div class="card-body">
-            <h5 class="card-title">Adicionar novo jogo</h5>
-            <form method="POST">
-                <div class="row g-2">
-                    <div class="col-md-3">
+            <h5>Adicionar novo jogo</h5>
+            <form method="POST" action="{{ url_for('admin_futebol') }}">
+                <div class="row g-2 mb-2">
+                    <div class="col">
                         <input type="text" name="time1" class="form-control" placeholder="Time 1" required>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col">
                         <input type="text" name="time2" class="form-control" placeholder="Time 2" required>
                     </div>
-                    <div class="col-md-2">
-                        <input type="number" step="0.01" min="1" name="odds1" class="form-control" placeholder="Odd Time 1" required>
+                    <div class="col">
+                        <input type="number" step="0.01" name="odds1" class="form-control" placeholder="Odd Time 1" required>
                     </div>
-                    <div class="col-md-2">
-                        <input type="number" step="0.01" min="1" name="odds_empate" class="form-control" placeholder="Odd Empate" required>
+                    <div class="col">
+                        <input type="number" step="0.01" name="odds_empate" class="form-control" placeholder="Odd Empate" required>
                     </div>
-                    <div class="col-md-2">
-                        <input type="number" step="0.01" min="1" name="odds2" class="form-control" placeholder="Odd Time 2" required>
-                    </div>
-                </div>
-
-                <div class="row g-2 mt-2">
-                    <div class="col-md-3">
-                        <input type="number" step="0.01" min="1" name="odd_resultado" class="form-control" placeholder="Odd Resultado (opcional)">
-                    </div>
-                    <div class="col-md-3">
-                        <input type="number" step="0.01" min="1" name="odd_gols" class="form-control" placeholder="Odd Gols (opcional)">
-                    </div>
-                    <div class="col-md-3">
-                        <input type="number" step="0.01" min="1" name="odd_cartoes" class="form-control" placeholder="Odd Cartões (opcional)">
-                    </div>
-                    <div class="col-md-3">
-                        <input type="number" step="0.01" min="1" name="odd_expulsoes" class="form-control" placeholder="Odd Expulsões (opcional)">
+                    <div class="col">
+                        <input type="number" step="0.01" name="odds2" class="form-control" placeholder="Odd Time 2" required>
                     </div>
                 </div>
-
-                <div class="row mt-3">
-                    <div class="col-md-2">
-                        <button type="submit" class="btn btn-success w-100">Adicionar Jogo</button>
+                <div class="row g-2 mb-2">
+                    <div class="col">
+                        <input type="number" step="0.01" name="odd_resultado" class="form-control" placeholder="Odd Resultado (opcional)">
+                    </div>
+                    <div class="col">
+                        <input type="number" step="0.01" name="odd_gols" class="form-control" placeholder="Odd Gols (opcional)">
+                    </div>
+                    <div class="col">
+                        <input type="number" step="0.01" name="odd_cartoes" class="form-control" placeholder="Odd Cartões (opcional)">
+                    </div>
+                    <div class="col">
+                        <input type="number" step="0.01" name="odd_expulsoes" class="form-control" placeholder="Odd Expulsões (opcional)">
                     </div>
                 </div>
+                <button type="submit" class="btn btn-success mt-2">Adicionar Jogo</button>
             </form>
         </div>
     </div>
 
-    <!-- Jogos cadastrados -->
-    <h4>Jogos cadastrados</h4>
+    <!-- Lista de jogos -->
     {% if jogos %}
-        <div class="accordion" id="accordionJogos">
+        <div class="accordion" id="jogosAccordion">
             {% for jogo in jogos %}
-                <div class="accordion-item mb-2">
-                    <h2 class="accordion-header" id="heading{{ jogo.id }}">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ jogo.id }}" aria-expanded="false" aria-controls="collapse{{ jogo.id }}">
-                            {{ jogo.time1 }} x {{ jogo.time2 }} {% if not jogo.ativo %} (Inativo) {% endif %}
-                        </button>
-                    </h2>
-                    <div id="collapse{{ jogo.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ jogo.id }}" data-bs-parent="#accordionJogos">
-                        <div class="accordion-body">
-                            <ul class="list-group">
-                                {% for m in jogo.mercados %}
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        {{ m.nome }}: {{ m.odd }}
-                                        <a href="{{ url_for('deletar_mercado', mercado_id=m.id) }}" class="btn btn-sm btn-danger">Deletar</a>
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                            <div class="mt-2">
-                                <a href="{{ url_for('deletar_jogo', jogo_id=jogo.id) }}" class="btn btn-sm btn-danger">Deletar Jogo</a>
-                                {% if jogo.ativo %}
-                                    <a href="{{ url_for('toggle_jogo', jogo_id=jogo.id) }}" class="btn btn-sm btn-warning">Desativar</a>
-                                {% else %}
-                                    <a href="{{ url_for('toggle_jogo', jogo_id=jogo.id) }}" class="btn btn-sm btn-success">Ativar</a>
-                                {% endif %}
-                            </div>
+                <div class="card mb-2 shadow-sm">
+                    <div class="card-header d-flex justify-content-between" id="heading{{ jogo.id }}">
+                        <h5>{{ jogo.time1 }} x {{ jogo.time2 }}</h5>
+                        <div>
+                            <form style="display:inline;" method="POST" action="{{ url_for('toggle_jogo', jogo_id=jogo.id) }}">
+                                <button class="btn btn-sm {{ 'btn-danger' if jogo.ativo else 'btn-success' }}">
+                                    {{ 'Desativar' if jogo.ativo else 'Ativar' }}
+                                </button>
+                            </form>
+                            <form style="display:inline;" method="POST" action="{{ url_for('delete_jogo', jogo_id=jogo.id) }}">
+                                <button class="btn btn-sm btn-outline-danger">Excluir</button>
+                            </form>
                         </div>
+                    </div>
+                    <div class="card-body">
+                        <ul>
+                            {% for mercado in jogo.mercados %}
+                                <li>{{ mercado.nome }} - Odd: {{ mercado.odd }}</li>
+                            {% endfor %}
+                        </ul>
                     </div>
                 </div>
             {% endfor %}
@@ -92,35 +79,40 @@
     <!-- Apostas recentes -->
     <h4 class="mt-4">Apostas recentes</h4>
     {% if apostas %}
-        <div class="table-responsive">
-            <table class="table table-striped table-bordered">
-                <thead>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Usuário</th>
+                    <th>Jogo</th>
+                    <th>Escolha</th>
+                    <th>Valor</th>
+                    <th>Resultado</th>
+                    <th>Data</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ap in apostas %}
                     <tr>
-                        <th>Usuário</th>
-                        <th>Valor Apostado</th>
-                        <th>Jogo</th>
-                        <th>Mercado</th>
-                        <th>Odd</th>
-                        <th>Resultado</th>
+                        <td>{{ ap.id }}</td>
+                        <td>{{ ap.usuario }}</td>
+                        <td>{{ ap.time1 }} x {{ ap.time2 }}</td>
+                        <td>{{ ap.escolha }}</td>
+                        <td>{{ ap.valor }}</td>
+                        <td>{{ ap.resultado }}</td>
+                        <td>{{ ap.criado_em }}</td>
+                        <td>
+                            <a href="{{ url_for('atualizar_resultado', aposta_id=ap.id, resultado='vitoria') }}" class="btn btn-sm btn-success">Vitória</a>
+                            <a href="{{ url_for('atualizar_resultado', aposta_id=ap.id, resultado='derrota') }}" class="btn btn-sm btn-danger">Derrota</a>
+                            <a href="{{ url_for('deletar_aposta', aposta_id=ap.id) }}" class="btn btn-sm btn-outline-danger">Excluir</a>
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    {% for a in apostas %}
-                        <tr>
-                            <td>{{ a.usuario }}</td>
-                            <td>{{ a.valor_mercado or a.valor }}</td>
-                            <td>{{ a.time1 }} x {{ a.time2 }}</td>
-                            <td>{{ a.mercado_nome }}</td>
-                            <td>{{ a.valor_mercado }}</td>
-                            <td>{{ a.resultado or "Pendente" }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                {% endfor %}
+            </tbody>
+        </table>
     {% else %}
-        <p class="text-muted">Nenhuma aposta registrada ainda.</p>
+        <p class="text-muted">Nenhuma aposta registrada.</p>
     {% endif %}
-
 </div>
 {% endblock %}
