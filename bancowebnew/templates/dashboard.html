@@ -1,90 +1,31 @@
 {% extends "base.html" %}
 {% block conteudo %}
-<div class="container-fluid py-5" style="min-height:100vh; background: linear-gradient(160deg, #0a0a0a 0%, #111 100%); color:#fff;">
-    <div class="container">
+<div class="container py-5">
+  <h2 class="mb-4">📊 Painel do Usuário</h2>
+  <div class="alert alert-info">
+    Bem-vindo, <strong>{{ session['usuario'] }}</strong>! <br>
+    Seu saldo atual é: <strong>R$ {{ saldo }}</strong>
+  </div>
 
-        <!-- Card de boas-vindas sofisticado -->
-        <div class="card shadow-lg border-0 rounded-4 mb-5" 
-             style="background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); color:#fff; overflow:hidden; position:relative;">
-            <div class="card-body text-center py-5 position-relative">
-                <!-- Efeito animado sutil de luz -->
-                <div style="position:absolute; top:0; left:0; width:100%; height:100%; background: radial-gradient(circle at top left, rgba(255,255,255,0.05), transparent); pointer-events:none;"></div>
-                <h2 class="fw-bold mb-2 display-5">Bem-vindo, {{ usuario }}</h2>
-                <p class="fs-5 text-light opacity-75 mb-3">Saldo disponível</p>
-                <h3 class="fw-bold" style="color:#00ff88; font-size:2.5rem;">R$ {{ saldo|round(2) }}</h3>
-                <div class="mt-4">
-                    <a href="{{ url_for('jogos') }}" class="btn btn-gradient btn-lg shadow-sm fw-bold" style="border-radius:50px; font-size:1.2rem;">🎲 Ir para Jogos</a>
-                </div>
-            </div>
-        </div>
+  <div class="row g-3">
+    <div class="col-md-3">
+      <a href="{{ url_for('deposito') }}" class="btn btn-success w-100">💰 Depositar</a>
+    </div>
+    <div class="col-md-3">
+      <a href="{{ url_for('saque') }}" class="btn btn-danger w-100">💸 Sacar</a>
+    </div>
+    <div class="col-md-3">
+      <a href="{{ url_for('transferencia') }}" class="btn btn-warning w-100">🔄 Transferir</a>
+    </div>
+    <div class="col-md-3">
+      <a href="{{ url_for('futebol') }}" class="btn btn-primary w-100">⚽ Apostar</a>
+    </div>
+  </div>
 
-        <!-- Grid de ações com hover elegante -->
-        <div class="row g-4">
-            {% set btn_style = "border-radius:20px; padding:25px; font-size:1.1rem; transition:0.3s;" %}
-            {% set btn_hover = "transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,255,136,0.5);" %}
-
-            <div class="col-6 col-md-3">
-                <a href="{{ url_for('deposito') }}" class="btn w-100 shadow-sm d-flex flex-column align-items-center justify-content-center" style="background:#0f3; color:#000; {{ btn_style }};" onmouseover="this.style.cssText+='{{ btn_hover }}'" onmouseout="this.style.cssText='background:#0f3; color:#000; {{ btn_style }}'">
-                   <i class="bi bi-cash-coin fs-2 mb-2"></i> Depósito
-                </a>
-            </div>
-
-            <div class="col-6 col-md-3">
-                <a href="{{ url_for('saque') }}" class="btn w-100 shadow-sm d-flex flex-column align-items-center justify-content-center" style="background:#ff8c00; color:#fff; {{ btn_style }};" onmouseover="this.style.cssText+='{{ btn_hover }}'" onmouseout="this.style.cssText='background:#ff8c00; color:#fff; {{ btn_style }}'">
-                   <i class="bi bi-bank fs-2 mb-2"></i> Saque
-                </a>
-            </div>
-
-            <div class="col-6 col-md-3">
-                <a href="{{ url_for('transferencia') }}" class="btn w-100 shadow-sm d-flex flex-column align-items-center justify-content-center" style="background:#1e90ff; color:#fff; {{ btn_style }};" onmouseover="this.style.cssText+='{{ btn_hover }}'" onmouseout="this.style.cssText='background:#1e90ff; color:#fff; {{ btn_style }}'">
-                   <i class="bi bi-arrow-left-right fs-2 mb-2"></i> Transferência
-                </a>
-            </div>
-
-            <div class="col-6 col-md-3">
-                <a href="{{ url_for('historico') }}" class="btn w-100 shadow-sm d-flex flex-column align-items-center justify-content-center" style="background:#6a0dad; color:#fff; {{ btn_style }};" onmouseover="this.style.cssText+='{{ btn_hover }}'" onmouseout="this.style.cssText='background:#6a0dad; color:#fff; {{ btn_style }}'">
-                   <i class="bi bi-clock-history fs-2 mb-2"></i> Histórico
-                </a>
-            </div>
-
-            <div class="col-6 col-md-3">
-                <a href="{{ url_for('alterar_senha') }}" class="btn w-100 shadow-sm d-flex flex-column align-items-center justify-content-center" style="background:#00ced1; color:#000; {{ btn_style }};" onmouseover="this.style.cssText+='{{ btn_hover }}'" onmouseout="this.style.cssText='background:#00ced1; color:#000; {{ btn_style }}'">
-                   <i class="bi bi-key fs-2 mb-2"></i> Alterar senha
-                </a>
-            </div>
-
-            <div class="col-6 col-md-3">
-                <a href="{{ url_for('logout') }}" class="btn w-100 shadow-sm d-flex flex-column align-items-center justify-content-center" style="background:#ff4c4c; color:#fff; {{ btn_style }};" onmouseover="this.style.cssText+='{{ btn_hover }}'" onmouseout="this.style.cssText='background:#ff4c4c; color:#fff; {{ btn_style }}'">
-                   <i class="bi bi-box-arrow-right fs-2 mb-2"></i> Sair
-                </a>
-            </div>
-            <div class="col-6 col-md-3">
-    <a href="https://baank-8c4e.onrender.com/futebol" 
-       class="btn w-100 shadow-sm d-flex flex-column align-items-center justify-content-center" 
-       style="background:#32cd32; color:#000; {{ btn_style }};" 
-       onmouseover="this.style.cssText+='{{ btn_hover }}'" 
-       onmouseout="this.style.cssText='background:#32cd32; color:#000; {{ btn_style }}'">
-       <i class="bi bi-trophy fs-2 mb-2"></i> Futebol
-    </a>
+  <div class="mt-4">
+    <a href="{{ url_for('historico') }}" class="btn btn-outline-dark">📜 Histórico de Transações</a>
+    <a href="{{ url_for('alterar_senha') }}" class="btn btn-outline-secondary">🔒 Alterar Senha</a>
+    <a href="{{ url_for('logout') }}" class="btn btn-outline-danger">🚪 Sair</a>
+  </div>
 </div>
- 
-
-
-
-
-
-<style>
-    .btn-gradient {
-        background: linear-gradient(45deg, #00ff88, #00bfa5);
-        color: #000;
-        font-weight: bold;
-        box-shadow: 0 4px 20px rgba(0,255,136,0.4);
-    }
-    .btn-gradient:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 12px 25px rgba(0,255,136,0.6);
-    }
-</style>
 {% endblock %}
-
-
