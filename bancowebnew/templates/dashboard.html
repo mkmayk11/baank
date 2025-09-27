@@ -1,45 +1,80 @@
 {% extends "base.html" %}
 {% block conteudo %}
 <div class="container py-5">
-  <div class="card shadow-lg border-0 rounded-4">
-    <div class="card-body p-4">
-      <h2 class="mb-4 text-center text-primary fw-bold">📊 Painel do Usuário</h2>
 
-      <div class="alert alert-info text-center fs-5">
+  <!-- Botão sair no canto superior direito -->
+  <div class="d-flex justify-content-end mb-3">
+    <a href="{{ url_for('logout') }}" class="btn btn-sm btn-danger shadow-sm px-3 rounded-pill">
+      🚪 Sair
+    </a>
+  </div>
+
+  <div class="card shadow-lg border-0 rounded-4 bg-dark text-light neon-card">
+    <div class="card-body p-5 text-center">
+
+      <h2 class="mb-4 fw-bold text-gradient">📊 Painel do Usuário</h2>
+
+      <div class="alert alert-info bg-gradient text-dark fs-5 rounded-3 shadow-sm border-0">
         Bem-vindo, <strong>{{ session['usuario'] }}</strong>! <br>
-        Seu saldo atual é: <strong>R$ {{ saldo }}</strong>
+        Seu saldo atual é: <strong class="text-success">💵 R$ {{ saldo }}</strong>
       </div>
 
-      <div class="row g-3 mb-4">
+      <!-- Primeira linha de botões -->
+      <div class="row g-4 mb-4">
         <div class="col-md-3 col-6">
-          <a href="{{ url_for('deposito') }}" class="btn btn-success w-100 py-2 rounded-3">💰 Depositar</a>
+          <a href="{{ url_for('deposito') }}" class="btn btn-success w-100 py-3 rounded-3 neon-btn">💰 Depositar</a>
         </div>
         <div class="col-md-3 col-6">
-          <a href="{{ url_for('saque') }}" class="btn btn-danger w-100 py-2 rounded-3">💸 Sacar</a>
+          <a href="{{ url_for('saque') }}" class="btn btn-danger w-100 py-3 rounded-3 neon-btn">💸 Sacar</a>
         </div>
         <div class="col-md-3 col-6">
-          <a href="{{ url_for('transferencia') }}" class="btn btn-warning w-100 py-2 rounded-3">🔄 Transferir</a>
+          <a href="{{ url_for('transferencia') }}" class="btn btn-warning w-100 py-3 rounded-3 neon-btn">🔄 Transferir</a>
         </div>
         <div class="col-md-3 col-6">
-        </div>
-
-        <div class="row g-3 mb-4">
-        <div class="col-md-3 col-6">
-          <a href="{{ url_for('jogos') }}" class="btn btn-dark w-100 py-2 rounded-3">🎮 Jogos</a>
-        </div>
-        <div class="col-md-3 col-6">
-          <a href="{{ url_for('historico') }}" class="btn btn-outline-dark w-100 py-2 rounded-3">📜 Histórico</a>
-        </div>
-        <div class="col-md-3 col-6">
-          <a href="{{ url_for('alterar_senha') }}" class="btn btn-outline-secondary w-100 py-2 rounded-3">🔒 Alterar Senha</a>
-        </div>
-        <div class="col-md-3 col-6">
-          <a href="{{ url_for('logout') }}" class="btn btn-outline-danger w-100 py-2 rounded-3">🚪 Sair</a>
+          <a href="{{ url_for('futebol') }}" class="btn btn-primary w-100 py-3 rounded-3 neon-btn">⚽ Apostar</a>
         </div>
       </div>
+
+      <!-- Segunda linha de botões -->
+      <div class="row g-4">
+        <div class="col-md-3 col-6">
+          <a href="{{ url_for('jogos') }}" class="btn btn-dark w-100 py-3 rounded-3 neon-btn">🎮 Jogos</a>
+        </div>
+        <div class="col-md-3 col-6">
+          <a href="{{ url_for('historico') }}" class="btn btn-outline-light w-100 py-3 rounded-3 neon-btn">📜 Histórico</a>
+        </div>
+        <div class="col-md-3 col-6">
+          <a href="{{ url_for('alterar_senha') }}" class="btn btn-outline-secondary w-100 py-3 rounded-3 neon-btn">🔒 Alterar Senha</a>
+        </div>
+        <div class="col-md-3 col-6">
+          <a href="{{ url_for('perfil') }}" class="btn btn-info w-100 py-3 rounded-3 neon-btn">👤 Perfil</a>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
+
+<!-- Estilos extras -->
+<style>
+  .neon-card {
+    background: linear-gradient(145deg, #1c1c1c, #0d0d0d);
+    box-shadow: 0 0 25px rgba(0, 255, 255, 0.2);
+  }
+  .neon-btn {
+    font-size: 1.1rem;
+    font-weight: bold;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 0 10px rgba(0,0,0,0.4);
+  }
+  .neon-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(0,255,200,0.8);
+  }
+  .text-gradient {
+    background: linear-gradient(90deg, #0ff, #0f0, #ff0, #f0f);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+</style>
 {% endblock %}
-
-
