@@ -840,8 +840,7 @@ def admin_futebol():
         flash("Acesso negado! Você precisa estar logado como administrador.", "danger")
         return redirect(url_for("login"))
 
-    # abre conexão
-    conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
+    conn = get_connection()
     cur = conn.cursor()
 
     try:
@@ -861,49 +860,28 @@ def admin_futebol():
             try:
                 # insere jogo
                 cur.execute(
-                    "INSERT INTO jogos_futebol (time1, time2) VALUES (%s, %s) RETURNING id",
-                    (time1, time2),
+                    "INSERT INTO jogos_futebol (time1, time2, odds1, odds_empate, odds2) VALUES (%s, %s, %s, %s, %s) RETURNING id",
+                    (time1, time2, odds1, odds_empate, odds2),
                 )
                 jogo_row = cur.fetchone()
-                jogo_id = jogo_row["id"] if jogo_row and "id" in jogo_row else None
+                jogo_id = jogo_row["id"] if jogo_row else None
                 if not jogo_id:
                     raise Exception("Não foi possível obter ID do jogo inserido.")
 
                 # insere mercados básicos
-                cur.execute(
-                    "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
-                    (jogo_id, "Time 1", odds1),
-                )
-                cur.execute(
-                    "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
-                    (jogo_id, "Empate", odds_empate),
-                )
-                cur.execute(
-                    "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
-                    (jogo_id, "Time 2", odds2),
-                )
+                cur.execute("INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)", (jogo_id, "Time 1", odds1))
+                cur.execute("INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)", (jogo_id, "Empate", odds_empate))
+                cur.execute("INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)", (jogo_id, "Time 2", odds2))
 
                 # insere mercados extras
                 if odd_resultado:
-                    cur.execute(
-                        "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
-                        (jogo_id, "Odd Resultado", odd_resultado),
-                    )
+                    cur.execute("INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)", (jogo_id, "Odd Resultado", odd_resultado))
                 if odd_gols:
-                    cur.execute(
-                        "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
-                        (jogo_id, "Gols", odd_gols),
-                    )
+                    cur.execute("INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)", (jogo_id, "Gols", odd_gols))
                 if odd_cartoes:
-                    cur.execute(
-                        "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
-                        (jogo_id, "Cartões", odd_cartoes),
-                    )
+                    cur.execute("INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)", (jogo_id, "Cartões", odd_cartoes))
                 if odd_expulsoes:
-                    cur.execute(
-                        "INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)",
-                        (jogo_id, "Expulsões", odd_expulsoes),
-                    )
+                    cur.execute("INSERT INTO mercados_jogo (jogo_id, nome, odd) VALUES (%s, %s, %s)", (jogo_id, "Expulsões", odd_expulsoes))
 
                 conn.commit()
                 flash("Jogo e mercados adicionados com sucesso!", "success")
@@ -916,7 +894,7 @@ def admin_futebol():
         # ---------- GET: buscar jogos e apostas ----------
         cur.execute("""
             SELECT j.id, j.time1, j.time2, j.ativo,
-                   json_agg(json_build_object('id', m.id, 'nome', 'odd', m.odd)) 
+                   json_agg(json_build_object('id', m.id, 'nome', m.nome, 'odd', m.odd)) 
                    FILTER (WHERE m.id IS NOT NULL) AS mercados
             FROM jogos_futebol j
             LEFT JOIN mercados_jogo m ON j.id = m.jogo_id
@@ -925,10 +903,9 @@ def admin_futebol():
         """)
         jogos = cur.fetchall()
 
-        # Busca apostas recentes
         cur.execute("""
-            SELECT a.id, a.usuario, a.valor, 
-                   CASE WHEN a.resultado IS NULL THEN 'Pendente' ELSE a.resultado END AS resultado,
+            SELECT a.id, a.usuario_id AS usuario, a.valor, 
+                   COALESCE(a.resultado, 'Pendente') AS resultado,
                    a.criado_em, aj.jogo_id, j.time1, j.time2, aj.escolha, aj.resultado AS resultado_jogo
             FROM apostas a
             JOIN apostas_jogos aj ON a.id = aj.aposta_id
@@ -946,7 +923,6 @@ def admin_futebol():
         conn.close()
 
     return render_template("admin_futebol.html", jogos=jogos, apostas=apostas)
-
 
 
 
@@ -1555,6 +1531,7 @@ def apostar():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
