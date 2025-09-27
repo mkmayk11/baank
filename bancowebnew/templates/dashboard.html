@@ -1,26 +1,74 @@
 {% extends "base.html" %}
 {% block conteudo %}
-<div class="container py-5">
+<div class="container-fluid p-0" style="min-height: 100vh; background: #0d0d0d; color: #fff;">
 
-  <!-- Botão sair no canto superior direito -->
-  <div class="d-flex justify-content-end mb-3">
-    <a href="{{ url_for('logout') }}" class="btn btn-sm btn-danger shadow-sm px-3 rounded-pill">
-      🚪 Sair
-    </a>
-  </div>
+  <!-- Sidebar -->
+  <div class="d-flex">
+    <nav class="sidebar bg-dark shadow-lg p-4" style="width: 250px; min-height: 100vh;">
+      <h3 class="text-gradient mb-4">💎 Meu Banco</h3>
+      <ul class="nav flex-column">
+        <li class="nav-item mb-2"><a href="{{ url_for('dashboard') }}" class="nav-link text-light">📊 Dashboard</a></li>
+        <li class="nav-item mb-2"><a href="{{ url_for('deposito') }}" class="nav-link text-light">💰 Depositar</a></li>
+        <li class="nav-item mb-2"><a href="{{ url_for('saque') }}" class="nav-link text-light">💸 Sacar</a></li>
+        <li class="nav-item mb-2"><a href="{{ url_for('transferencia') }}" class="nav-link text-light">🔄 Transferir</a></li>
+        <li class="nav-item mb-2"><a href="{{ url_for('jogos') }}" class="nav-link text-light">🎮 Jogos</a></li>
+        <li class="nav-item mb-2"><a href="{{ url_for('historico') }}" class="nav-link text-light">📜 Histórico</a></li>
+        <li class="nav-item mb-2"><a href="{{ url_for('alterar_senha') }}" class="nav-link text-light">🔒 Alterar Senha</a></li>
+        <li class="nav-item mt-4">
+          <a href="{{ url_for('logout') }}" class="btn btn-outline-danger w-100">🚪 Sair</a>
+        </li>
+      </ul>
+    </nav>
 
-  <div class="card shadow-lg border-0 rounded-4 bg-dark text-light neon-card">
-    <div class="card-body p-5 text-center">
+    <!-- Main content -->
+    <div class="flex-grow-1 p-4">
 
-      <h2 class="mb-4 fw-bold text-gradient">📊 Painel do Usuário</h2>
-
-      <div class="alert alert-info bg-gradient text-dark fs-5 rounded-3 shadow-sm border-0">
-        Bem-vindo, <strong>{{ session['usuario'] }}</strong>! <br>
-        Seu saldo atual é: <strong class="text-success">💵 R$ {{ saldo }}</strong>
+      <!-- Header -->
+      <div class="mb-4">
+        <h2 class="text-gradient fw-bold">📊 Painel do Usuário</h2>
+        <p class="text-muted">Bem-vindo, <strong>{{ session['usuario'] }}</strong>!</p>
       </div>
 
-      <!-- Primeira linha de botões -->
-      <div class="row g-4 mb-4">
+      <!-- Cards superiores -->
+      <div class="row g-4 mb-5">
+
+        <!-- Saldo -->
+        <div class="col-md-6 col-lg-4">
+          <div class="card card-neon p-4">
+            <h5 class="fw-bold">Saldo Atual</h5>
+            <p class="fs-3 text-success">💵 R$ {{ saldo }}</p>
+            <small class="text-muted">Última atualização: {{ ultimo_update }}</small>
+          </div>
+        </div>
+
+        <!-- Próximas transações -->
+        <div class="col-md-6 col-lg-4">
+          <div class="card card-neon p-4">
+            <h5 class="fw-bold">Próximas Transações</h5>
+            <ul class="list-unstyled mt-2">
+              {% for t in proximas_transacoes %}
+              <li class="mb-2">
+                <span class="text-warning">{{ t.descricao }}</span> - <strong class="text-info">R$ {{ t.valor }}</strong>
+              </li>
+              {% else %}
+              <li class="text-muted">Nenhuma transação futura</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+
+        <!-- Gráfico resumo -->
+        <div class="col-md-12 col-lg-4">
+          <div class="card card-neon p-4">
+            <h5 class="fw-bold mb-3">Resumo Mensal</h5>
+            <canvas id="graficoResumo" height="150"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Atalhos principais -->
+      <div class="row g-4 mb-5">
         <div class="col-md-3 col-6">
           <a href="{{ url_for('deposito') }}" class="btn btn-success w-100 py-3 rounded-3 neon-btn">💰 Depositar</a>
         </div>
@@ -35,31 +83,50 @@
         </div>
       </div>
 
-      <!-- Segunda linha de botões -->
-      <div class="row g-4">
-        <div class="col-md-3 col-6">
-          <a href="{{ url_for('historico') }}" class="btn btn-outline-light w-100 py-3 rounded-3 neon-btn">📜 Histórico</a>
-        </div>
-        <div class="col-md-3 col-6">
-          <a href="{{ url_for('alterar_senha') }}" class="btn btn-outline-secondary w-100 py-3 rounded-3 neon-btn">🔒 Alterar Senha</a>
-        </div>
-        <div class="col-md-3 col-6">
-          <!-- Espaço vazio caso queira adicionar outro botão futuramente -->
-        </div>
-        <div class="col-md-3 col-6">
-          <!-- Espaço vazio caso queira adicionar outro botão futuramente -->
-        </div>
+      <!-- Rodapé com notificações -->
+      <div class="card card-neon p-4">
+        <h5 class="fw-bold">Notificações Recentes</h5>
+        <ul class="list-unstyled mt-2">
+          {% for n in notificacoes %}
+          <li class="mb-2">
+            <span class="text-light">{{ n.mensagem }}</span> <small class="text-muted">{{ n.data }}</small>
+          </li>
+          {% else %}
+          <li class="text-muted">Nenhuma notificação</li>
+          {% endfor %}
+        </ul>
       </div>
 
     </div>
   </div>
 </div>
 
-<!-- Estilos extras -->
+<!-- Estilos -->
 <style>
-  .neon-card {
+  body {
+    background: #0d0d0d;
+    font-family: 'Poppins', sans-serif;
+  }
+  .sidebar {
+    border-right: 1px solid rgba(255,255,255,0.1);
+  }
+  .nav-link {
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  .nav-link:hover {
+    color: #0ff;
+    text-decoration: none;
+  }
+  .card-neon {
     background: linear-gradient(145deg, #1c1c1c, #0d0d0d);
-    box-shadow: 0 0 25px rgba(0, 255, 255, 0.2);
+    box-shadow: 0 0 20px rgba(0,255,255,0.2);
+    border-radius: 20px;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  }
+  .card-neon:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 25px rgba(0,255,255,0.5);
   }
   .neon-btn {
     font-size: 1.1rem;
@@ -77,4 +144,28 @@
     -webkit-text-fill-color: transparent;
   }
 </style>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const ctx = document.getElementById('graficoResumo').getContext('2d');
+  const graficoResumo = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Gastos', 'Depósitos', 'Transferências'],
+      datasets: [{
+        label: 'Resumo',
+        data: [{{ gastos }}, {{ depositos }}, {{ transferencias }}],
+        backgroundColor: ['#ff6384','#36a2eb','#ffce56'],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: 'white', font: {size:14} } },
+      }
+    }
+  });
+</script>
 {% endblock %}
