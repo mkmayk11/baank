@@ -31,13 +31,12 @@
           <a href="{{ url_for('transferencia') }}" class="btn btn-warning w-100 py-3 rounded-3 neon-btn">🔄 Transferir</a>
         </div>
         <div class="col-md-3 col-6">
+          <a href="{{ url_for('jogos') }}" class="btn btn-dark w-100 py-3 rounded-3 neon-btn">🎮 Jogos</a>
+        </div>
       </div>
 
       <!-- Segunda linha de botões -->
       <div class="row g-4">
-        <div class="col-md-3 col-6">
-          <a href="{{ url_for('jogos') }}" class="btn btn-dark w-100 py-3 rounded-3 neon-btn">🎮 Jogos</a>
-        </div>
         <div class="col-md-3 col-6">
           <a href="{{ url_for('historico') }}" class="btn btn-outline-light w-100 py-3 rounded-3 neon-btn">📜 Histórico</a>
         </div>
@@ -45,6 +44,11 @@
           <a href="{{ url_for('alterar_senha') }}" class="btn btn-outline-secondary w-100 py-3 rounded-3 neon-btn">🔒 Alterar Senha</a>
         </div>
         <div class="col-md-3 col-6">
+          <!-- Espaço vazio caso queira adicionar outro botão futuramente -->
+        </div>
+        <div class="col-md-3 col-6">
+          <!-- Espaço vazio caso queira adicionar outro botão futuramente -->
+        </div>
       </div>
 
     </div>
@@ -74,5 +78,3 @@
   }
 </style>
 {% endblock %}
-
-
