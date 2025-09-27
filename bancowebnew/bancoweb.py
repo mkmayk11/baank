@@ -1004,6 +1004,7 @@ def delete_jogo(jogo_id):
 # ---------- Rota futebol ----------
 @app.route("/futebol", methods=["GET", "POST"])
 def futebol():
+    # verifica sessão
     if "usuario_id" not in session:
         flash("Você precisa estar logado para apostar.", "warning")
         return redirect(url_for("login"))
@@ -1073,7 +1074,7 @@ def futebol():
                 WHERE aj.jogo_id = %s AND a.usuario_id = %s
             """, (jogo["id"], usuario_id))
             apostas_usuario = cur.fetchall()
-            # garante que odds e id do mercado fiquem disponíveis
+            # associa odds corretas
             for ap in apostas_usuario:
                 ap['odd'] = next((m['odd'] for m in jogo['mercados'] if m['id'] == ap['mercado_id']), None)
             jogo["apostas_usuario"] = apostas_usuario if apostas_usuario else []
@@ -1091,6 +1092,7 @@ def futebol():
         conn.close()
 
     return render_template("futebol.html", jogos=jogos, saldo_usuario=saldo_usuario)
+
 
 
 
@@ -1560,6 +1562,7 @@ def apostar():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
