@@ -364,20 +364,51 @@ def registrar_aposta(usuario, jogo_id, valor, escolha):
 
 
 # -------------------- Rotas --------------------
-@app.route("/", methods=["GET", "POST"])
+@app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        usuario = request.form["usuario"]
-        senha = request.form["senha"]
-        dados = carregar_dados()
-        if usuario in dados["clientes"] and dados["clientes"][usuario]["senha"] == senha:
-            session["usuario"] = usuario
-            if usuario == "admin":
-                return redirect(url_for("admin_depositos"))
-            return redirect(url_for("dashboard"))
-        flash("Login inválido")
-    return render_template("login.html")
+        username = request.form.get("username")
+        senha = request.form.get("senha")  # se tiver senha, senão remova
 
+        # abre conexão
+        conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
+        cur = conn.cursor()
+
+        # busca usuário
+        cur.execute("SELECT * FROM usuarios WHERE username = %s", (username,))
+        usuario = cur.fetchone()
+        cur.close()
+        conn.close()
+
+        if not usuario:
+            flash("Usuário não encontrado!", "danger")
+            return redirect(url_for("login"))
+
+        # Se tiver senha, valide aqui:
+        # if usuario["senha"] != senha:
+        #     flash("Senha incorreta!", "danger")
+        #     return redirect(url_for("login"))
+
+        # ---------- Sessão ----------
+        session.clear()  # limpa sessão antiga
+        session["usuario_id"] = usuario["id"] if "id" in usuario else usuario.get("username")
+        session["usuario"] = usuario["username"]
+        session["is_admin"] = usuario.get("is_admin", False)
+
+        flash(f"Bem-vindo, {usuario['username']}!", "success")
+        return redirect(url_for("futebol"))
+
+    # GET: formulário de login simples
+    return """
+    <h2>Login</h2>
+    <form method="post">
+        <label>Usuário:</label><br>
+        <input type="text" name="username" required><br><br>
+        <label>Senha:</label><br>
+        <input type="password" name="senha"><br><br>
+        <button type="submit">Entrar</button>
+    </form>
+    """
 
 
 # -------------------- Depósito pendente --------------------
@@ -1523,6 +1554,7 @@ def apostar():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
