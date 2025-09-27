@@ -841,53 +841,45 @@ def deletar_historico_selecionados():
 # -------------------- ADMIN FUTEBOL --------------------
 import psycopg2.extras
 
-@app.route("/admin_futebol", methods=["GET", "POST"])
+@app.route("/admin_futebol")
 def admin_futebol():
-    conn = psycopg2.connect(DB_URL)
-    cur = conn.cursor()
+    if "usuario" not in session or session.get("usuario") != "admin":
+        flash("Acesso restrito. Faça login como administrador.", "danger")
+        return redirect(url_for("login"))
 
-    if request.method == "POST":
-        # Adicionar novo jogo
-        time1 = request.form["time1"]
-        time2 = request.form["time2"]
-        odds1 = request.form["odds1"]
-        odds_empate = request.form["odds_empate"]
-        odds2 = request.form["odds2"]
+    try:
+        conn = psycopg2.connect(DB_URL)
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-        try:
-            cur.execute("""
-                INSERT INTO jogos_futebol (time1, time2, odds1, odds_empate, odds2, ativo)
-                VALUES (%s, %s, %s, %s, %s, TRUE)
-            """, (time1, time2, odds1, odds_empate, odds2))
-            conn.commit()
-            flash("Jogo adicionado com sucesso!", "success")
-        except Exception as e:
-            conn.rollback()
-            flash(f"Erro ao adicionar jogo: {e}", "danger")
+        # Buscar jogos cadastrados
+        cur.execute("""
+            SELECT id, time_casa, time_fora, odds_casa, odds_fora, odds_empate 
+            FROM jogos_futebol
+            ORDER BY id DESC
+        """)
+        jogos = cur.fetchall()
 
-        return redirect(url_for("admin_futebol"))
+        # Buscar apostas vinculadas aos jogos
+        cur.execute("""
+            SELECT 
+                a.id, a.usuario, a.valor, a.escolha, a.resultado, a.criado_em,
+                j.time_casa, j.time_fora
+            FROM apostas a
+            JOIN jogos_futebol j ON a.jogo_id = j.id
+            ORDER BY a.id DESC
+        """)
+        apostas = cur.fetchall()
 
-    # Puxar jogos cadastrados
-    cur.execute("""
-        SELECT id, time1, time2, odds1, odds_empate, odds2, ativo
-        FROM jogos_futebol
-        ORDER BY id DESC
-    """)
-    jogos = cur.fetchall()  # retorna lista de tuplas, combinando com seu template
+        cur.close()
+        conn.close()
 
-    # Puxar apostas
-    cur.execute("""
-        SELECT a.id, a.usuario, j.time1, j.time2, a.valor, a.escolha, a.resultado
-        FROM apostas a
-        JOIN jogos_futebol j ON a.jogo_id = j.id
-        ORDER BY a.id DESC
-    """)
-    apostas = cur.fetchall()  # lista de tuplas também
+        return render_template("admin_futebol.html", jogos=jogos, apostas=apostas)
 
-    cur.close()
-    conn.close()
+    except Exception as e:
+        print("Erro ao carregar admin_futebol:", e)
+        flash("Erro ao carregar painel de administração de futebol.", "danger")
+        return redirect(url_for("dashboard"))
 
-    return render_template("admin_futebol.html", jogos=jogos, apostas=apostas)
 
 
 
@@ -1251,6 +1243,7 @@ def criar_tabela_apostas():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
