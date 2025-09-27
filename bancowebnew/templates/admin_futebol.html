@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% block conteudo %}
 <div class="container py-4">
-    <h2 class="mb-4">Admin Futebol</h2>
+    <h2 class="mb-4 text-center">⚽ Painel Admin Futebol</h2>
 
-    <!-- Formulário para adicionar jogo -->
-    <div class="card mb-4 p-3 shadow-sm">
-        <h5>Adicionar novo jogo</h5>
+    <!-- Formulário para adicionar novo jogo -->
+    <div class="card mb-4 p-4 shadow-sm">
+        <h5 class="mb-3">Adicionar Novo Jogo</h5>
         <form method="POST" action="{{ url_for('admin_futebol') }}">
-            <div class="row g-2">
+            <div class="row g-3">
                 <div class="col-md-3">
                     <input type="text" class="form-control" name="time1" placeholder="Time 1" required>
                 </div>
@@ -25,7 +25,7 @@
                 </div>
             </div>
 
-            <div class="row g-2 mt-2">
+            <div class="row g-3 mt-2">
                 <div class="col-md-3">
                     <input type="number" step="0.01" class="form-control" name="odd_resultado" placeholder="Odd Resultado">
                 </div>
@@ -40,53 +40,56 @@
                 </div>
             </div>
 
-            <button type="submit" class="btn btn-success mt-2">Adicionar Jogo</button>
+            <button type="submit" class="btn btn-success mt-3">Adicionar Jogo</button>
         </form>
     </div>
 
     <!-- Lista de jogos -->
     {% if jogos %}
-        <h5>Jogos Cadastrados</h5>
-        <table class="table table-striped table-bordered">
-            <thead>
+    <h5>Jogos Cadastrados</h5>
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered align-middle">
+            <thead class="table-dark">
                 <tr>
                     <th>Jogo</th>
                     <th>Ativo</th>
-                    <th>Mercados</th>
+                    <th>Mercados / Odds</th>
                     <th>Ações</th>
                 </tr>
             </thead>
             <tbody>
                 {% for jogo in jogos %}
-                    <tr>
-                        <td>{{ jogo.time1 }} x {{ jogo.time2 }}</td>
-                        <td>{{ 'Sim' if jogo.ativo else 'Não' }}</td>
-                        <td>
-                            {% for m in jogo.mercados %}
-                                {{ m.nome }}: {{ m.odd }}<br>
-                            {% endfor %}
-                        </td>
-                        <td>
-                            <form action="{{ url_for('toggle_jogo', jogo_id=jogo.id) }}" method="POST" style="display:inline;">
-                                <button class="btn btn-sm btn-warning">Ativar/Desativar</button>
-                            </form>
-                            <form action="{{ url_for('delete_jogo', jogo_id=jogo.id) }}" method="POST" style="display:inline;">
-                                <button class="btn btn-sm btn-danger">Deletar</button>
-                            </form>
-                        </td>
-                    </tr>
+                <tr>
+                    <td>{{ jogo.time1 }} x {{ jogo.time2 }}</td>
+                    <td>{{ 'Sim' if jogo.ativo else 'Não' }}</td>
+                    <td>
+                        {% for m in jogo.mercados %}
+                            <span class="badge bg-info text-dark">{{ m.nome }}: {{ m.odd }}</span>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        <form action="{{ url_for('toggle_jogo', jogo_id=jogo.id) }}" method="POST" style="display:inline-block;">
+                            <button class="btn btn-sm btn-warning mb-1">Ativar/Desativar</button>
+                        </form>
+                        <form action="{{ url_for('delete_jogo', jogo_id=jogo.id) }}" method="POST" style="display:inline-block;">
+                            <button class="btn btn-sm btn-danger mb-1">Deletar</button>
+                        </form>
+                    </td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
+    </div>
     {% else %}
         <p class="text-muted">Nenhum jogo cadastrado.</p>
     {% endif %}
 
     <!-- Últimas apostas -->
-    <h5 class="mt-4">Últimas Apostas</h5>
+    <h5 class="mt-5">Últimas Apostas</h5>
     {% if apostas %}
-        <table class="table table-striped table-bordered">
-            <thead>
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered align-middle">
+            <thead class="table-dark">
                 <tr>
                     <th>Usuário</th>
                     <th>Jogo</th>
@@ -94,21 +97,37 @@
                     <th>Valor</th>
                     <th>Resultado</th>
                     <th>Data</th>
+                    <th>Ações</th>
                 </tr>
             </thead>
             <tbody>
                 {% for a in apostas %}
-                    <tr>
-                        <td>{{ a.usuario }}</td>
-                        <td>{{ a.time1 }} x {{ a.time2 }}</td>
-                        <td>{{ a.escolha }}</td>
-                        <td>{{ a.valor }}</td>
-                        <td>{{ a.resultado }}</td>
-                        <td>{{ a.data_aposta }}</td>
-                    </tr>
+                <tr>
+                    <td>{{ a.usuario }}</td>
+                    <td>{{ a.time1 }} x {{ a.time2 }}</td>
+                    <td>{{ a.escolha }}</td>
+                    <td>{{ a.valor }}</td>
+                    <td>{{ a.resultado }}</td>
+                    <td>{{ a.criado_em if a.criado_em else a.data_aposta }}</td>
+                    <td>
+                        <form action="{{ url_for('atualizar_aposta') }}" method="POST">
+                            <input type="hidden" name="aposta_id" value="{{ a.id }}">
+                            <select name="resultado" class="form-select form-select-sm mb-1" required>
+                                <option value="">Atualizar Resultado</option>
+                                <option value="vitoria">Vitória</option>
+                                <option value="derrota">Derrota</option>
+                            </select>
+                            <button class="btn btn-sm btn-primary">Atualizar</button>
+                        </form>
+                        <form action="{{ url_for('deletar_aposta', aposta_id=a.id) }}" method="GET" style="display:inline;">
+                            <button class="btn btn-sm btn-danger mt-1">Deletar</button>
+                        </form>
+                    </td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
+    </div>
     {% else %}
         <p class="text-muted">Nenhuma aposta registrada.</p>
     {% endif %}
