@@ -210,15 +210,23 @@ def garantir_usuario(usuario):
 
 # Registrar aposta (exemplo adaptado)
 def registrar_aposta(usuario, jogo_id, valor, escolha):
-    conn = get_connection()
+    conn = psycopg2.connect(DB_URL)
     c = conn.cursor()
+
+    # Verifica se o usuário existe
+    c.execute("SELECT 1 FROM usuarios WHERE username = %s", (usuario,))
+    if not c.fetchone():
+        # Se não existir, cria com saldo inicial 0
+        c.execute("INSERT INTO usuarios (username, saldo) VALUES (%s, %s)", (usuario, 0))
+
+    # Agora insere a aposta
     c.execute("""
         INSERT INTO apostas (usuario, jogo_id, valor, escolha)
         VALUES (%s, %s, %s, %s)
     """, (usuario, jogo_id, valor, escolha))
+
     conn.commit()
     conn.close()
-
 
 
 
@@ -301,12 +309,10 @@ def apostar_futebol():
     else:
         return jsonify({"success": False, "mensagem": "Seleção inválida."})
 
-    # Registrar aposta
-    registrar_aposta(usuario, jogo_id, valor, vencedor)
+    # Registrar aposta (em produção: salvar em tabela de apostas)
     registrar_historico(usuario, f"Aposta Futebol: {jogo['time1']} x {jogo['time2']} - Escolha: {vencedor}", valor)
 
     return jsonify({"success": True, "saldo": saldo, "mensagem": f"Aposta registrada! Odds: {odds}"})
-
 
 
 
@@ -364,51 +370,20 @@ def registrar_aposta(usuario, jogo_id, valor, escolha):
 
 
 # -------------------- Rotas --------------------
-@app.route("/login", methods=["GET", "POST"])
+@app.route("/", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        username = request.form.get("username")
-        senha = request.form.get("senha")  # se tiver senha, senão remova
+        usuario = request.form["usuario"]
+        senha = request.form["senha"]
+        dados = carregar_dados()
+        if usuario in dados["clientes"] and dados["clientes"][usuario]["senha"] == senha:
+            session["usuario"] = usuario
+            if usuario == "admin":
+                return redirect(url_for("admin_depositos"))
+            return redirect(url_for("dashboard"))
+        flash("Login inválido")
+    return render_template("login.html")
 
-        # abre conexão
-        conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
-        cur = conn.cursor()
-
-        # busca usuário
-        cur.execute("SELECT * FROM usuarios WHERE username = %s", (username,))
-        usuario = cur.fetchone()
-        cur.close()
-        conn.close()
-
-        if not usuario:
-            flash("Usuário não encontrado!", "danger")
-            return redirect(url_for("login"))
-
-        # Se tiver senha, valide aqui:
-        # if usuario["senha"] != senha:
-        #     flash("Senha incorreta!", "danger")
-        #     return redirect(url_for("login"))
-
-        # ---------- Sessão ----------
-        session.clear()  # limpa sessão antiga
-        session["usuario_id"] = usuario["id"] if "id" in usuario else usuario.get("username")
-        session["usuario"] = usuario["username"]
-        session["is_admin"] = usuario.get("is_admin", False)
-
-        flash(f"Bem-vindo, {usuario['username']}!", "success")
-        return redirect(url_for("futebol"))
-
-    # GET: formulário de login simples
-    return """
-    <h2>Login</h2>
-    <form method="post">
-        <label>Usuário:</label><br>
-        <input type="text" name="username" required><br><br>
-        <label>Senha:</label><br>
-        <input type="password" name="senha"><br><br>
-        <button type="submit">Entrar</button>
-    </form>
-    """
 
 
 # -------------------- Depósito pendente --------------------
@@ -864,207 +839,31 @@ def deletar_historico_selecionados():
     return redirect(url_for("historico"))
 
 # -------------------- ADMIN FUTEBOL --------------------
-# -------------------- ROTA ADMIN FUTEBOL --------------------
-# -------------------- Rota Admin Futebol --------------------
-from flask import Flask, render_template, request, redirect, url_for, flash, session
-import psycopg2
 import psycopg2.extras
-from decimal import Decimal
-from datetime import datetime
 
-app = Flask(__name__)
-app.secret_key = "segredo_super_seguro"
-DB_URL = "postgresql://savesite_user:5X70ctnMmv1jfWVuCQssRvmQUjW0D56p@dpg-d37hgjjuibrs7392ou1g-a/savesite"
-
-# -------------------- Função de conexão --------------------
-def get_connection():
-    return psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
-
-# -------------------- Login exemplo --------------------
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        usuario = request.form["usuario"]
-        senha = request.form.get("senha")  # só se tiver senha
-        # exemplo: admin
-        if usuario == "admin":
-            session["usuario_id"] = 0
-            session["usuario"] = "admin"
-            session["is_admin"] = True
-            flash("Logado como admin!", "success")
-            return redirect(url_for("admin_futebol"))
-        else:
-            # usuário normal
-            conn = get_connection()
-            cur = conn.cursor()
-            cur.execute("SELECT id, saldo FROM usuarios WHERE username = %s", (usuario,))
-            user = cur.fetchone()
-            conn.close()
-            if user:
-                session["usuario_id"] = user["id"]
-                session["usuario"] = usuario
-                session["is_admin"] = False
-                flash("Logado com sucesso!", "success")
-                return redirect(url_for("futebol"))
-            else:
-                flash("Usuário não encontrado", "danger")
-    return render_template("login.html")
-
-# -------------------- Logout --------------------
-@app.route("/logout")
-def logout():
-    session.clear()
-    flash("Você saiu da conta.", "success")
-    return redirect(url_for("login"))
-
-# -------------------- Rota futebol --------------------
-@app.route("/futebol", methods=["GET", "POST"])
-def futebol():
-    if "usuario_id" not in session or session.get("is_admin"):
-        flash("Você precisa estar logado para apostar.", "warning")
-        return redirect(url_for("login"))
-
-    usuario_id = session["usuario_id"]
-    conn = get_connection()
-    cur = conn.cursor()
-    try:
-        if request.method == "POST":
-            jogo_id = request.form.get("jogo_id")
-            mercado_id = request.form.get("mercado_id")
-            valor = Decimal(request.form.get("valor"))
-
-            # saldo
-            cur.execute("SELECT saldo FROM usuarios WHERE id = %s", (usuario_id,))
-            usuario = cur.fetchone()
-            saldo = usuario["saldo"] if usuario else 0
-            if valor > saldo:
-                flash("Saldo insuficiente!", "danger")
-                return redirect(url_for("futebol"))
-
-            # insere aposta
-            cur.execute(
-                "INSERT INTO apostas (usuario, jogo_id, mercado_id, valor, criado_em) VALUES (%s, %s, %s, %s, NOW()) RETURNING id",
-                (session["usuario"], jogo_id, mercado_id, valor),
-            )
-            aposta_id = cur.fetchone()["id"]
-            # atualiza saldo
-            novo_saldo = saldo - valor
-            cur.execute("UPDATE usuarios SET saldo = %s WHERE id = %s", (novo_saldo, usuario_id))
-            conn.commit()
-            flash("Aposta registrada com sucesso!", "success")
-            return redirect(url_for("futebol"))
-
-        # GET: Jogos ativos
-        cur.execute("""
-            SELECT j.id, j.time1, j.time2, j.ativo,
-                   json_agg(json_build_object('id', m.id, 'nome', m.nome, 'odd', m.odd)) 
-                   FILTER (WHERE m.id IS NOT NULL) AS mercados
-            FROM jogos_futebol j
-            LEFT JOIN mercados_jogo m ON j.id = m.jogo_id
-            WHERE j.ativo = TRUE
-            GROUP BY j.id
-            ORDER BY j.id DESC
-        """)
-        jogos = cur.fetchall()
-
-        # Apostas do usuário
-        for jogo in jogos:
-            cur.execute("""
-                SELECT aj.id, aj.mercado_id, m.nome, aj.valor,
-                       COALESCE(a.resultado, 'Pendente') AS resultado
-                FROM apostas aj
-                JOIN apostas a ON aj.id = a.id
-                JOIN mercados_jogo m ON aj.mercado_id = m.id
-                WHERE aj.jogo_id = %s AND a.usuario = %s
-            """, (jogo["id"], session["usuario"]))
-            apostas_usuario = cur.fetchall()
-            # associa odds
-            for ap in apostas_usuario:
-                ap['odd'] = next((m['odd'] for m in jogo['mercados'] if m['id'] == ap['mercado_id']), None)
-            jogo["apostas_usuario"] = apostas_usuario if apostas_usuario else []
-
-        # saldo
-        cur.execute("SELECT saldo FROM usuarios WHERE id = %s", (usuario_id,))
-        saldo_usuario = cur.fetchone()["saldo"]
-    except Exception as e:
-        flash(f"Erro ao carregar jogos: {e}", "danger")
-        jogos, saldo_usuario = [], 0
-    finally:
-        cur.close()
-        conn.close()
-
-    return render_template("futebol.html", jogos=jogos, saldo_usuario=saldo_usuario)
-
-# -------------------- Rota admin futebol --------------------
 @app.route("/admin_futebol", methods=["GET", "POST"])
 def admin_futebol():
-    if "usuario_id" not in session or not session.get("is_admin"):
-        flash("Acesso negado! Você precisa estar logado como administrador.", "danger")
-        return redirect(url_for("login"))
+    conn = psycopg2.connect(DB_URL)
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-    conn = get_connection()
-    cur = conn.cursor()
-    try:
-        if request.method == "POST":
-            time1 = request.form["time1"]
-            time2 = request.form["time2"]
-            odds1 = Decimal(request.form["odds1"])
-            odds_empate = Decimal(request.form["odds_empate"])
-            odds2 = Decimal(request.form["odds2"])
+    # Buscar jogos
+    cur.execute("SELECT * FROM jogos_futebol ORDER BY id DESC")
+    jogos = cur.fetchall()
 
-            # insere jogo
-            cur.execute("INSERT INTO jogos_futebol (time1, time2, odds1, odds_empate, odds2, ativo) VALUES (%s,%s,%s,%s,%s,TRUE) RETURNING id",
-                        (time1, time2, odds1, odds_empate, odds2))
-            jogo_id = cur.fetchone()["id"]
+    # Buscar apostas
+    cur.execute("""
+        SELECT a.id, a.usuario, a.valor, a.escolha, a.resultado,
+               j.time1, j.time2
+        FROM apostas_futebol a
+        JOIN jogos_futebol j ON a.jogo_id = j.id
+        ORDER BY a.id DESC
+    """)
+    apostas = cur.fetchall()
 
-            # insere mercados básicos
-            cur.execute("INSERT INTO mercados_jogo (jogo_id,nome,odd) VALUES (%s,'Time1',%s)", (jogo_id, odds1))
-            cur.execute("INSERT INTO mercados_jogo (jogo_id,nome,odd) VALUES (%s,'Empate',%s)", (jogo_id, odds_empate))
-            cur.execute("INSERT INTO mercados_jogo (jogo_id,nome,odd) VALUES (%s,'Time2',%s)", (jogo_id, odds2))
-
-            conn.commit()
-            flash("Jogo e mercados adicionados com sucesso!", "success")
-            return redirect(url_for("admin_futebol"))
-
-        # GET: lista jogos
-        cur.execute("""
-            SELECT j.id, j.time1, j.time2, j.ativo,
-                   json_agg(json_build_object('id', m.id, 'nome', 'odd', m.odd)) 
-                   FILTER (WHERE m.id IS NOT NULL) AS mercados
-            FROM jogos_futebol j
-            LEFT JOIN mercados_jogo m ON j.id = m.jogo_id
-            GROUP BY j.id
-            ORDER BY j.id DESC
-        """)
-        jogos = cur.fetchall()
-
-        # últimas apostas
-        cur.execute("""
-            SELECT a.id, a.usuario, a.valor, COALESCE(a.resultado,'Pendente') AS resultado,
-                   a.criado_em, aj.jogo_id, j.time1, j.time2, aj.mercado_id, aj.escolha
-            FROM apostas a
-            JOIN apostas_jogos aj ON a.id = aj.aposta_id
-            JOIN jogos_futebol j ON aj.jogo_id = j.id
-            ORDER BY COALESCE(a.criado_em,NOW()) DESC
-            LIMIT 500
-        """)
-        apostas = cur.fetchall()
-    except Exception as e:
-        flash(f"Erro ao carregar admin_futebol: {e}", "danger")
-        jogos, apostas = [], []
-    finally:
-        cur.close()
-        conn.close()
+    cur.close()
+    conn.close()
 
     return render_template("admin_futebol.html", jogos=jogos, apostas=apostas)
-
-
-
-
-
-
-
-
 
 
 
@@ -1105,9 +904,46 @@ def delete_jogo(jogo_id):
 
 
 # ---------- Rota futebol ----------
+@app.route("/futebol", methods=["GET", "POST"])
+def futebol():
+    if "usuario" not in session:
+        return redirect(url_for("login"))
+    
+    usuario = session["usuario"]
+    dados = carregar_dados()
+    cliente = dados["clientes"].get(usuario)
+    saldo = float(cliente["saldo"]) if cliente else 0
 
+    # Pega jogos ativos
+    conn = get_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cur.execute("SELECT * FROM jogos_futebol WHERE ativo = TRUE")
+    jogos = cur.fetchall()
+    conn.close()
 
+    if request.method == "POST":
+        jogo_id = int(request.form.get("jogo_id"))
+        valor_aposta = float(request.form.get("valor_aposta", 0))
+        resultado_aposta = request.form.get("resultado")  # time1, time2 ou empate
 
+        if valor_aposta <= 0 or valor_aposta > saldo:
+            flash("Valor inválido ou saldo insuficiente!", "danger")
+            return redirect(url_for("futebol"))
+
+        # Deduz saldo do cliente
+        saldo -= valor_aposta
+        salvar_cliente(usuario, saldo=saldo)  # atualizar saldo
+
+        # Salva aposta no banco de dados
+        registrar_aposta(usuario, jogo_id, valor_aposta, resultado_aposta)
+
+        # Salva no histórico do cliente
+        registrar_historico(usuario, f"Aposta em futebol: {resultado_aposta}", valor_aposta)
+
+        flash(f"Aposta de R$ {valor_aposta:.2f} em '{resultado_aposta}' realizada!", "success")
+        return redirect(url_for("futebol"))
+
+    return render_template("futebol.html", usuario=usuario, saldo=saldo, jogos=jogos)
 
 @app.route('/atualizar_aposta', methods=['POST'])
 def atualizar_aposta():
@@ -1282,82 +1118,75 @@ def fixar_apostas():
 
 from decimal import Decimal
 
-from flask import Flask, redirect, url_for, flash
-import psycopg2
-import psycopg2.extras
-from decimal import Decimal
-
-@app.route("/atualizar_resultado/<int:aposta_id>/<resultado>")
+@app.route("/atualizar_resultado/<int:aposta_id>/<resultado>", methods=["GET"])
 def atualizar_resultado(aposta_id, resultado):
-    conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
-    cur = conn.cursor()
     try:
-        # Buscar dados da aposta
-        cur.execute("""
-            SELECT a.usuario, a.valor, a.escolha, j.odds1, j.odds_empate, j.odds2
+        conn = psycopg2.connect(DB_URL)
+        c = conn.cursor()
+
+        # Pega os dados da aposta e do jogo
+        c.execute("""
+            SELECT a.valor, a.escolha, j.odds1, j.odds_empate, j.odds2, a.usuario
             FROM apostas a
             JOIN jogos_futebol j ON a.jogo_id = j.id
             WHERE a.id = %s
         """, (aposta_id,))
-        aposta = cur.fetchone()
-
+        aposta = c.fetchone()
         if not aposta:
             flash("Aposta não encontrada.", "danger")
             return redirect(url_for("admin_futebol"))
 
-        # Atualizar resultado da aposta
-        cur.execute("UPDATE apostas SET resultado = %s WHERE id = %s", (resultado, aposta_id))
+        valor, escolha, odds1, odds_empate, odds2, usuario = aposta
 
-        # Se vitória, calcular lucro e atualizar saldo do usuário
-        if resultado.lower() == "vitoria":
-            valor = aposta['valor']  # já é Decimal
-            escolha = aposta['escolha']
-            # Determinar odds corretas e converter para Decimal
-            if escolha.lower() == 'time1':
-                odds = Decimal(aposta['odds1'])
-            elif escolha.lower() == 'empate':
-                odds = Decimal(aposta['odds_empate'])
-            else:
-                odds = Decimal(aposta['odds2'])
+        # Converte para Decimal
+        valor = Decimal(valor)
+        odds1 = Decimal(odds1)
+        odds_empate = Decimal(odds_empate)
+        odds2 = Decimal(odds2)
 
-            lucro = valor * odds
+        ganho = Decimal("0")
+        if resultado == "vitoria":
+            # Calcula ganho de acordo com a escolha
+            if escolha == "time1":
+                ganho = valor * odds1
+            elif escolha == "empate":
+                ganho = valor * odds_empate
+            else:  # time2
+                ganho = valor * odds2
 
-            cur.execute("UPDATE clientes SET saldo = saldo + %s WHERE usuario = %s", (lucro, aposta['usuario']))
+            # Atualiza saldo do usuário: soma o valor total ganho
+            c.execute("""
+                UPDATE usuarios
+                SET saldo = saldo + %s
+                WHERE username = %s
+            """, (float(ganho), usuario))  # converte para float antes de enviar para SQL
+
+        # Atualiza resultado da aposta
+        c.execute("""
+            UPDATE apostas
+            SET resultado = %s
+            WHERE id = %s
+        """, (resultado, aposta_id))
 
         conn.commit()
-        flash("Resultado atualizado com sucesso!", "success")
+        flash(f"Aposta atualizada para '{resultado}'.", "success")
+        return redirect(url_for("admin_futebol"))
+
     except Exception as e:
-        conn.rollback()
-        flash(f"Erro ao atualizar resultado: {e}", "danger")
+        print(e)
+        flash("Erro ao atualizar a aposta.", "danger")
+        return redirect(url_for("admin_futebol"))
+
     finally:
-        cur.close()
         conn.close()
-
-    return redirect(url_for("admin_futebol"))
-
-
 
 @app.route("/deletar_jogo/<int:jogo_id>")
 def deletar_jogo(jogo_id):
-    conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
     cur = conn.cursor()
-    try:
-        # Deletar todas as apostas ligadas a esse jogo
-        cur.execute("DELETE FROM apostas WHERE jogo_id = %s", (jogo_id,))
-        # Deletar o jogo
-        cur.execute("DELETE FROM jogos_futebol WHERE id = %s", (jogo_id,))
-        conn.commit()
-        flash("Jogo e apostas associadas deletados com sucesso!", "success")
-    except Exception as e:
-        conn.rollback()
-        flash(f"Erro ao deletar jogo: {e}", "danger")
-    finally:
-        cur.close()
-        conn.close()
+    cur.execute("DELETE FROM jogos WHERE id = %s", (jogo_id,))
+    conn.commit()
+    flash("Jogo deletado com sucesso!", "success")
     return redirect(url_for("admin_futebol"))
-
-
-
 
 @app.route("/deletar_aposta/<int:aposta_id>")
 def deletar_aposta(aposta_id):
@@ -1372,252 +1201,33 @@ def deletar_aposta(aposta_id):
 @app.route("/criar_tabela_apostas")
 def criar_tabela_apostas():
     try:
-        conn = get_connection()
+        conn = psycopg2.connect(DB_URL)
         cur = conn.cursor()
         cur.execute("""
-            CREATE TABLE IF NOT EXISTS apostas (
+            CREATE TABLE IF NOT EXISTS apostas_futebol (
                 id SERIAL PRIMARY KEY,
-                usuario TEXT REFERENCES clientes(usuario),
-                jogo_id INT REFERENCES jogos_futebol(id),
-                valor NUMERIC(12,2) NOT NULL,
-                escolha TEXT NOT NULL,
-                resultado TEXT DEFAULT 'pendente',
-                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                usuario VARCHAR(100) NOT NULL,
+                time1 VARCHAR(100) NOT NULL,
+                time2 VARCHAR(100) NOT NULL,
+                valor NUMERIC(10,2) NOT NULL,
+                escolha VARCHAR(50) NOT NULL,
+                resultado VARCHAR(20)
             );
         """)
         conn.commit()
         cur.close()
         conn.close()
-        return "✅ Tabela 'apostas' criada com sucesso!"
+        return "✅ Tabela 'apostas_futebol' criada com sucesso!"
     except Exception as e:
         return f"❌ Erro ao criar tabela: {e}"
 
-@app.route("/ajustar_apostas")
-def ajustar_apostas():
-    conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.DictCursor)
-    cur = conn.cursor()
-    try:
-        cur.execute("ALTER TABLE apostas ADD COLUMN jogo_id INT REFERENCES jogos_futebol(id);")
-        conn.commit()
-        msg = "Coluna 'jogo_id' adicionada na tabela 'apostas'."
-    except psycopg2.errors.DuplicateColumn:
-        conn.rollback()
-        msg = "Coluna 'jogo_id' já existe em 'apostas'."
-    cur.close()
-    conn.close()
-    return msg
 
-
-
-
-
-@app.route("/migrar_apostas")
-def migrar_apostas():
-    conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
-    cur = conn.cursor()
-    try:
-        cur.execute("ALTER TABLE apostas ADD COLUMN IF NOT EXISTS jogo_id INT REFERENCES jogos_futebol(id);")
-        conn.commit()
-        return "✅ Coluna jogo_id adicionada na tabela apostas!"
-    except Exception as e:
-        conn.rollback()
-        return f"❌ Erro na migração: {e}"
-    finally:
-        cur.close()
-        conn.close()
-
-    return msg
-
-
-
-@app.route("/migrar_multijogos")
-def migrar_multijogos():
-    import psycopg2
-    import psycopg2.extras
-
-    conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
-    cur = conn.cursor()
-    try:
-        # Criar tabela de jogos de futebol
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS jogos_futebol (
-                id SERIAL PRIMARY KEY,
-                time1 TEXT NOT NULL,
-                time2 TEXT NOT NULL,
-                ativo BOOLEAN DEFAULT TRUE
-            );
-        """)
-
-        # Criar tabela de mercados do jogo
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS mercados_jogo (
-                id SERIAL PRIMARY KEY,
-                jogo_id INT REFERENCES jogos_futebol(id) ON DELETE CASCADE,
-                nome TEXT NOT NULL,
-                odd NUMERIC(12,2) NOT NULL
-            );
-        """)
-
-        # Criar tabela de apostas principal
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS apostas (
-                id SERIAL PRIMARY KEY,
-                usuario TEXT REFERENCES clientes(usuario),
-                valor NUMERIC(12,2) NOT NULL,
-                resultado TEXT DEFAULT 'pendente',
-                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        """)
-
-        # Criar tabela de jogos dentro da aposta (apostas múltiplas)
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS apostas_jogos (
-                id SERIAL PRIMARY KEY,
-                aposta_id INT REFERENCES apostas(id) ON DELETE CASCADE,
-                jogo_id INT REFERENCES jogos_futebol(id),
-                mercado_id INT REFERENCES mercados_jogo(id),
-                escolha TEXT NOT NULL,
-                resultado TEXT DEFAULT 'pendente'
-            );
-        """)
-
-        conn.commit()
-        return "✅ Tabelas de múltiplos jogos e mercados criadas com sucesso!"
-    except Exception as e:
-        conn.rollback()
-        return f"❌ Erro ao criar tabelas: {e}"
-    finally:
-        cur.close()
-        conn.close()
-
-
-
-
-
-
-@app.route("/ajustar_tabela")
-def ajustar_tabela():
-    conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
-    cur = conn.cursor()
-    try:
-        # Permitir NULL nas odds da tabela original
-        cur.execute("ALTER TABLE jogos_futebol ALTER COLUMN odds1 DROP NOT NULL;")
-        cur.execute("ALTER TABLE jogos_futebol ALTER COLUMN odds2 DROP NOT NULL;")
-        cur.execute("ALTER TABLE jogos_futebol ALTER COLUMN odds_empate DROP NOT NULL;")
-        
-        conn.commit()
-        flash("Tabela ajustada com sucesso!", "success")
-    except Exception as e:
-        conn.rollback()
-        flash(f"Erro ao ajustar tabela: {e}", "danger")
-    finally:
-        cur.close()
-        conn.close()
-    return redirect(url_for("admin_futebol"))
-
-
-@app.route("/apostar", methods=["POST"])
-def apostar():
-    # abre conexão
-    conn = psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
-    cur = conn.cursor()
-
-    try:
-        usuario = session.get("usuario")  # garante que o usuário está logado
-        if not usuario:
-            flash("Você precisa estar logado para apostar.", "warning")
-            return redirect(url_for("login"))
-
-        jogo_id = request.form.get("jogo_id")
-        mercado_id = request.form.get("mercado_id")
-        valor = request.form.get("valor")
-
-        if not jogo_id or not mercado_id or not valor:
-            flash("Dados incompletos para registrar a aposta.", "danger")
-            return redirect(url_for("futebol"))
-
-        # pega o nome do mercado para registrar
-        cur.execute("SELECT nome, odd FROM mercados_jogo WHERE id=%s", (mercado_id,))
-        mercado = cur.fetchone()
-        if not mercado:
-            flash("Mercado selecionado inválido.", "danger")
-            return redirect(url_for("futebol"))
-
-        # insere na tabela apostas
-        cur.execute(
-            "INSERT INTO apostas (usuario, valor, resultado) VALUES (%s, %s, %s) RETURNING id",
-            (usuario, valor, "pendente")
-        )
-        aposta_row = cur.fetchone()
-        aposta_id = aposta_row["id"] if aposta_row and "id" in aposta_row else None
-        if not aposta_id:
-            raise Exception("Erro ao obter ID da aposta.")
-
-        # insere na tabela apostas_jogos
-        cur.execute(
-            "INSERT INTO apostas_jogos (aposta_id, jogo_id, mercado_id, escolha) VALUES (%s, %s, %s, %s)",
-            (aposta_id, jogo_id, mercado_id, mercado["nome"])
-        )
-
-        conn.commit()
-        flash(f"Aposta registrada com sucesso no mercado '{mercado['nome']}'!", "success")
-    except Exception as e:
-        conn.rollback()
-        flash(f"Erro ao registrar aposta: {e}", "danger")
-    finally:
-        cur.close()
-        conn.close()
-
-    return redirect(url_for("futebol"))
 
 
 
 
 if __name__ == "__main__":
     app.run(debug=True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
