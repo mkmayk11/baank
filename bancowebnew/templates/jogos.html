@@ -61,15 +61,10 @@
   </div>
 </div>
 
-<!-- AUDIOS -->
-<audio id="slotSound" src="{{ url_for('static', filename='sounds/slot_spin.mp3') }}"></audio>
-<audio id="rouletteSound" src="{{ url_for('static', filename='sounds/roulette_spin.mp3') }}"></audio>
-<audio id="winSound" src="{{ url_for('static', filename='sounds/win.mp3') }}"></audio>
-
-<!-- BOTÃO DE ATIVAR SOM -->
+<!-- BOTÃO DE SOM -->
 <button id="btnSom" 
-        style="position:fixed; top:10px; right:10px; z-index:9999; padding:6px 12px; font-size:14px; border:none; border-radius:6px; background:red; color:white; cursor:pointer;">
-  🔊 Ativar Som
+        style="position:fixed; top:10px; right:10px; z-index:9999; padding:6px 12px; font-size:14px; border:none; border-radius:6px; background:#0f0; color:#000; cursor:pointer;">
+  🔊 Som Ligado
 </button>
 
 <style>
@@ -88,17 +83,28 @@
 <script>
 const symbols = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲","🏺","💸"];
 
-// SONS
-const slotSound = document.getElementById("slotSound");
-const rouletteSound = document.getElementById("rouletteSound");
-const winSound = document.getElementById("winSound");
+// SONS ONLINE (Pixabay CDN)
+const SONS = {
+  slotSpin: "https://cdn.pixabay.com/audio/2022/03/15/audio_4c00a92f2a.mp3",
+  rouletteSpin: "https://cdn.pixabay.com/audio/2022/03/15/audio_1b2f8a6b52.mp3",
+  win: "https://cdn.pixabay.com/audio/2022/03/15/audio_2e836e3a0c.mp3",
+  jackpot: "https://cdn.pixabay.com/audio/2022/03/15/audio_60d8eebd9a.mp3",
+  lose: "https://cdn.pixabay.com/audio/2022/03/15/audio_7b06f04342.mp3"
+};
+
+let somLigado = true;
+function playSound(url) {
+  if (!somLigado) return;
+  const audio = new Audio(url);
+  audio.volume = 0.6;
+  audio.play().catch(e => console.log("Som bloqueado:", e));
+}
 
 // -------------------- SLOTS --------------------
 let rodadasGratis = {{ rodadas_gratis }};
 
 async function spinReel(reelId, finalSymbol) {
-  slotSound.currentTime = 0;
-  slotSound.play();
+  playSound(SONS.slotSpin);
   return new Promise(resolve => {
     const reel = document.getElementById(reelId);
     let i = 0;
@@ -124,9 +130,12 @@ async function startSlot(rolos, resultado, saldoFinal, rodadasRestantes){
   document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
   document.getElementById("rodadasRestantes").innerText = rodadasRestantes > 0 ? `Jogadas restantes: ${rodadasRestantes}` : "";
 
-  if(resultado.includes("Ganhou") || resultado.includes("🎉")){
-    winSound.currentTime = 0;
-    winSound.play();
+  if(resultado.includes("💎") || resultado.includes("JACKPOT")) {
+    playSound(SONS.jackpot);
+  } else if(resultado.includes("Ganhou") || resultado.includes("🎉")) {
+    playSound(SONS.win);
+  } else {
+    playSound(SONS.lose);
   }
 
   setTimeout(() => {
@@ -198,8 +207,7 @@ function drawRoulette() {
 function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhido=null, aposta=null){
     if(spinning) return;
     spinning = true;
-    rouletteSound.currentTime = 0;
-    rouletteSound.play();
+    playSound(SONS.rouletteSpin);
     const segmentAngle = (2*Math.PI)/segments.length;
     const targetAngle = (2*Math.PI*6) + winningIndex * segmentAngle;
 
@@ -237,8 +245,9 @@ function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhid
                 if(numeroFinal === numeroEscolhido){
                     const premio = aposta * 36;
                     resultadoFinal += ` 🎉 Acertou! Prêmio x36 = R$ ${premio.toFixed(2)}`;
-                    winSound.currentTime = 0;
-                    winSound.play();
+                    playSound(SONS.win);
+                } else {
+                    playSound(SONS.lose);
                 }
             }
 
@@ -272,14 +281,12 @@ document.getElementById("formRoleta").addEventListener("submit", async e => {
   animateToIndex(data.numero, data.saldo, data.resultado, numero, aposta);
 });
 
-// -------------------- BOTÃO DE ATIVAR SOM --------------------
+// -------------------- CONTROLE DE SOM --------------------
 const btnSom = document.getElementById("btnSom");
 btnSom.addEventListener("click", () => {
-    slotSound.play().catch(()=>{ slotSound.pause(); slotSound.currentTime=0; });
-    rouletteSound.play().catch(()=>{ rouletteSound.pause(); rouletteSound.currentTime=0; });
-    winSound.play().catch(()=>{ winSound.pause(); winSound.currentTime=0; });
-
-    btnSom.style.display = "none";
+  somLigado = !somLigado;
+  btnSom.style.background = somLigado ? "#0f0" : "#f00";
+  btnSom.textContent = somLigado ? "🔊 Som Ligado" : "🔈 Som Desligado";
 });
 </script>
 
