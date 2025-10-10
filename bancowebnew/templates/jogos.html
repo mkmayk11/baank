@@ -56,12 +56,17 @@
           </div>
         </div>
       </div>
-
     </div>
   </div>
 </div>
 
-<!-- 🔊 SISTEMA DE SONS (sem pastas nem arquivos locais) -->
+<!-- 🔊 BOTÃO DE ATIVAR SOM -->
+<button id="ativarSom" 
+  style="position:fixed; top:15px; right:15px; z-index:9999; padding:8px 14px; border:none; background:#0f0; color:#000; font-weight:bold; border-radius:8px; cursor:pointer; box-shadow:0 0 10px #0f0;">
+  🔊 Ativar Som
+</button>
+
+<!-- 🔊 SISTEMA DE ÁUDIO COM LINKS ONLINE -->
 <script>
 const sounds = {
   slot: "https://cdn.pixabay.com/audio/2022/03/15/audio_4c00a92f2a.mp3",
@@ -70,20 +75,18 @@ const sounds = {
   lose: "https://cdn.pixabay.com/audio/2022/03/15/audio_7b06f04342.mp3"
 };
 
+let soundEnabled = false;
 function playSound(url, volume = 0.6) {
+  if (!soundEnabled) return;
   const audio = new Audio(url);
   audio.volume = volume;
-  audio.play().catch(e => console.log("Som bloqueado:", e));
+  audio.play().catch(()=>{});
 }
 
-// desbloqueia som no primeiro clique do usuário
-let soundUnlocked = false;
-window.addEventListener("click", () => {
-  if (!soundUnlocked) {
-    playSound(sounds.win, 0);
-    soundUnlocked = true;
-    console.log("🔓 Som liberado!");
-  }
+document.getElementById("ativarSom").addEventListener("click", () => {
+  soundEnabled = true;
+  playSound(sounds.win, 0.1);
+  document.getElementById("ativarSom").style.display = "none";
 });
 </script>
 
@@ -176,88 +179,87 @@ const segments = Array.from({length:21},(_,i)=>i);
 let angle=0, spinning=false;
 
 function drawRoulette() {
-    const radius = canvas.width / 2;
-    const segmentAngle = (2 * Math.PI) / segments.length;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.save();
-    ctx.translate(radius, radius);
-    ctx.rotate(angle - segmentAngle/2 - Math.PI/2);
+  const radius = canvas.width / 2;
+  const segmentAngle = (2 * Math.PI) / segments.length;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  ctx.translate(radius, radius);
+  ctx.rotate(angle - segmentAngle/2 - Math.PI/2);
 
-    for (let i = 0; i < segments.length; i++) {
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.arc(0, 0, radius, i * segmentAngle, (i + 1) * segmentAngle);
-        ctx.fillStyle = "#111";
-        ctx.fill();
-        ctx.strokeStyle = "#0f0";
-        ctx.stroke();
+  for (let i = 0; i < segments.length; i++) {
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, radius, i * segmentAngle, (i + 1) * segmentAngle);
+      ctx.fillStyle = "#111";
+      ctx.fill();
+      ctx.strokeStyle = "#0f0";
+      ctx.stroke();
 
-        ctx.save();
-        ctx.rotate(i * segmentAngle + segmentAngle / 2);
-        ctx.fillStyle = "#fff";
-        ctx.font = "16px Arial";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(segments[i].toString(), radius * 0.65, 0);
-        ctx.restore();
-    }
+      ctx.save();
+      ctx.rotate(i * segmentAngle + segmentAngle / 2);
+      ctx.fillStyle = "#fff";
+      ctx.font = "16px Arial";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(segments[i].toString(), radius * 0.65, 0);
+      ctx.restore();
+  }
 
-    ctx.restore();
+  ctx.restore();
 }
 
 function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhido=null, aposta=null){
-    if(spinning) return;
-    spinning = true;
-    playSound(sounds.roulette);
-    const segmentAngle = (2*Math.PI)/segments.length;
-    const targetAngle = (2*Math.PI*6) + winningIndex * segmentAngle;
+  if(spinning) return;
+  spinning = true;
+  playSound(sounds.roulette);
+  const segmentAngle = (2*Math.PI)/segments.length;
+  const targetAngle = (2*Math.PI*6) + winningIndex * segmentAngle;
 
-    let currentAngle = angle;
-    let speed = 0.5;
+  let currentAngle = angle;
+  let speed = 0.5;
 
-    function animate(){
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.save();
-        ctx.translate(canvas.width/2, canvas.height/2);
-        ctx.rotate(currentAngle - segmentAngle/2 - Math.PI/2);
-        ctx.translate(-canvas.width/2, -canvas.height/2);
-        drawRoulette();
-        ctx.restore();
+  function animate(){
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(canvas.width/2, canvas.height/2);
+    ctx.rotate(currentAngle - segmentAngle/2 - Math.PI/2);
+    ctx.translate(-canvas.width/2, -canvas.height/2);
+    drawRoulette();
+    ctx.restore();
 
-        if(currentAngle < targetAngle){
-            currentAngle += speed;
-            speed *= 0.995;
-            requestAnimationFrame(animate);
+    if(currentAngle < targetAngle){
+      currentAngle += speed;
+      speed *= 0.995;
+      requestAnimationFrame(animate);
+    } else {
+      angle = targetAngle % (2*Math.PI);
+      spinning = false;
+
+      const normalizedAngle = (2*Math.PI - angle + segmentAngle/2 + Math.PI/2) % (2*Math.PI);
+      const indexUnderPointer = Math.floor(normalizedAngle / segmentAngle) % segments.length;
+      const numeroFinal = segments[indexUnderPointer];
+
+      let resultadoFinal = `Número: ${numeroFinal} → Caiu ${numeroFinal}. `;
+      let msgServidor = resultadoTexto.replace(/Caiu\s+\d+\.?/gi, "").trim();
+      if (msgServidor) resultadoFinal += msgServidor;
+
+      if(numeroEscolhido !== null && aposta !== null){
+        if(numeroFinal === numeroEscolhido){
+          const premio = aposta * 36;
+          resultadoFinal += ` 🎉 Acertou! Prêmio x36 = R$ ${premio.toFixed(2)}`;
+          playSound(sounds.win);
         } else {
-            angle = targetAngle % (2*Math.PI);
-            spinning = false;
-
-            const normalizedAngle = (2*Math.PI - angle + segmentAngle/2 + Math.PI/2) % (2*Math.PI);
-            const indexUnderPointer = Math.floor(normalizedAngle / segmentAngle) % segments.length;
-            const numeroFinal = segments[indexUnderPointer];
-
-            let resultadoFinal = `Número: ${numeroFinal} → Caiu ${numeroFinal}. `;
-            let msgServidor = resultadoTexto.replace(/Caiu\s+\d+\.?/gi, "").trim();
-            if (msgServidor) resultadoFinal += msgServidor;
-
-            if(numeroEscolhido !== null && aposta !== null){
-                if(numeroFinal === numeroEscolhido){
-                    const premio = aposta * 36;
-                    resultadoFinal += ` 🎉 Acertou! Prêmio x36 = R$ ${premio.toFixed(2)}`;
-                    playSound(sounds.win);
-                } else {
-                    playSound(sounds.lose);
-                }
-            }
-
-            document.getElementById("rouletteResult").innerText = resultadoFinal;
-            document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
-
-            setTimeout(() => { angle = 0; drawRoulette(); }, 3000);
+          playSound(sounds.lose);
         }
-    }
+      }
 
-    animate();
+      document.getElementById("rouletteResult").innerText = resultadoFinal;
+      document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
+      setTimeout(() => { angle = 0; drawRoulette(); }, 3000);
+    }
+  }
+
+  animate();
 }
 
 drawRoulette();
