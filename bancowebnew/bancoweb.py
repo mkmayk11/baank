@@ -508,6 +508,11 @@ def jogos():
 
     usuario = session["usuario"]
     dados = carregar_dados()
+
+    # protege caso o usuário não exista ainda
+    if usuario not in dados.get("clientes", {}):
+        dados.setdefault("clientes", {})[usuario] = {"saldo": 0.0, "rodadas_gratis": 0}
+
     saldo = dados["clientes"][usuario]["saldo"]
 
     # símbolos do caça-níquel
@@ -540,21 +545,20 @@ def jogos():
                 resultado = ""
 
                 # --- novas regras especiais ---
-                if rolos.count("💸") == 3:  # TRIO de dinheiro
+                if rolos.count("💸") == 3:
                     ganho = aposta * 160
                     saldo_real += ganho
                     resultado = f"💸💸💸 TRIPLO DINHEIRO! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (3 Dinheiro {rolos})", ganho)
-                elif rolos.count("💸") == 2:  # PAR de dinheiro
+                elif rolos.count("💸") == 2:
                     ganho = aposta * 70
                     saldo_real += ganho
                     resultado = f"💸💸 Dois Dinheiros! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (2 Dinheiro {rolos})", ganho)
-                elif rolos.count("🍀") == 2:  # Dois trevos
+                elif rolos.count("🍀") == 2:
                     rodadas_gratis_usuario += 10
                     resultado = f"🍀🍀 Sorte Grande! {rolos} Você ganhou 10 rodadas grátis!"
                     registrar_historico(usuario, f"Caça-níquel (2 Trevos {rolos})", 0)
-                # --- regras padrão já existentes ---
                 elif rolos.count("⭐") == 3:
                     ganho = aposta * 300
                     saldo_real += ganho
@@ -589,14 +593,16 @@ def jogos():
                     if rodadas_gratis_usuario > 0:
                         rodadas_gratis_usuario -= 1
                         resultado = f"❌ {rolos} Você perdeu uma rodada grátis, saldo não foi descontado."
+                        registrar_historico(usuario, f"Caça-níquel (Rodada grátis {rolos})", 0)
                     else:
                         saldo_real -= aposta
                         resultado = f"❌ {rolos} Você perdeu R$ {aposta:.2f}."
-                    registrar_historico(usuario, f"Caça-níquel (Derrota {rolos})", -aposta)
+                        registrar_historico(usuario, f"Caça-níquel (Derrota {rolos})", -aposta)
 
+            # salva saldo e rodadas corretamente
             dados["clientes"][usuario]["rodadas_gratis"] = rodadas_gratis_usuario
             saldo = saldo_real
-            salvar_cliente(usuario, saldo=saldo)
+            salvar_cliente(usuario, saldo=saldo, rodadas_gratis=rodadas_gratis_usuario)
 
             return jsonify({
                 "rolos": rolos,
@@ -623,7 +629,7 @@ def jogos():
             if numero == numero_sorteado:
                 premio = aposta * 56
                 saldo_real += premio
-                resultado += f" 🎉 Acertou! Prêmio x36 = R$ {premio:.2f}"
+                resultado += f" 🎉 Acertou! Prêmio x56 = R$ {premio:.2f}"
                 registrar_historico(usuario, f"Roleta acerto {numero_sorteado}", premio)
             else:
                 saldo_real -= aposta
@@ -649,6 +655,7 @@ def jogos():
         last_numero_aposta="",
         rodadas_gratis=rodadas_gratis
     )
+
 
 
 
@@ -1238,6 +1245,7 @@ def criar_tabela_apostas():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
