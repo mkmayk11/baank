@@ -525,13 +525,16 @@ def jogos():
             except:
                 return jsonify({"erro":"Aposta inválida"}), 400
 
-            rodadas_gratis_usuario = dados["clientes"][usuario].get("rodadas_gratis", 0)
+            rodadas_gratis_usuario = int(dados["clientes"][usuario].get("rodadas_gratis", 0))
             saldo_real = saldo
+
+            # usa rodada grátis se tiver
+            usando_rodada_gratis = rodadas_gratis_usuario > 0
 
             if aposta <= 0 and rodadas_gratis_usuario <= 0:
                 resultado = "Digite um valor válido de aposta!"
                 rolos = ["❔","❔","❔"]
-            elif aposta > saldo_real and rodadas_gratis_usuario <= 0:
+            elif aposta > saldo_real and not usando_rodada_gratis:
                 resultado = "Saldo insuficiente!"
                 rolos = ["❔","❔","❔"]
             else:
@@ -559,25 +562,25 @@ def jogos():
 
                 # --- regras padrão já existentes ---
                 elif rolos.count("⭐") == 3:
-                    ganho = aposta * 200
+                    ganho = aposta * 300
                     saldo_real += ganho
                     resultado = f"🌟🌟🌟 JACKPOT SUPREMO! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (Jackpot Estrelas {rolos})", ganho)
 
                 elif rolos.count("⭐") == 2:
-                    ganho = aposta * 50
+                    ganho = aposta * 60
                     saldo_real += ganho
                     resultado = f"🌟 Duas estrelas! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (2 Estrelas {rolos})", ganho)
 
                 elif rolos.count("🎲") == 3:
-                    ganho = aposta * 80
+                    ganho = aposta * 100
                     saldo_real += ganho
                     resultado = f"🎲🎲🎲 TRIPLO DADOS! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (3 Dados {rolos})", ganho)
 
                 elif rolos.count("🎲") == 2:
-                    ganho = aposta * 20
+                    ganho = aposta * 30
                     saldo_real += ganho
                     resultado = f"🎲🎲 Dois dados! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (2 Dados {rolos})", ganho)
@@ -595,7 +598,7 @@ def jogos():
                     registrar_historico(usuario, f"Caça-níquel (Par {rolos})", ganho)
 
                 else:
-                    if rodadas_gratis_usuario > 0:
+                    if usando_rodada_gratis:
                         rodadas_gratis_usuario -= 1
                         resultado = f"❌ {rolos} Você perdeu uma rodada grátis, saldo não foi descontado."
                     else:
@@ -603,9 +606,10 @@ def jogos():
                         resultado = f"❌ {rolos} Você perdeu R$ {aposta:.2f}."
                         registrar_historico(usuario, f"Caça-níquel (Derrota {rolos})", -aposta)
 
+            # salva saldo e rodadas atualizados
             dados["clientes"][usuario]["rodadas_gratis"] = rodadas_gratis_usuario
             saldo = saldo_real
-            salvar_cliente(usuario, saldo=saldo)
+            salvar_cliente(usuario, saldo=saldo, rodadas_gratis=rodadas_gratis_usuario)
 
             return jsonify({
                 "rolos": rolos,
@@ -613,7 +617,8 @@ def jogos():
                 "saldo": saldo,
                 "rodadas_gratis": rodadas_gratis_usuario
             })
-                  # -------- ROLETA --------
+
+        # -------- ROLETA --------
         elif tipo == "roleta":
             try:
                 aposta = float(data.get("aposta", 0))
@@ -657,6 +662,7 @@ def jogos():
         last_numero_aposta="",
         rodadas_gratis=rodadas_gratis
     )
+
   
 
 
@@ -1243,6 +1249,7 @@ def criar_tabela_apostas():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
