@@ -674,10 +674,6 @@ def jogos():
         rodadas_gratis=rodadas_gratis
     )
 
-# Rodar app
-if __name__ == "__main__":
-    app.run(debug=True)
-
 
 
 
@@ -1268,6 +1264,7 @@ def criar_tabela_apostas():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
