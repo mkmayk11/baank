@@ -507,34 +507,31 @@ def jogos():
         return redirect(url_for("login"))
 
     usuario = session["usuario"]
-    dados = carregar_dados()  # Certifique-se que retorna {'usuarios': {...}}
-    if usuario not in dados["usuarios"]:
-        # se usuário não existir, cria com saldo 0
-        dados["usuarios"][usuario] = {"saldo": 0.0, "rodadas_gratis": 0}
+    dados = carregar_dados()
+    saldo = dados["clientes"][usuario]["saldo"]
 
-    saldo = dados["usuarios"][usuario].get("saldo", 0.0)
-
+    # símbolos do caça-níquel
     simbolos = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲","🏺","💸"]
 
     if request.method == "POST":
         data = request.get_json()
         tipo = data.get("tipo")
 
+        # -------- CAÇA-NÍQUEL --------
         if tipo == "caca":
             try:
                 aposta = float(data.get("aposta", 0))
                 lote = int(data.get("lote", 1))
             except:
-                return jsonify({"erro": "Aposta inválida"}), 400
+                return jsonify({"erro":"Aposta inválida"}), 400
 
-            rodadas_gratis_usuario = int(dados["usuarios"][usuario].get("rodadas_gratis", 0))
+            rodadas_gratis_usuario = dados["clientes"][usuario].get("rodadas_gratis", 0)
             saldo_real = saldo
-            usando_rodada_gratis = rodadas_gratis_usuario > 0
 
             if aposta <= 0 and rodadas_gratis_usuario <= 0:
                 resultado = "Digite um valor válido de aposta!"
                 rolos = ["❔","❔","❔"]
-            elif aposta > saldo_real and not usando_rodada_gratis:
+            elif aposta > saldo_real and rodadas_gratis_usuario <= 0:
                 resultado = "Saldo insuficiente!"
                 rolos = ["❔","❔","❔"]
             else:
@@ -542,73 +539,64 @@ def jogos():
                 ganho = 0
                 resultado = ""
 
-                # Regras especiais
-                if rolos.count("💸") == 3:
+                # --- novas regras especiais ---
+                if rolos.count("💸") == 3:  # TRIO de dinheiro
                     ganho = aposta * 160
                     saldo_real += ganho
                     resultado = f"💸💸💸 TRIPLO DINHEIRO! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (3 Dinheiro {rolos})", ganho)
-
-                elif rolos.count("💸") == 2:
+                elif rolos.count("💸") == 2:  # PAR de dinheiro
                     ganho = aposta * 70
                     saldo_real += ganho
                     resultado = f"💸💸 Dois Dinheiros! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (2 Dinheiro {rolos})", ganho)
-
-                elif rolos.count("🍀") == 2:
+                elif rolos.count("🍀") == 2:  # Dois trevos
                     rodadas_gratis_usuario += 10
                     resultado = f"🍀🍀 Sorte Grande! {rolos} Você ganhou 10 rodadas grátis!"
                     registrar_historico(usuario, f"Caça-níquel (2 Trevos {rolos})", 0)
-
-                # Regras padrão
+                # --- regras padrão já existentes ---
                 elif rolos.count("⭐") == 3:
                     ganho = aposta * 300
                     saldo_real += ganho
                     resultado = f"🌟🌟🌟 JACKPOT SUPREMO! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (Jackpot Estrelas {rolos})", ganho)
-
                 elif rolos.count("⭐") == 2:
-                    ganho = aposta * 60
+                    ganho = aposta * 50
                     saldo_real += ganho
                     resultado = f"🌟 Duas estrelas! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (2 Estrelas {rolos})", ganho)
-
                 elif rolos.count("🎲") == 3:
-                    ganho = aposta * 100
+                    ganho = aposta * 80
                     saldo_real += ganho
                     resultado = f"🎲🎲🎲 TRIPLO DADOS! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (3 Dados {rolos})", ganho)
-
                 elif rolos.count("🎲") == 2:
-                    ganho = aposta * 30
+                    ganho = aposta * 20
                     saldo_real += ganho
                     resultado = f"🎲🎲 Dois dados! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (2 Dados {rolos})", ganho)
-
                 elif rolos[0] == rolos[1] == rolos[2]:
                     ganho = aposta * 30
                     saldo_real += ganho
                     resultado = f"🎉 Jackpot! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (Jackpot {rolos})", ganho)
-
                 elif rolos[0] == rolos[1] or rolos[1] == rolos[2] or rolos[0] == rolos[2]:
-                    ganho = aposta * 6
+                    ganho = aposta * 8
                     saldo_real += ganho
                     resultado = f"✨ Par! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (Par {rolos})", ganho)
-
                 else:
-                    if usando_rodada_gratis:
+                    if rodadas_gratis_usuario > 0:
                         rodadas_gratis_usuario -= 1
                         resultado = f"❌ {rolos} Você perdeu uma rodada grátis, saldo não foi descontado."
                     else:
                         saldo_real -= aposta
                         resultado = f"❌ {rolos} Você perdeu R$ {aposta:.2f}."
-                        registrar_historico(usuario, f"Caça-níquel (Derrota {rolos})", -aposta)
+                    registrar_historico(usuario, f"Caça-níquel (Derrota {rolos})", -aposta)
 
-            dados["usuarios"][usuario]["rodadas_gratis"] = rodadas_gratis_usuario
+            dados["clientes"][usuario]["rodadas_gratis"] = rodadas_gratis_usuario
             saldo = saldo_real
-            salvar_cliente(usuario, saldo=saldo, rodadas_gratis=rodadas_gratis_usuario)
+            salvar_cliente(usuario, saldo=saldo)
 
             return jsonify({
                 "rolos": rolos,
@@ -617,6 +605,7 @@ def jogos():
                 "rodadas_gratis": rodadas_gratis_usuario
             })
 
+        # -------- ROLETA --------
         elif tipo == "roleta":
             try:
                 aposta = float(data.get("aposta", 0))
@@ -632,7 +621,7 @@ def jogos():
             resultado = f"Caiu {numero_sorteado}."
 
             if numero == numero_sorteado:
-                premio = aposta * 36
+                premio = aposta * 56
                 saldo_real += premio
                 resultado += f" 🎉 Acertou! Prêmio x36 = R$ {premio:.2f}"
                 registrar_historico(usuario, f"Roleta acerto {numero_sorteado}", premio)
@@ -649,7 +638,8 @@ def jogos():
                 "saldo": saldo
             })
 
-    rodadas_gratis = dados["usuarios"][usuario].get("rodadas_gratis", 0)
+    # -------- GET normal --------
+    rodadas_gratis = dados["clientes"][usuario].get("rodadas_gratis", 0)
     return render_template(
         "jogos.html",
         saldo=saldo,
@@ -1248,6 +1238,7 @@ def criar_tabela_apostas():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
