@@ -527,19 +527,14 @@ def registrar_historico(usuario, descricao, valor):
 
 @app.route("/jogos", methods=["GET", "POST"])
 def jogos():
-    # Se não estiver logado ou for admin, redireciona para logout (login inexistente)
     if "usuario" not in session or session["usuario"] == "admin":
-        return redirect(url_for("logout"))  # use "logout" ou outro endpoint válido
+        return redirect(url_for("login"))
 
     usuario = session["usuario"]
     dados = carregar_dados()
+    saldo = dados["clientes"][usuario]["saldo"]
 
-    # Evita KeyError caso o usuário não exista
-    if usuario not in dados.get("clientes", {}):
-        return redirect(url_for("logout"))  # ou outra página de erro segura
-
-    saldo = dados["clientes"][usuario].get("saldo", 0)
-
+    # símbolos do caça-níquel
     simbolos = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲","🏺","💸"]
 
     if request.method == "POST":
@@ -569,21 +564,21 @@ def jogos():
                 resultado = ""
 
                 # --- novas regras especiais ---
-                if rolos.count("💸") == 3:
+                if rolos.count("💸") == 3:  # TRIO de dinheiro
                     ganho = aposta * 160
                     saldo_real += ganho
                     resultado = f"💸💸💸 TRIPLO DINHEIRO! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (3 Dinheiro {rolos})", ganho)
-                elif rolos.count("💸") == 2:
+                elif rolos.count("💸") == 2:  # PAR de dinheiro
                     ganho = aposta * 70
                     saldo_real += ganho
                     resultado = f"💸💸 Dois Dinheiros! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (2 Dinheiro {rolos})", ganho)
-                elif rolos.count("🍀") == 2:
+                elif rolos.count("🍀") == 2:  # Dois trevos
                     rodadas_gratis_usuario += 10
                     resultado = f"🍀🍀 Sorte Grande! {rolos} Você ganhou 10 rodadas grátis!"
                     registrar_historico(usuario, f"Caça-níquel (2 Trevos {rolos})", 0)
-                # --- regras padrão ---
+                # --- regras padrão já existentes ---
                 elif rolos.count("⭐") == 3:
                     ganho = aposta * 300
                     saldo_real += ganho
@@ -610,7 +605,7 @@ def jogos():
                     resultado = f"🎉 Jackpot! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (Jackpot {rolos})", ganho)
                 elif rolos[0] == rolos[1] or rolos[1] == rolos[2] or rolos[0] == rolos[2]:
-                    ganho = aposta * 8
+                    ganho = aposta * 6
                     saldo_real += ganho
                     resultado = f"✨ Par! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (Par {rolos})", ganho)
@@ -650,7 +645,7 @@ def jogos():
             resultado = f"Caiu {numero_sorteado}."
 
             if numero == numero_sorteado:
-                premio = aposta * 56
+                premio = aposta * 36
                 saldo_real += premio
                 resultado += f" 🎉 Acertou! Prêmio x36 = R$ {premio:.2f}"
                 registrar_historico(usuario, f"Roleta acerto {numero_sorteado}", premio)
@@ -1269,6 +1264,7 @@ def criar_tabela_apostas():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
