@@ -146,7 +146,7 @@
 </style>
 
 <script>
-  const symbols = ["🍒","🍀"];
+  const symbols = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲","🏺","💸"];
 
   // -------------------- SLOTS --------------------
   let rodadasGratis = {{ rodadas_gratis }};
@@ -192,7 +192,7 @@
 
   async function runSlots(aposta, lote){
     let totalLote = lote + rodadasGratis; // inicializa com o lote do form + rodadas grátis atuais
-    rodadasGratis = 0; // zera para acumular novas rodadas do servidor
+
     for(let i = 0; i < totalLote; i++){
         const resp = await fetch("{{ url_for('jogos') }}", {
             method: "POST",
@@ -201,16 +201,19 @@
         });
         const data = await resp.json();
 
-        // atualiza rodadas grátis vindas do servidor
+        // soma as novas rodadas grátis vindas do servidor
         if(data.rodadas_gratis && data.rodadas_gratis > 0){
-            rodadasGratis = data.rodadas_gratis;
-            totalLote = (totalLote - i - 1) + rodadasGratis; // recalcula totalLote considerando rodadas extras
+            rodadasGratis += data.rodadas_gratis;
+            totalLote = (totalLote - i - 1) + data.rodadas_gratis; // ajusta o total de rodadas restantes
         }
 
         await startSlot(data.rolos, data.resultado, data.saldo, totalLote - i - 1);
+
+        // pausa entre rodadas
         await new Promise(res => setTimeout(res, 4000));
     }
 }
+
 
 
   document.getElementById("formCaca").addEventListener("submit", async e => {
@@ -286,8 +289,8 @@
         if (msgServidor) resultadoFinal += msgServidor;
         if(numeroEscolhido !== null && aposta !== null){
           if(numeroFinal === numeroEscolhido){
-            const premio = aposta * 36;
-            resultadoFinal += ` 🎉 Acertou! Prêmio x36 = R$ ${premio.toFixed(2)}`;
+            const premio = aposta * 56;
+            resultadoFinal += ` 🎉 Acertou! Prêmio x56 = R$ ${premio.toFixed(2)}`;
             playSound(sounds.win);
           } else {
             playSound(sounds.lose);
@@ -319,5 +322,6 @@
   });
 </script>
 {% endblock %}
+
 
 
