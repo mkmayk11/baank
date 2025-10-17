@@ -105,6 +105,26 @@ document.getElementById("ativarSom").addEventListener("click", () => {
 
 <script>
 const symbols = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲","🏺","💸"];
+const sounds = {
+  slot: "https://cdn.pixabay.com/audio/2022/03/15/audio_4c00a92f2a.mp3",
+  roulette: "https://cdn.pixabay.com/audio/2022/03/15/audio_4c00a92f2a.mp3",
+  win: "https://cdn.pixabay.com/audio/2022/03/15/audio_2e836e3a0c.mp3",
+  lose: "https://cdn.pixabay.com/audio/2022/03/15/audio_7b06f04342.mp3"
+};
+
+let soundEnabled = false;
+function playSound(url, volume = 0.6) {
+  if (!soundEnabled) return;
+  const audio = new Audio(url);
+  audio.volume = volume;
+  audio.play().catch(()=>{});
+}
+
+document.getElementById("ativarSom").addEventListener("click", () => {
+  soundEnabled = true;
+  playSound(sounds.win, 0.1);
+  document.getElementById("ativarSom").style.display = "none";
+});
 
 // -------------------- SLOTS --------------------
 let rodadasGratis = {{ rodadas_gratis }};
@@ -131,6 +151,7 @@ async function startSlot(rolos, resultado, saldoFinal, rodadasRestantes){
   await spinReel("reel1", rolos[0]);
   await spinReel("reel2", rolos[1]);
   await spinReel("reel3", rolos[2]);
+  
   document.getElementById("slotResultado").style.display="block";
   document.getElementById("slotResultado").innerText = resultado;
   document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
@@ -151,16 +172,22 @@ async function startSlot(rolos, resultado, saldoFinal, rodadasRestantes){
 }
 
 async function runSlots(aposta, lote){
-  let totalLote = lote + rodadasGratis;
+  let rodadasRestantes = lote + rodadasGratis;
   rodadasGratis = 0;
-  for(let i=0; i<totalLote; i++){
+
+  while(rodadasRestantes > 0){
     const resp = await fetch("{{ url_for('jogos') }}", {
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({tipo:"caca", aposta, lote:1})
     });
     const data = await resp.json();
-    await startSlot(data.rolos, data.resultado, data.saldo, totalLote-i-1);
+
+    // Adiciona rodadas grátis que vieram do servidor
+    rodadasRestantes += data.rodadas_gratis || 0;
+    rodadasRestantes--; // desconta a rodada atual
+
+    await startSlot(data.rolos, data.resultado, data.saldo, rodadasRestantes);
     await new Promise(res => setTimeout(res, 4000));
   }
 }
@@ -279,4 +306,6 @@ document.getElementById("formRoleta").addEventListener("submit", async e => {
   animateToIndex(data.numero, data.saldo, data.resultado, numero, aposta);
 });
 </script>
+
 {% endblock %}
+
