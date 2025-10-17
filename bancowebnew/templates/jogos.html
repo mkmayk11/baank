@@ -191,19 +191,27 @@
   }
 
   async function runSlots(aposta, lote){
-    let totalLote = lote + rodadasGratis;
-    rodadasGratis = 0;
-    for(let i=0; i<totalLote; i++){
-      const resp = await fetch("{{ url_for('jogos') }}", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({tipo:"caca", aposta, lote:1})
-      });
-      const data = await resp.json();
-      await startSlot(data.rolos, data.resultado, data.saldo, totalLote-i-1);
-      await new Promise(res => setTimeout(res, 4000));
+    let totalLote = lote + rodadasGratis; // inicializa com o lote do form + rodadas grátis atuais
+    rodadasGratis = 0; // zera para acumular novas rodadas do servidor
+    for(let i = 0; i < totalLote; i++){
+        const resp = await fetch("{{ url_for('jogos') }}", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({tipo: "caca", aposta, lote: 1})
+        });
+        const data = await resp.json();
+
+        // atualiza rodadas grátis vindas do servidor
+        if(data.rodadas_gratis && data.rodadas_gratis > 0){
+            rodadasGratis = data.rodadas_gratis;
+            totalLote = (totalLote - i - 1) + rodadasGratis; // recalcula totalLote considerando rodadas extras
+        }
+
+        await startSlot(data.rolos, data.resultado, data.saldo, totalLote - i - 1);
+        await new Promise(res => setTimeout(res, 4000));
     }
-  }
+}
+
 
   document.getElementById("formCaca").addEventListener("submit", async e => {
     e.preventDefault();
@@ -311,4 +319,5 @@
   });
 </script>
 {% endblock %}
+
 
