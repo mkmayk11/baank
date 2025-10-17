@@ -511,7 +511,7 @@ def jogos():
     saldo = dados["clientes"][usuario]["saldo"]
 
     # símbolos do caça-níquel
-    simbolos = ["🍒","🍀"]
+    simbolos = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲","🏺","💸"]
 
     if request.method == "POST":
         data = request.get_json()
@@ -589,7 +589,7 @@ def jogos():
                     registrar_historico(usuario, f"Caça-níquel (Jackpot {rolos})", ganho)
 
                 elif rolos[0] == rolos[1] or rolos[1] == rolos[2] or rolos[0] == rolos[2]:
-                    ganho = aposta * 6
+                    ganho = aposta * 8
                     saldo_real += ganho
                     resultado = f"✨ Par! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (Par {rolos})", ganho)
@@ -629,9 +629,9 @@ def jogos():
             resultado = f"Caiu {numero_sorteado}."
 
             if numero == numero_sorteado:
-                premio = aposta * 36
+                premio = aposta * 56
                 saldo_real += premio
-                resultado += f" 🎉 Acertou! Prêmio x36 = R$ {premio:.2f}"
+                resultado += f" 🎉 Acertou! Prêmio x56 = R$ {premio:.2f}"
                 registrar_historico(usuario, f"Roleta acerto {numero_sorteado}", premio)
             else:
                 saldo_real -= aposta
@@ -1243,5 +1243,6 @@ def criar_tabela_apostas():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
