@@ -511,7 +511,7 @@ def jogos():
     saldo = dados["clientes"][usuario]["saldo"]
 
     # símbolos do caça-níquel
-    simbolos = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲","🏺","💸"]
+    simbolos = ["🍒","🍀"]
 
     if request.method == "POST":
         data = request.get_json()
@@ -1243,4 +1243,5 @@ def criar_tabela_apostas():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
