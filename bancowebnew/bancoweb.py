@@ -559,25 +559,25 @@ def jogos():
 
                 # --- regras padrão já existentes ---
                 elif rolos.count("⭐") == 3:
-                    ganho = aposta * 200
+                    ganho = aposta * 250
                     saldo_real += ganho
                     resultado = f"🌟🌟🌟 JACKPOT SUPREMO! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (Jackpot Estrelas {rolos})", ganho)
 
                 elif rolos.count("⭐") == 2:
-                    ganho = aposta * 50
+                    ganho = aposta * 80
                     saldo_real += ganho
                     resultado = f"🌟 Duas estrelas! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (2 Estrelas {rolos})", ganho)
 
                 elif rolos.count("🎲") == 3:
-                    ganho = aposta * 80
+                    ganho = aposta * 130
                     saldo_real += ganho
                     resultado = f"🎲🎲🎲 TRIPLO DADOS! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (3 Dados {rolos})", ganho)
 
                 elif rolos.count("🎲") == 2:
-                    ganho = aposta * 20
+                    ganho = aposta * 50
                     saldo_real += ganho
                     resultado = f"🎲🎲 Dois dados! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (2 Dados {rolos})", ganho)
@@ -1243,6 +1243,7 @@ def criar_tabela_apostas():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
