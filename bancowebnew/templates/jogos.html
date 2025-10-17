@@ -4,23 +4,19 @@
   <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h2 class="text-white">🎲 Maask Cassino 🎲 </h2>
-      <div id="saldoBox" class="px-3 py-2" style="background: rgba(0,0,0,0.4); border-radius:12px; border:1px solid #2f2;">
+      <div id="saldoBox" class="px-3 py-2" style="background: rgba(0,0,0,0.4); border-radius:12px; border:1px solid #2f2">
         <strong>Saldo:</strong> R$ {{ '%.2f' % saldo }}
       </div>
     </div>
 
     <div class="row justify-content-center g-4">
-
       <!-- 🎰 CAÇA-NÍQUEL -->
       <div class="col-md-6">
         <div class="card p-4 text-center shadow-lg slot-card">
           <h2 class="mb-3">🎰 Caça-Níquel</h2>
           <form id="formCaca">
-            <input type="number" name="aposta_caca" id="apostaCaca" step="0.01"
-              value="{{ last_aposta_caca }}" placeholder="Valor da aposta" required class="form-control mb-2">
-            <input type="number" name="lote" id="lote" value="{{ last_lote }}"
-              placeholder="Qtd rodadas (opcional)" class="form-control mb-3">
-
+            <input type="number" name="aposta_caca" id="apostaCaca" step="0.01" value="{{ last_aposta_caca }}" placeholder="Valor da aposta" required class="form-control mb-2">
+            <input type="number" name="lote" id="lote" value="{{ last_lote }}" placeholder="Qtd rodadas (opcional)" class="form-control mb-3">
             <button type="submit" class="btn btn-neon w-100">Girar 🎰</button>
           </form>
 
@@ -29,6 +25,7 @@
             <div class="reel" id="reel2">❔</div>
             <div class="reel" id="reel3">❔</div>
           </div>
+
           <div id="slotResultado" class="alert alert-info mt-3" style="display:none;"></div>
           <div id="rodadasRestantes" class="text-white mt-2" style="font-size:0.9rem;"></div>
         </div>
@@ -39,11 +36,8 @@
         <div class="card p-4 text-center shadow-lg roulette-card">
           <h2 class="mb-3">🎡 Roleta</h2>
           <form id="formRoleta">
-            <input type="number" name="aposta_roleta" id="apostaRoleta" step="0.01"
-              value="{{ last_aposta_roleta }}" placeholder="Valor da aposta" required class="form-control mb-2">
-            <input type="number" name="numero_roleta" id="numeroAposta" min="0" max="20"
-              value="{{ last_numero_aposta }}" placeholder="Número apostado (0-20)" class="form-control mb-3">
-
+            <input type="number" name="aposta_roleta" id="apostaRoleta" step="0.01" value="{{ last_aposta_roleta }}" placeholder="Valor da aposta" required class="form-control mb-2">
+            <input type="number" name="numero_roleta" id="numeroAposta" min="0" max="20" value="{{ last_numero_aposta }}" placeholder="Número apostado (0-20)" class="form-control mb-3">
             <button type="submit" class="btn btn-neon w-100">Rodar 🎡</button>
           </form>
 
@@ -61,159 +55,177 @@
 </div>
 
 <!-- 🔊 BOTÃO DE ATIVAR SOM -->
-<button id="ativarSom" 
-  style="position:fixed; top:15px; right:15px; z-index:9999; padding:8px 14px; border:none; background:#0f0; color:#000; font-weight:bold; border-radius:8px; cursor:pointer; box-shadow:0 0 10px #0f0;">
+<button id="ativarSom" style="position:fixed; top:15px; right:15px; z-index:9999; padding:8px 14px; border:none; background:#0f0; color:#000; font-weight:bold; border-radius:8px; cursor:pointer; box-shadow:0 0 10px #0f0;">
   🔊 Ativar Som
 </button>
 
 <!-- 🔊 SISTEMA DE ÁUDIO COM LINKS ONLINE -->
 <script>
-const sounds = {
-  slot: "https://cdn.pixabay.com/audio/2022/03/15/audio_4c00a92f2a.mp3",
-  roulette: "https://cdn.pixabay.com/audio/2022/03/15/audio_4c00a92f2a.mp3",
-  win: "https://cdn.pixabay.com/audio/2022/03/15/audio_2e836e3a0c.mp3",
-  lose: "https://cdn.pixabay.com/audio/2022/03/15/audio_7b06f04342.mp3"
-};
-
-let soundEnabled = false;
-function playSound(url, volume = 0.6) {
-  if (!soundEnabled) return;
-  const audio = new Audio(url);
-  audio.volume = volume;
-  audio.play().catch(()=>{});
-}
-
-document.getElementById("ativarSom").addEventListener("click", () => {
-  soundEnabled = true;
-  playSound(sounds.win, 0.1);
-  document.getElementById("ativarSom").style.display = "none";
-});
+  const sounds = {
+    slot: "https://cdn.pixabay.com/audio/2022/03/15/audio_4c00a92f2a.mp3",
+    roulette: "https://cdn.pixabay.com/audio/2022/03/15/audio_4c00a92f2a.mp3",
+    win: "https://cdn.pixabay.com/audio/2022/03/15/audio_2e836e3a0c.mp3",
+    lose: "https://cdn.pixabay.com/audio/2022/03/15/audio_7b06f04342.mp3"
+  };
+  let soundEnabled = false;
+  function playSound(url, volume = 0.6) {
+    if (!soundEnabled) return;
+    const audio = new Audio(url);
+    audio.volume = volume;
+    audio.play().catch(()=>{});
+  }
+  document.getElementById("ativarSom").addEventListener("click", () => {
+    soundEnabled = true;
+    playSound(sounds.win, 0.1);
+    document.getElementById("ativarSom").style.display = "none";
+  });
 </script>
 
 <style>
-  body { background: radial-gradient(circle at center, #111 0%, #000 100%); color: #fff; }
-  .card { border-radius: 20px; background: rgba(20,20,20,0.95); border: 1px solid #444; }
-  .btn-neon { background: linear-gradient(45deg, #0ff, #0f0); color: #000; font-weight: bold; border-radius: 12px; transition: 0.2s; }
-  .btn-neon:hover { transform: scale(1.05); box-shadow: 0 0 20px #0f0; }
-  .slot-machine { display: flex; justify-content: center; gap: 10px; }
-  .reel { width: 70px; height: 70px; background: #111; border: 2px solid #0f0; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; color: #0f0; box-shadow: inset 0 0 10px #0f0; }
-  .roulette-container { position: relative; margin: auto; }
-  .roulette-wrapper { position: relative; display: inline-block; }
-  #rouletteCanvas { border-radius: 50%; border: 5px solid #0f0; box-shadow: 0 0 20px #0f0; background: #111; }
-  .roulette-pointer { position: absolute; top: -25px; left: 50%; transform: translateX(-50%); font-size: 2rem; color: #ff0; text-shadow: 0 0 5px #000, 0 0 10px #ff0; }
+  body {
+    background: radial-gradient(circle at center, #111 0%, #000 100%);
+    color: #fff;
+  }
+  .card {
+    border-radius: 20px;
+    background: rgba(20,20,20,0.95);
+    border: 1px solid #444;
+  }
+  .btn-neon {
+    background: linear-gradient(45deg, #0ff, #0f0);
+    color: #000;
+    font-weight: bold;
+    border-radius: 12px;
+    transition: 0.2s;
+  }
+  .btn-neon:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px #0f0;
+  }
+  .slot-machine {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+  .reel {
+    width: 70px;
+    height: 70px;
+    background: #111;
+    border: 2px solid #0f0;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.2rem;
+    color: #0f0;
+    box-shadow: inset 0 0 10px #0f0;
+  }
+  .roulette-container {
+    position: relative;
+    margin: auto;
+  }
+  .roulette-wrapper {
+    position: relative;
+    display: inline-block;
+  }
+  #rouletteCanvas {
+    border-radius: 50%;
+    border: 5px solid #0f0;
+    box-shadow: 0 0 20px #0f0;
+    background: #111;
+  }
+  .roulette-pointer {
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 2rem;
+    color: #ff0;
+    text-shadow: 0 0 5px #000, 0 0 10px #ff0;
+  }
 </style>
 
 <script>
-const symbols = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲","🏺","💸"];
-const sounds = {
-  slot: "https://cdn.pixabay.com/audio/2022/03/15/audio_4c00a92f2a.mp3",
-  roulette: "https://cdn.pixabay.com/audio/2022/03/15/audio_4c00a92f2a.mp3",
-  win: "https://cdn.pixabay.com/audio/2022/03/15/audio_2e836e3a0c.mp3",
-  lose: "https://cdn.pixabay.com/audio/2022/03/15/audio_7b06f04342.mp3"
-};
+  const symbols = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲","🏺","💸"];
 
-let soundEnabled = false;
-function playSound(url, volume = 0.6) {
-  if (!soundEnabled) return;
-  const audio = new Audio(url);
-  audio.volume = volume;
-  audio.play().catch(()=>{});
-}
+  // -------------------- SLOTS --------------------
+  let rodadasGratis = {{ rodadas_gratis }};
 
-document.getElementById("ativarSom").addEventListener("click", () => {
-  soundEnabled = true;
-  playSound(sounds.win, 0.1);
-  document.getElementById("ativarSom").style.display = "none";
-});
-
-// -------------------- SLOTS --------------------
-let rodadasGratis = {{ rodadas_gratis }};
-
-async function spinReel(reelId, finalSymbol) {
-  playSound(sounds.slot);
-  return new Promise(resolve => {
-    const reel = document.getElementById(reelId);
-    let i = 0;
-    const interval = setInterval(() => {
-      reel.textContent = symbols[i % symbols.length];
-      i++;
-    }, 80);
-    setTimeout(() => {
-      clearInterval(interval);
-      reel.textContent = finalSymbol;
-      resolve();
-    }, 1800);
-  });
-}
-
-async function startSlot(rolos, resultado, saldoFinal, rodadasRestantes){
-  document.getElementById("slotResultado").style.display="none";
-  await spinReel("reel1", rolos[0]);
-  await spinReel("reel2", rolos[1]);
-  await spinReel("reel3", rolos[2]);
-  
-  document.getElementById("slotResultado").style.display="block";
-  document.getElementById("slotResultado").innerText = resultado;
-  document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
-  document.getElementById("rodadasRestantes").innerText = rodadasRestantes > 0 ? `Jogadas restantes: ${rodadasRestantes}` : "";
-
-  if(resultado.includes("Ganhou") || resultado.includes("🎉")){
-    playSound(sounds.win);
-  } else if(resultado.includes("Perdeu")){
-    playSound(sounds.lose);
-  }
-
-  setTimeout(() => {
-    document.getElementById("reel1").textContent = "❔";
-    document.getElementById("reel2").textContent = "❔";
-    document.getElementById("reel3").textContent = "❔";
-    document.getElementById("slotResultado").style.display = "none";
-  }, 3000);
-}
-
-async function runSlots(aposta, lote){
-  let rodadasRestantes = lote + rodadasGratis;
-  rodadasGratis = 0;
-
-  while(rodadasRestantes > 0){
-    const resp = await fetch("{{ url_for('jogos') }}", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({tipo:"caca", aposta, lote:1})
+  async function spinReel(reelId, finalSymbol) {
+    playSound(sounds.slot);
+    return new Promise(resolve => {
+      const reel = document.getElementById(reelId);
+      let i = 0;
+      const interval = setInterval(() => {
+        reel.textContent = symbols[i % symbols.length];
+        i++;
+      }, 80);
+      setTimeout(() => {
+        clearInterval(interval);
+        reel.textContent = finalSymbol;
+        resolve();
+      }, 1800);
     });
-    const data = await resp.json();
-
-    // Adiciona rodadas grátis que vieram do servidor
-    rodadasRestantes += data.rodadas_gratis || 0;
-    rodadasRestantes--; // desconta a rodada atual
-
-    await startSlot(data.rolos, data.resultado, data.saldo, rodadasRestantes);
-    await new Promise(res => setTimeout(res, 4000));
   }
-}
 
-document.getElementById("formCaca").addEventListener("submit", async e => {
-  e.preventDefault();
-  const aposta = parseFloat(document.getElementById("apostaCaca").value);
-  const lote = parseInt(document.getElementById("lote").value) || 1;
-  runSlots(aposta, lote);
-});
+  async function startSlot(rolos, resultado, saldoFinal, rodadasRestantes){
+    document.getElementById("slotResultado").style.display="none";
+    await spinReel("reel1", rolos[0]);
+    await spinReel("reel2", rolos[1]);
+    await spinReel("reel3", rolos[2]);
+    document.getElementById("slotResultado").style.display="block";
+    document.getElementById("slotResultado").innerText = resultado;
+    document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
+    document.getElementById("rodadasRestantes").innerText = rodadasRestantes > 0 ? `Jogadas restantes: ${rodadasRestantes}` : "";
+    if(resultado.includes("Ganhou") || resultado.includes("🎉")){
+      playSound(sounds.win);
+    } else if(resultado.includes("Perdeu")){
+      playSound(sounds.lose);
+    }
+    setTimeout(() => {
+      document.getElementById("reel1").textContent = "❔";
+      document.getElementById("reel2").textContent = "❔";
+      document.getElementById("reel3").textContent = "❔";
+      document.getElementById("slotResultado").style.display = "none";
+    }, 3000);
+  }
 
-// -------------------- ROLETA --------------------
-const canvas = document.getElementById("rouletteCanvas");
-const ctx = canvas.getContext("2d");
-const segments = Array.from({length:21},(_,i)=>i);
-let angle=0, spinning=false;
+  async function runSlots(aposta, lote){
+    let totalLote = lote + rodadasGratis;
+    rodadasGratis = 0;
+    for(let i=0; i<totalLote; i++){
+      const resp = await fetch("{{ url_for('jogos') }}", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({tipo:"caca", aposta, lote:1})
+      });
+      const data = await resp.json();
+      await startSlot(data.rolos, data.resultado, data.saldo, totalLote-i-1);
+      await new Promise(res => setTimeout(res, 4000));
+    }
+  }
 
-function drawRoulette() {
-  const radius = canvas.width / 2;
-  const segmentAngle = (2 * Math.PI) / segments.length;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.save();
-  ctx.translate(radius, radius);
-  ctx.rotate(angle - segmentAngle/2 - Math.PI/2);
+  document.getElementById("formCaca").addEventListener("submit", async e => {
+    e.preventDefault();
+    const aposta = parseFloat(document.getElementById("apostaCaca").value);
+    const lote = parseInt(document.getElementById("lote").value) || 1;
+    runSlots(aposta, lote);
+  });
 
-  for (let i = 0; i < segments.length; i++) {
+  // -------------------- ROLETA --------------------
+  const canvas = document.getElementById("rouletteCanvas");
+  const ctx = canvas.getContext("2d");
+  const segments = Array.from({length:21},(_,i)=>i);
+  let angle=0, spinning=false;
+
+  function drawRoulette() {
+    const radius = canvas.width / 2;
+    const segmentAngle = (2 * Math.PI) / segments.length;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(radius, radius);
+    ctx.rotate(angle - segmentAngle/2 - Math.PI/2);
+    for (let i = 0; i < segments.length; i++) {
       ctx.beginPath();
       ctx.moveTo(0, 0);
       ctx.arc(0, 0, radius, i * segmentAngle, (i + 1) * segmentAngle);
@@ -221,7 +233,6 @@ function drawRoulette() {
       ctx.fill();
       ctx.strokeStyle = "#0f0";
       ctx.stroke();
-
       ctx.save();
       ctx.rotate(i * segmentAngle + segmentAngle / 2);
       ctx.fillStyle = "#fff";
@@ -230,82 +241,73 @@ function drawRoulette() {
       ctx.textBaseline = "middle";
       ctx.fillText(segments[i].toString(), radius * 0.65, 0);
       ctx.restore();
-  }
-
-  ctx.restore();
-}
-
-function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhido=null, aposta=null){
-  if(spinning) return;
-  spinning = true;
-  playSound(sounds.roulette);
-  const segmentAngle = (2*Math.PI)/segments.length;
-  const targetAngle = (2*Math.PI*6) + winningIndex * segmentAngle;
-
-  let currentAngle = angle;
-  let speed = 0.5;
-
-  function animate(){
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.save();
-    ctx.translate(canvas.width/2, canvas.height/2);
-    ctx.rotate(currentAngle - segmentAngle/2 - Math.PI/2);
-    ctx.translate(-canvas.width/2, -canvas.height/2);
-    drawRoulette();
-    ctx.restore();
-
-    if(currentAngle < targetAngle){
-      currentAngle += speed;
-      speed *= 0.995;
-      requestAnimationFrame(animate);
-    } else {
-      angle = targetAngle % (2*Math.PI);
-      spinning = false;
-
-      const normalizedAngle = (2*Math.PI - angle + segmentAngle/2 + Math.PI/2) % (2*Math.PI);
-      const indexUnderPointer = Math.floor(normalizedAngle / segmentAngle) % segments.length;
-      const numeroFinal = segments[indexUnderPointer];
-
-      let resultadoFinal = `Número: ${numeroFinal} → Caiu ${numeroFinal}. `;
-      let msgServidor = resultadoTexto.replace(/Caiu\s+\d+\.?/gi, "").trim();
-      if (msgServidor) resultadoFinal += msgServidor;
-
-      if(numeroEscolhido !== null && aposta !== null){
-        if(numeroFinal === numeroEscolhido){
-          const premio = aposta * 36;
-          resultadoFinal += ` 🎉 Acertou! Prêmio x36 = R$ ${premio.toFixed(2)}`;
-          playSound(sounds.win);
-        } else {
-          playSound(sounds.lose);
-        }
-      }
-
-      document.getElementById("rouletteResult").innerText = resultadoFinal;
-      document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
-      setTimeout(() => { angle = 0; drawRoulette(); }, 3000);
     }
+    ctx.restore();
   }
 
-  animate();
-}
+  function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhido=null, aposta=null){
+    if(spinning) return;
+    spinning = true;
+    playSound(sounds.roulette);
+    const segmentAngle = (2*Math.PI)/segments.length;
+    const targetAngle = (2*Math.PI*6) + winningIndex * segmentAngle;
+    let currentAngle = angle;
+    let speed = 0.5;
 
-drawRoulette();
+    function animate(){
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.translate(canvas.width/2, canvas.height/2);
+      ctx.rotate(currentAngle - segmentAngle/2 - Math.PI/2);
+      ctx.translate(-canvas.width/2, -canvas.height/2);
+      drawRoulette();
+      ctx.restore();
 
-document.getElementById("formRoleta").addEventListener("submit", async e => {
-  e.preventDefault();
-  const aposta = parseFloat(document.getElementById("apostaRoleta").value);
-  const numero = parseInt(document.getElementById("numeroAposta").value);
+      if(currentAngle < targetAngle){
+        currentAngle += speed;
+        speed *= 0.995;
+        requestAnimationFrame(animate);
+      } else {
+        angle = targetAngle % (2*Math.PI);
+        spinning = false;
+        const normalizedAngle = (2*Math.PI - angle + segmentAngle/2 + Math.PI/2) % (2*Math.PI);
+        const indexUnderPointer = Math.floor(normalizedAngle / segmentAngle) % segments.length;
+        const numeroFinal = segments[indexUnderPointer];
+        let resultadoFinal = `Número: ${numeroFinal} → Caiu ${numeroFinal}.`;
+        let msgServidor = resultadoTexto.replace(/Caiu\s+\d+\.?/gi, "").trim();
+        if (msgServidor) resultadoFinal += msgServidor;
+        if(numeroEscolhido !== null && aposta !== null){
+          if(numeroFinal === numeroEscolhido){
+            const premio = aposta * 36;
+            resultadoFinal += ` 🎉 Acertou! Prêmio x36 = R$ ${premio.toFixed(2)}`;
+            playSound(sounds.win);
+          } else {
+            playSound(sounds.lose);
+          }
+        }
+        document.getElementById("rouletteResult").innerText = resultadoFinal;
+        document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
+        setTimeout(() => {
+          angle = 0;
+          drawRoulette();
+        }, 3000);
+      }
+    }
+    animate();
+  }
 
-  const resp = await fetch("{{ url_for('jogos') }}",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({tipo:"roleta", aposta, numero})
+  drawRoulette();
+  document.getElementById("formRoleta").addEventListener("submit", async e => {
+    e.preventDefault();
+    const aposta = parseFloat(document.getElementById("apostaRoleta").value);
+    const numero = parseInt(document.getElementById("numeroAposta").value);
+    const resp = await fetch("{{ url_for('jogos') }}",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({tipo:"roleta", aposta, numero})
+    });
+    const data = await resp.json();
+    animateToIndex(data.numero, data.saldo, data.resultado, numero, aposta);
   });
-
-  const data = await resp.json();
-  animateToIndex(data.numero, data.saldo, data.resultado, numero, aposta);
-});
 </script>
-
 {% endblock %}
-
