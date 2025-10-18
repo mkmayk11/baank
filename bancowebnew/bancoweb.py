@@ -254,14 +254,25 @@ def cadastro():
     if request.method == "POST":
         usuario = request.form["usuario"]
         senha = request.form["senha"]
-        dados = carregar_dados()
-        if usuario in dados["clientes"]:
-            flash("Usuário já existe!")
-        else:
-            salvar_cliente(usuario, senha=senha, saldo=0)
-            flash("Cadastro realizado!")
-            return redirect(url_for("login"))
+        email = request.form["email"]
+        telefone = request.form["telefone"]
+        chave_pix = request.form["chave_pix"]
+
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO clientes (usuario, senha, email, telefone, chave_pix)
+            VALUES (%s, %s, %s, %s, %s)
+            ON CONFLICT (usuario) DO NOTHING
+        """, (usuario, senha, email, telefone, chave_pix))
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        flash("Cadastro realizado com sucesso! Faça login.", "success")
+        return redirect(url_for("login"))
     return render_template("cadastro.html")
+
 
 @app.route("/dashboard")
 def dashboard():
@@ -1249,6 +1260,7 @@ def criar_tabela_apostas():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
