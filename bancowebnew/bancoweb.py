@@ -277,7 +277,7 @@ def cadastro():
 @app.route("/dashboard")
 def dashboard():
     if "usuario" not in session or session["usuario"] == "admin":
-        return redirect(url_for("login"))
+        return redirect(url_for("admin_dashboard"))
     usuario = session["usuario"]
     dados = carregar_dados()
     saldo = dados["clientes"][usuario]["saldo"]
@@ -1274,6 +1274,7 @@ def admin_dashboard():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
