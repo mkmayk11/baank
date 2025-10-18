@@ -1253,6 +1253,20 @@ def criar_tabela_apostas():
     except Exception as e:
         return f"❌ Erro ao criar tabela: {e}"
 
+@app.route("/admin_dashboard")
+def admin_dashboard():
+    if not session.get("usuario") or not session.get("admin"):
+        return redirect(url_for("login"))
+    
+    conn = get_connection()
+    c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    c.execute("SELECT usuario, email, telefone, chave_pix, saldo FROM clientes ORDER BY usuario ASC;")
+    clientes = c.fetchall()
+    conn.close()
+    
+    return render_template("admin_dashboard.html", clientes=clientes)
+
+
 
 
 
@@ -1260,6 +1274,7 @@ def criar_tabela_apostas():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
