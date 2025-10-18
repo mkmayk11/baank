@@ -120,7 +120,29 @@ def admin_dashboard():
     clientes = carregar_clientes()
     return render_template("admin_dashboard.html", clientes=clientes)
 
+@app.route("/deposito")
+def deposito():
+    # Aqui você renderiza a página de depósito
+    return render_template("deposito.html")
+
+@app.route("/cadastro", methods=["GET", "POST"])
+def cadastro():
+    if request.method == "POST":
+        usuario = request.form["usuario"]
+        senha = request.form["senha"]
+        # insira no banco
+        conn = psycopg2.connect(DB_URL, sslmode="require")
+        cur = conn.cursor()
+        cur.execute("INSERT INTO clientes (usuario, senha, saldo) VALUES (%s,%s,0)", (usuario, senha))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return redirect(url_for("login"))
+    return render_template("cadastro.html")
+
+
 # -------------------- Main --------------------
 if __name__ == "__main__":
     app.run(debug=True)
+
 
