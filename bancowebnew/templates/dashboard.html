@@ -5,7 +5,7 @@
   <!-- Sidebar -->
   <div class="d-flex">
     <nav class="sidebar bg-dark shadow-lg p-4" style="width: 250px; min-height: 100vh;">
-      <h3 class="text-gradient mb-4">💎 Meu Banco</h3>
+      <h3 class="text-gradient mb-4"> ⚛︎ MH Bank </h3>
       <ul class="nav flex-column">
         <li class="nav-item mb-2"><a href="{{ url_for('dashboard') }}" class="nav-link text-light">📊 Dashboard</a></li>
         <li class="nav-item mb-2"><a href="{{ url_for('deposito') }}" class="nav-link text-light">💰 Depositar</a></li>
@@ -25,7 +25,7 @@
 
       <!-- Header -->
       <div class="mb-4">
-        <h2 class="text-gradient fw-bold">📊 Painel do Usuário</h2>
+        <h2 class="text-gradient fw-bold">👤 Painel do Usuário</h2>
         <p class="text-muted">Bem-vindo, <strong>{{ session['usuario'] }}</strong>!</p>
       </div>
 
@@ -169,3 +169,4 @@
   });
 </script>
 {% endblock %}
+
