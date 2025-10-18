@@ -148,11 +148,38 @@ def saque():
         return redirect(url_for("dashboard"))
     return render_template("saque.html")
 
+@app.route("/alterar_senha", methods=["GET", "POST"])
+def alterar_senha():
+    if "usuario" not in session:
+        return redirect(url_for("login"))
+
+    if request.method == "POST":
+        senha_atual = request.form["senha_atual"]
+        nova_senha = request.form["nova_senha"]
+
+        conn = sqlite3.connect(DB_FILE)
+        cur = conn.cursor()
+        cur.execute("SELECT senha FROM usuarios WHERE usuario = ?", (session["usuario"],))
+        senha_banco = cur.fetchone()
+
+        if senha_banco and senha_banco[0] == senha_atual:
+            cur.execute("UPDATE usuarios SET senha = ? WHERE usuario = ?", (nova_senha, session["usuario"]))
+            conn.commit()
+            conn.close()
+            return render_template("mensagem.html", msg="Senha alterada com sucesso!")
+        else:
+            conn.close()
+            return render_template("mensagem.html", msg="Senha atual incorreta!")
+
+    return render_template("alterar_senha.html")
+
+
 
 
 # -------------------- Main --------------------
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
