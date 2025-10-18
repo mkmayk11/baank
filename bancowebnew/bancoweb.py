@@ -132,10 +132,28 @@ def cadastro():
         return redirect(url_for("login"))
     return render_template("cadastro.html")
 
+@app.route("/saque", methods=["GET", "POST"])
+def saque():
+    if "usuario" not in session:
+        return redirect(url_for("login"))
+    if request.method == "POST":
+        valor = float(request.form["valor"])
+        conn = psycopg2.connect(DB_URL, sslmode="require")
+        cur = conn.cursor()
+        # Atualiza saldo do usuário
+        cur.execute("UPDATE clientes SET saldo = saldo - %s WHERE usuario = %s", (valor, session["usuario"]))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return redirect(url_for("dashboard"))
+    return render_template("saque.html")
+
+
 
 # -------------------- Main --------------------
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
