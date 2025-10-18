@@ -96,15 +96,7 @@ def logout():
     session.pop("admin", None)
     return redirect(url_for("login"))
 
-@app.route("/cadastro", methods=["GET","POST"])
-def cadastro():
-    if request.method == "POST":
-        usuario = request.form["usuario"]
-        senha = request.form["senha"]
-        salvar_cliente(usuario, senha)
-        flash("Cadastro realizado com sucesso!", "success")
-        return redirect(url_for("login"))
-    return render_template("cadastro.html")
+
 
 @app.route("/dashboard")
 def dashboard():
@@ -144,5 +136,6 @@ def cadastro():
 # -------------------- Main --------------------
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
