@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="container py-4">
+  <h2 class="mb-4 text-center text-primary">📋 Painel do Administrador</h2>
+
+  <div class="table-responsive">
+    <table class="table table-striped table-bordered">
+      <thead class="table-dark">
+        <tr>
+          <th>Usuário</th>
+          <th>Email</th>
+          <th>Telefone</th>
+          <th>Chave Pix</th>
+          <th>Saldo (R$)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cliente in clientes %}
+        <tr>
+          <td>{{ cliente.usuario }}</td>
+          <td>{{ cliente.email or '-' }}</td>
+          <td>{{ cliente.telefone or '-' }}</td>
+          <td>{{ cliente.chave_pix or '-' }}</td>
+          <td>{{ "%.2f"|format(cliente.saldo) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
