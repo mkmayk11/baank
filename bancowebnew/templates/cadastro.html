@@ -6,16 +6,35 @@
       <div class="card shadow-lg p-4">
         <h3 class="mb-4 text-center">📝 Cadastro</h3>
         <form method="POST">
+          
           <div class="mb-3">
             <label class="form-label">Usuário</label>
             <input type="text" class="form-control" name="usuario" required>
           </div>
+
           <div class="mb-3">
             <label class="form-label">Senha</label>
             <input type="password" class="form-control" name="senha" required>
           </div>
+
+          <div class="mb-3">
+            <label class="form-label">E-mail de contato</label>
+            <input type="email" class="form-control" name="email" placeholder="exemplo@dominio.com" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Telefone</label>
+            <input type="text" class="form-control" name="telefone" placeholder="(11) 91234-5678" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Chave PIX</label>
+            <input type="text" class="form-control" name="chave_pix" placeholder="CPF, e-mail ou telefone" required>
+          </div>
+
           <button type="submit" class="btn btn-success w-100">Cadastrar</button>
         </form>
+
         <p class="mt-3 text-center">
           Já tem conta? <a href="{{ url_for('login') }}">Entrar</a>
         </p>
