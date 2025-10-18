@@ -5,7 +5,7 @@ import os
 app = Flask(__name__)
 app.secret_key = "segredo_super_seguro"
 
-DB_URL = os.getenv("DATABASE_URL", "postgresql://savesite_user:senha@localhost:5432/savesite")
+DB_URL = os.getenv("DATABASE_URL", "postgresql://savesite_user:5X70ctnMmv1jfWVuCQssRvmQUjW0D56p@dpg-d37hgjjuibrs7392ou1g-a/savesite")
 
 # -------------------- Banco de dados --------------------
 def init_db():
@@ -123,3 +123,4 @@ def admin_dashboard():
 # -------------------- Main --------------------
 if __name__ == "__main__":
     app.run(debug=True)
+
