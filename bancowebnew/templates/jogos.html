@@ -3,7 +3,7 @@
 <div class="casino-background py-5">
   <div class="container">
     <div class="d-flex justify-content-between align-items-start mb-3">
-      <h2 class="text-white">🎲 Maask Cassino 🎲 </h2>
+      <h2 class="text-white">🎲 Maask Cassino 🎲</h2>
       <div id="saldoBox" class="px-3 py-2" style="background: rgba(0,0,0,0.4); border-radius:12px; border:1px solid #2f2">
         <strong>Saldo:</strong> R$ {{ '%.2f' % saldo }}
       </div>
@@ -11,11 +11,12 @@
 
     <div class="row justify-content-center g-4">
       <!-- 🎰 CAÇA-NÍQUEL -->
-      <div class="col-md-6 position-relative">
-        <!-- TABELA DE PRÊMIOS -->
-        <div class="card p-3 mb-3 shadow-lg" style="position:absolute; top:0; left:-220px; width:200px; background: rgba(0,0,0,0.8); border:1px solid #0f0; border-radius:12px;">
+      <div class="col-md-6 position-relative text-center">
+
+        <!-- TABELA DE PRÊMIOS - AGORA CENTRALIZADA E RESPONSIVA -->
+        <div class="card p-3 mb-3 shadow-lg mx-auto" style="background: rgba(0,0,0,0.8); border:1px solid #0f0; border-radius:12px; max-width: 300px;">
           <h5 class="text-white mb-2">🏆 Premiação dos Emojis</h5>
-          <table class="table table-sm text-white" style="margin-bottom:0;">
+          <table class="table table-sm text-white mb-0">
             <thead>
               <tr>
                 <th>Emoji</th>
@@ -23,16 +24,16 @@
               </tr>
             </thead>
             <tbody>
-              <tr><td>🍒</td><td>par qualquer = x6 trio = 30</td></tr>
-              <tr><td>🍀</td><td>par = 10 Rodadas Grátis trio = x30 + 10 rodadas</td></tr>
-              <tr><td>🎲</td><td>par = 50 trio = x130</td></tr>
-              <tr><td>⭐</td><td>par =80 trio x250</td></tr>
-              <tr><td>💸</td><td>par =70 trio x160</td></tr>
-              <!-- Adicione outros emojis e prêmios aqui -->
+              <tr><td>🍒</td><td>par = x6, trio = x30</td></tr>
+              <tr><td>🍀</td><td>par = 10 rodadas, trio = x50 + 20 rodadas</td></tr>
+              <tr><td>🎲</td><td>par = x50, trio = x130</td></tr>
+              <tr><td>⭐</td><td>par = x80, trio = x250</td></tr>
+              <tr><td>💸</td><td>par = x70, trio = x160</td></tr>
             </tbody>
           </table>
         </div>
 
+        <!-- MÁQUINA DE SLOT -->
         <div class="card p-4 text-center shadow-lg slot-card">
           <h2 class="mb-3">🎰 Caça-Níquel</h2>
           <form id="formCaca">
@@ -54,7 +55,7 @@
           <div id="historicoSlot" class="mt-3 text-white" style="font-size:0.9rem; background: rgba(0,0,0,0.3); border-radius:10px; padding:8px;">
             <h6>🎰 Últimos giros:</h6>
             <ul id="listaHistorico" style="list-style:none; padding-left:0; margin:0;">
-              <!-- itens serão adicionados dinamicamente -->
+              <!-- Itens adicionados dinamicamente -->
             </ul>
           </div>
         </div>
@@ -355,6 +356,7 @@
   });
 </script>
 {% endblock %}
+
 
 
 
