@@ -76,9 +76,15 @@ def init_db():
         )
     """)
 
+    # Adiciona colunas extras se ainda não existirem
+    c.execute("ALTER TABLE clientes ADD COLUMN IF NOT EXISTS email TEXT;")
+    c.execute("ALTER TABLE clientes ADD COLUMN IF NOT EXISTS telefone TEXT;")
+    c.execute("ALTER TABLE clientes ADD COLUMN IF NOT EXISTS chave_pix TEXT;")
+
     # Insere admin se não existir
     c.execute("INSERT INTO clientes (usuario, senha, saldo) VALUES (%s, %s, %s) ON CONFLICT (usuario) DO NOTHING",
               ("admin", "411269", 0))
+
 
     # Tabela de histórico
     c.execute("""
@@ -1243,6 +1249,7 @@ def criar_tabela_apostas():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
