@@ -8,7 +8,8 @@ app = Flask(__name__)
 app.secret_key = "segredo_super_seguro"
 
 # -------------------- Banco de dados --------------------
-DB_URL = os.getenv("DATABASE_URL", "postgresql://savesite_user:5X70ctnMmv1jfWVuCQssRvmQUjW0D56p@dpg-d37hgjjuibrs7392ou1g-a/savesite")
+DB_URL = os.getenv("DATABASE_URL", "postgresql://neondb_owner:npg_DsJetaU27Llx@ep-orange-base-ahmxop1e-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require")
+
 
 def criar_tabelas():
     conn = psycopg2.connect(DB_URL)
@@ -1274,6 +1275,7 @@ def admin_dashboard():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
