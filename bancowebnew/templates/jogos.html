@@ -34,32 +34,32 @@
         </div>
 
         <!-- MÁQUINA DE SLOT -->
-        <div class="card p-4 text-center shadow-lg slot-card">
-          <h2 class="mb-3">🎰 Caça-Níquel</h2>
-          <form id="formCaca">
-            <input type="number" name="aposta_caca" id="apostaCaca" step="0.01" value="{{ last_aposta_caca }}" placeholder="Valor da aposta" required class="form-control mb-2">
-            <input type="number" name="lote" id="lote" value="{{ last_lote }}" placeholder="Qtd rodadas (opcional)" class="form-control mb-3">
-            <button type="submit" class="btn btn-neon w-100">Girar 🎰</button>
-          </form>
+<div class="card p-4 text-center shadow-lg slot-card">
+  <h2 class="mb-3">🎰 Caça-Níquel 5x</h2>
+  <form id="formCaca">
+    <input type="number" name="aposta_caca" id="apostaCaca" step="0.01" value="{{ last_aposta_caca }}" placeholder="Valor da aposta" required class="form-control mb-2">
+    <input type="number" name="lote" id="lote" value="{{ last_lote }}" placeholder="Qtd rodadas (opcional)" class="form-control mb-3">
+    <button type="submit" class="btn btn-neon w-100">Girar 🎰</button>
+  </form>
 
-          <div id="slotMachine" class="slot-machine mt-4">
-            <div class="reel" id="reel1">❔</div>
-            <div class="reel" id="reel2">❔</div>
-            <div class="reel" id="reel3">❔</div>
-          </div>
+  <div id="slotMachine" class="slot-machine mt-4">
+    <!-- 🔥 5 rolos agora -->
+    <div class="reel" id="reel1">❔</div>
+    <div class="reel" id="reel2">❔</div>
+    <div class="reel" id="reel3">❔</div>
+    <div class="reel" id="reel4">❔</div>
+    <div class="reel" id="reel5">❔</div>
+  </div>
 
-          <div id="slotResultado" class="alert alert-info mt-3" style="display:none;"></div>
-          <div id="rodadasRestantes" class="text-white mt-2" style="font-size:0.9rem;"></div>
+  <div id="slotResultado" class="alert alert-info mt-3" style="display:none;"></div>
+  <div id="rodadasRestantes" class="text-white mt-2" style="font-size:0.9rem;"></div>
 
-          <!-- Histórico dos últimos giros -->
-          <div id="historicoSlot" class="mt-3 text-white" style="font-size:0.9rem; background: rgba(0,0,0,0.3); border-radius:10px; padding:8px;">
-            <h6>🎰 Últimos giros:</h6>
-            <ul id="listaHistorico" style="list-style:none; padding-left:0; margin:0;">
-              <!-- Itens adicionados dinamicamente -->
-            </ul>
-          </div>
-        </div>
-      </div>
+  <div id="historicoSlot" class="mt-3 text-white" style="font-size:0.9rem; background: rgba(0,0,0,0.3); border-radius:10px; padding:8px;">
+    <h6>🎰 Últimos giros:</h6>
+    <ul id="listaHistorico" style="list-style:none; padding-left:0; margin:0;"></ul>
+  </div>
+</div>
+
 
       <!-- 🎡 ROLETA -->
       <div class="col-md-6">
@@ -360,6 +360,7 @@ async function runSlots(aposta, lote){
   });
 </script>
 {% endblock %}
+
 
 
 
