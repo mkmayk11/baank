@@ -1293,13 +1293,13 @@ def admin_dashboard():
 
 
 
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+import os
 import random
 import psycopg2
-import os
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 
 app = Flask(__name__)
-app.secret_key = "supersecretkey"
+app.secret_key = "seu_super_segredo"  # troque por algo seguro
 
 # ---------------- Conexão com o banco ----------------
 def get_conn():
@@ -1309,18 +1309,17 @@ def get_conn():
     )
     return psycopg2.connect(DB_URL)
 
-# ---------------- Rota do Slot 5 ----------------
+# ---------------- Rota Slot 5 ----------------
 @app.route("/slot5", methods=["GET", "POST"])
 def slot5():
-    # Verifica se usuário está logado
     if "usuario" not in session:
-        return redirect(url_for("dashboard"))  # ou troque "dashboard" pelo endpoint de login correto
+        return redirect(url_for("login"))  # redireciona se não logado
 
     usuario = session["usuario"]
     conn = get_conn()
     c = conn.cursor()
 
-    # Pega saldo do usuário
+    # pega saldo atual do usuário
     c.execute("SELECT saldo FROM clientes WHERE usuario = %s", (usuario,))
     saldo = c.fetchone()[0]
 
@@ -1334,13 +1333,15 @@ def slot5():
             flash("Aposta inválida!")
             return redirect(url_for("slot5"))
 
-        # Gira os 5 quadrados
+        # Gira 5 quadrados
         resultado = [random.choice(emojis) for _ in range(5)]
 
-        # Regras simples: se 3 ou mais iguais, multiplica a aposta
+        # Contagem de iguais
         counts = {e: resultado.count(e) for e in set(resultado)}
         max_count = max(counts.values())
-        if max_count >= 5:
+
+        # Regras de premiação
+        if max_count == 5:
             premio = aposta * 10
         elif max_count == 4:
             premio = aposta * 5
@@ -1349,10 +1350,11 @@ def slot5():
         else:
             premio = -aposta
 
-        # Atualiza saldo
+        # Atualiza saldo no banco
         saldo += premio
         c.execute("UPDATE clientes SET saldo = %s WHERE usuario = %s", (saldo, usuario))
         conn.commit()
+
         flash(f"Resultado: {' '.join(resultado)} | {'Ganhou' if premio>0 else 'Perdeu'} {abs(premio)}!")
 
     conn.close()
@@ -1373,8 +1375,10 @@ def slot5():
 
 
 
+
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
