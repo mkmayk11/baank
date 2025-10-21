@@ -1312,8 +1312,9 @@ def get_conn():
 # ---------------- Rota do Slot 5 ----------------
 @app.route("/slot5", methods=["GET", "POST"])
 def slot5():
+    # Verifica se usuário está logado
     if "usuario" not in session:
-        return redirect(url_for("login"))
+        return redirect(url_for("dashboard"))  # ou troque "dashboard" pelo endpoint de login correto
 
     usuario = session["usuario"]
     conn = get_conn()
@@ -1323,7 +1324,7 @@ def slot5():
     c.execute("SELECT saldo FROM clientes WHERE usuario = %s", (usuario,))
     saldo = c.fetchone()[0]
 
-    emojis =["🕷️", "🐶", "🐸", "🐓", "🦑", "🦈", "🐇", "🦞", "🐷", "🦄"]
+    emojis = ["🕷️", "🐶", "🐸", "🐓", "🦑", "🦈", "🐇", "🦞", "🐷", "🦄"]
     resultado = []
     premio = 0
 
@@ -1371,8 +1372,10 @@ def slot5():
 
 
 
+
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
