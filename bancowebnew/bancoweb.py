@@ -1293,15 +1293,15 @@ def admin_dashboard():
 
 
 
-import os
-import random
-import psycopg2
+# ---------------- imports ----------------
 from flask import Flask, render_template, request, redirect, url_for, session, flash
+import os
+import psycopg2
+import random
 
 app = Flask(__name__)
-app.secret_key = "seu_super_segredo"  # troque por algo seguro
+app.secret_key = "supersecretkey"  # troque em produção
 
-# ---------------- Conexão com o banco ----------------
 # ---------------- Conexão com o banco ----------------
 def get_conn():
     DB_URL = os.getenv(
@@ -1310,39 +1310,65 @@ def get_conn():
     )
     return psycopg2.connect(DB_URL)
 
+# ---------------- Função para carregar dados do usuário ----------------
+def carregar_dados():
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("SELECT usuario, senha, saldo FROM clientes")
+    clientes = {}
+    for u, s, sal in c.fetchall():
+        clientes[u] = {"senha": s, "saldo": sal}
+    conn.close()
+    return {"clientes": clientes}
+
+# ---------------- Rota Login ----------------
+@app.route("/", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        usuario = request.form["usuario"]
+        senha = request.form["senha"]
+        dados = carregar_dados()
+        if usuario in dados["clientes"] and dados["clientes"][usuario]["senha"] == senha:
+            session["usuario"] = usuario
+            if usuario == "admin":
+                return redirect(url_for("admin_depositos"))  # caso admin
+            return redirect(url_for("dashboard"))
+        flash("Login inválido")
+    return render_template("login.html")
+
+# ---------------- Rota Dashboard ----------------
+@app.route("/dashboard")
+def dashboard():
+    if "usuario" not in session:
+        return redirect(url_for("login"))
+    usuario = session["usuario"]
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("SELECT saldo FROM clientes WHERE usuario = %s", (usuario,))
+    saldo = c.fetchone()[0]
+    conn.close()
+    return render_template("dashboard.html", saldo=saldo, usuario=usuario)
+
 # ---------------- Rota Slot 5 ----------------
 @app.route("/slot5", methods=["GET", "POST"])
 def slot5():
-    # Verifica login
     if "usuario" not in session:
-        flash("Você precisa estar logado para jogar!")
-        return redirect(url_for("login"))  # ou substitua pelo endpoint correto do login
+        return redirect(url_for("login"))  # redireciona se não logado
 
     usuario = session["usuario"]
     conn = get_conn()
     c = conn.cursor()
 
-    # Pega saldo do usuário com segurança
+    # pega saldo atual do usuário
     c.execute("SELECT saldo FROM clientes WHERE usuario = %s", (usuario,))
-    res = c.fetchone()
-    if res is None:
-        conn.close()
-        flash("Usuário não encontrado!")
-        return redirect(url_for("login"))
-
-    saldo = res[0]
+    saldo = c.fetchone()[0]
 
     emojis = ["🕷️", "🐶", "🐸", "🐓", "🦑", "🦈", "🐇", "🦞", "🐷", "🦄"]
     resultado = []
     premio = 0
 
     if request.method == "POST":
-        try:
-            aposta = int(request.form.get("aposta", 0))
-        except ValueError:
-            flash("Aposta inválida!")
-            return redirect(url_for("slot5"))
-
+        aposta = int(request.form.get("aposta", 0))
         if aposta <= 0 or aposta > saldo:
             flash("Aposta inválida!")
             return redirect(url_for("slot5"))
@@ -1350,7 +1376,7 @@ def slot5():
         # Gira 5 quadrados
         resultado = [random.choice(emojis) for _ in range(5)]
 
-        # Conta quantos iguais saíram
+        # Contagem de iguais
         counts = {e: resultado.count(e) for e in set(resultado)}
         max_count = max(counts.values())
 
@@ -1391,6 +1417,7 @@ def slot5():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
