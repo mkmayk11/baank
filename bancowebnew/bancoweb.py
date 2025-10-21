@@ -592,27 +592,27 @@ def jogos():
 
                 # --- regras gerais ---
                 elif maior_combo == 5:
-                    ganho = aposta * 60
+                    ganho = aposta * 200
                     saldo_real += ganho
-                    resultado = f"💥 QUINA! {rolos} Você ganhou R$ {ganho:.2f}!"
+                    resultado = f"🌟 QUINA! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (5 iguais {rolos})", ganho)
 
                 elif maior_combo == 4:
-                    ganho = aposta * 25
+                    ganho = aposta * 60
                     saldo_real += ganho
-                    resultado = f"🔥 QUADRA! {rolos} Você ganhou R$ {ganho:.2f}!"
+                    resultado = f"🌟 QUADRA! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (4 iguais {rolos})", ganho)
 
                 elif maior_combo == 3:
-                    ganho = aposta * 10
+                    ganho = aposta * 20
                     saldo_real += ganho
-                    resultado = f"🎉 TRINCA! {rolos} Você ganhou R$ {ganho:.2f}!"
+                    resultado = f"✅ TRINCA! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (3 iguais {rolos})", ganho)
 
                 elif maior_combo == 2:
                     ganho = aposta * 4
                     saldo_real += ganho
-                    resultado = f"✨ Parzinho sortudo! {rolos} Você ganhou R$ {ganho:.2f}!"
+                    resultado = f"✅ Par! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (Par {rolos})", ganho)
 
                 else:
@@ -1310,6 +1310,7 @@ def admin_dashboard():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
