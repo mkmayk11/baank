@@ -1282,8 +1282,78 @@ def admin_dashboard():
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+from flask import Flask, render_template, request, session, redirect, url_for, jsonify
+import random
+
+@app.route("/slot5", methods=["GET", "POST"])
+def slot5():
+    if "usuario" not in session:
+        return redirect(url_for("login"))
+
+    usuario = session["usuario"]
+    simbolos = ["🕷️", "🐶", "🐸", "🐓", "🦑", "🦈", "🐇", "🦞", "🐷", "🦄"]
+
+    if request.method == "POST":
+        # Gira 5 símbolos
+        resultado = random.choices(simbolos, k=5)
+        premio = 0
+
+        # Conta quantos iguais
+        repeticoes = {s: resultado.count(s) for s in set(resultado)}
+        maior_repeticao = max(repeticoes.values())
+
+        if maior_repeticao == 5:
+            premio = 100  # jackpot
+            msg = "🦄 JACKPOT! 5 iguais!"
+        elif maior_repeticao == 4:
+            premio = 50
+            msg = "🐇 Quase lá! 4 iguais!"
+        elif maior_repeticao == 3:
+            premio = 20
+            msg = "🐷 Ganhou com 3 iguais!"
+        else:
+            premio = -10
+            msg = "Nada dessa vez 😢"
+
+        # Atualiza saldo (ajusta conforme tua lógica de DB)
+        conn = get_conn()
+        c = conn.cursor()
+        c.execute("UPDATE clientes SET saldo = saldo + ? WHERE nome = ?", (premio, usuario))
+        conn.commit()
+        conn.close()
+
+        return jsonify({"resultado": resultado, "msg": msg, "premio": premio})
+
+    return render_template("slot5.html")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
