@@ -1,29 +1,127 @@
-{% extends "base.html" %}
-{% block conteudo %}
-<div class="casino-background py-5 text-center">
-  <h2 class="text-white mb-4">🎰 Slot 5 Emojis</h2>
-  
-  <div id="roleta5" class="d-flex justify-content-center gap-3 mb-3 fs-1">
-    <span>🎲</span><span>🎲</span><span>🎲</span><span>🎲</span><span>🎲</span>
-  </div>
+<!doctype html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <title>Slot 5 🎰</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1b1b1b;
+            color: #fff;
+            text-align: center;
+            padding: 50px;
+        }
+        h2 {
+            color: #ffcc00;
+        }
+        .saldo {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+        form {
+            margin-bottom: 30px;
+        }
+        input[type="number"] {
+            padding: 10px;
+            font-size: 1em;
+            width: 100px;
+            border-radius: 5px;
+            border: none;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 1em;
+            background-color: #ffcc00;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #ff9900;
+        }
+        .mensagem {
+            margin-bottom: 20px;
+            font-size: 1em;
+        }
+        .resultado {
+            font-size: 3em;
+            margin-top: 20px;
+            letter-spacing: 10px;
+        }
+        a {
+            display: inline-block;
+            margin-top: 30px;
+            color: #ffcc00;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        a:hover {
+            color: #ff9900;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0;
+            color: #ff6666;
+        }
+    </style>
+</head>
+<body>
+    <h2>🎰 Slot 5 - Mais Emojis 🎰</h2>
+    <div class="saldo">Saldo: {{ saldo }}</div>
 
-  <button id="btnGirar5" class="btn btn-warning mb-3">Girar Slot 5</button>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul>
+        {% for msg in messages %}
+          <li>{{ msg }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
 
-  <div id="mensagem5" class="text-white fs-5"></div>
-</div>
+    <form id="slotForm" method="POST">
+        <label>Aposta:</label>
+        <input type="number" name="aposta" min="1" required>
+        <button type="submit">Girar</button>
+    </form>
 
-<script>
-document.getElementById("btnGirar5").addEventListener("click", async () => {
-  const res = await fetch("/slot5", { method: "POST" });
-  const data = await res.json();
-  const slots = document.querySelectorAll("#roleta5 span");
+    <div class="resultado" id="slotResultado">
+        {% if resultado %}
+            {{ ' '.join(resultado) }}
+        {% endif %}
+    </div>
 
-  // Mostra o resultado
-  data.resultado.forEach((emoji, i) => {
-    slots[i].textContent = emoji;
-  });
+    <a href="{{ url_for('dashboard') }}">🔙 Voltar</a>
 
-  document.getElementById("mensagem5").innerHTML = `${data.msg} <br>💰 Prêmio: ${data.premio}`;
-});
-</script>
-{% endblock %}
+    <script>
+        const form = document.getElementById('slotForm');
+        const resultadoDiv = document.getElementById('slotResultado');
+        const emojis = ["🕷️","🐶","🐸","🐓","🦑","🦈","🐇","🦞","🐷","🦄"];
+
+        form.addEventListener('submit', function(e){
+            e.preventDefault();
+
+            let aposta = parseInt(form.aposta.value);
+            if(isNaN(aposta) || aposta < 1) return;
+
+            // animação de giro
+            let giro = 20; // quantas trocas
+            let atual = 0;
+            let anim = setInterval(() => {
+                let fakeResultado = [];
+                for(let i=0;i<5;i++){
+                    fakeResultado.push(emojis[Math.floor(Math.random()*emojis.length)]);
+                }
+                resultadoDiv.textContent = fakeResultado.join(' ');
+                atual++;
+                if(atual >= giro){
+                    clearInterval(anim);
+                    form.submit(); // envia de verdade pro backend
+                }
+            }, 100);
+        });
+    </script>
+</body>
+</html>
