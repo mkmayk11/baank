@@ -1322,38 +1322,10 @@ def carregar_dados():
     return {"clientes": clientes}
 
 # ---------------- Rota Login ----------------
-@app.route("/", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        usuario = request.form["usuario"]
-        senha = request.form["senha"]
-        dados = carregar_dados()
-        if usuario in dados["clientes"] and dados["clientes"][usuario]["senha"] == senha:
-            session["usuario"] = usuario
-            if usuario == "admin":
-                return redirect(url_for("admin_depositos"))  # caso admin
-            return redirect(url_for("dashboard"))
-        flash("Login inválido")
-    return render_template("login.html")
-
-# ---------------- Rota Dashboard ----------------
-@app.route("/dashboard")
-def dashboard():
-    if "usuario" not in session:
-        return redirect(url_for("login"))
-    usuario = session["usuario"]
-    conn = get_conn()
-    c = conn.cursor()
-    c.execute("SELECT saldo FROM clientes WHERE usuario = %s", (usuario,))
-    saldo = c.fetchone()[0]
-    conn.close()
-    return render_template("dashboard.html", saldo=saldo, usuario=usuario)
-
-# ---------------- Rota Slot 5 ----------------
 @app.route("/slot5", methods=["GET", "POST"])
 def slot5():
     if "usuario" not in session:
-        return redirect(url_for("login"))  # redireciona se não logado
+        return redirect(url_for("login"))
 
     usuario = session["usuario"]
     conn = get_conn()
@@ -1361,46 +1333,53 @@ def slot5():
 
     # pega saldo atual do usuário
     c.execute("SELECT saldo FROM clientes WHERE usuario = %s", (usuario,))
-    saldo = c.fetchone()[0]
+    row = c.fetchone()
+    if not row:
+        flash("Usuário não encontrado no banco!")
+        return redirect(url_for("login"))
+    saldo = row[0]
 
     emojis = ["🕷️", "🐶", "🐸", "🐓", "🦑", "🦈", "🐇", "🦞", "🐷", "🦄"]
     resultado = []
     premio = 0
 
     if request.method == "POST":
-        aposta = int(request.form.get("aposta", 0))
+        try:
+            aposta = int(request.form.get("aposta", 0))
+        except ValueError:
+            flash("Aposta inválida!")
+            return render_template("slot5.html", saldo=saldo, resultado=resultado)
+
         if aposta <= 0 or aposta > saldo:
             flash("Aposta inválida!")
-            return redirect(url_for("slot5"))
-
-        # Gira 5 quadrados
-        resultado = [random.choice(emojis) for _ in range(5)]
-
-        # Contagem de iguais
-        counts = {e: resultado.count(e) for e in set(resultado)}
-        max_count = max(counts.values())
-
-        # Regras de premiação
-        if max_count == 5:
-            premio = aposta * 10
-        elif max_count == 4:
-            premio = aposta * 5
-        elif max_count == 3:
-            premio = aposta * 2
         else:
-            premio = -aposta
+            # Gira 5 quadrados
+            resultado = [random.choice(emojis) for _ in range(5)]
 
-        # Atualiza saldo no banco
-        saldo += premio
-        c.execute("UPDATE clientes SET saldo = %s WHERE usuario = %s", (saldo, usuario))
-        conn.commit()
+            # Contagem de iguais
+            counts = {e: resultado.count(e) for e in set(resultado)}
+            max_count = max(counts.values())
 
-        flash(f"Resultado: {' '.join(resultado)} | {'Ganhou' if premio>0 else 'Perdeu'} {abs(premio)}!")
+            # Regras de premiação
+            if max_count == 5:
+                premio = aposta * 10
+            elif max_count == 4:
+                premio = aposta * 5
+            elif max_count == 3:
+                premio = aposta * 2
+            else:
+                premio = -aposta
+
+            # Atualiza saldo no banco
+            saldo += premio
+            c.execute("UPDATE clientes SET saldo = %s WHERE usuario = %s", (saldo, usuario))
+            conn.commit()
+
+            flash(f"Resultado: {' '.join(resultado)} | {'Ganhou' if premio>0 else 'Perdeu'} {abs(premio)}!")
 
     conn.close()
+    # Renderiza direto sem redirect
     return render_template("slot5.html", saldo=saldo, resultado=resultado)
-
-
 
 
 
@@ -1417,6 +1396,7 @@ def slot5():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
