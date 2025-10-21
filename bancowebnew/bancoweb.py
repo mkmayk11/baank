@@ -1063,9 +1063,18 @@ def setup_db():
         return f"Erro: {e}"
 
 
+
+
+import os
 import psycopg2
 
-conn = psycopg2.connect("postgresql://savesite_user:5X70ctnMmv1jfWVuCQssRvmQUjW0D56p@dpg-d37hgjjuibrs7392ou1g-a/savesite")
+DB_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://neondb_owner:npg_DsJetaU27Llx@ep-orange-base-ahmxop1e-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require"
+)
+
+conn = psycopg2.connect(DB_URL)
+
 c = conn.cursor()
 c.execute("""
 CREATE TABLE IF NOT EXISTS apostas (
@@ -1275,6 +1284,7 @@ def admin_dashboard():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
