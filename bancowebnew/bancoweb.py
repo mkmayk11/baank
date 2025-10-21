@@ -1302,6 +1302,7 @@ app = Flask(__name__)
 app.secret_key = "seu_super_segredo"  # troque por algo seguro
 
 # ---------------- Conexão com o banco ----------------
+# ---------------- Conexão com o banco ----------------
 def get_conn():
     DB_URL = os.getenv(
         "DATABASE_URL",
@@ -1312,23 +1313,36 @@ def get_conn():
 # ---------------- Rota Slot 5 ----------------
 @app.route("/slot5", methods=["GET", "POST"])
 def slot5():
+    # Verifica login
     if "usuario" not in session:
-        return redirect(url_for("login"))  # redireciona se não logado
+        flash("Você precisa estar logado para jogar!")
+        return redirect(url_for("login"))  # ou substitua pelo endpoint correto do login
 
     usuario = session["usuario"]
     conn = get_conn()
     c = conn.cursor()
 
-    # pega saldo atual do usuário
+    # Pega saldo do usuário com segurança
     c.execute("SELECT saldo FROM clientes WHERE usuario = %s", (usuario,))
-    saldo = c.fetchone()[0]
+    res = c.fetchone()
+    if res is None:
+        conn.close()
+        flash("Usuário não encontrado!")
+        return redirect(url_for("login"))
+
+    saldo = res[0]
 
     emojis = ["🕷️", "🐶", "🐸", "🐓", "🦑", "🦈", "🐇", "🦞", "🐷", "🦄"]
     resultado = []
     premio = 0
 
     if request.method == "POST":
-        aposta = int(request.form.get("aposta", 0))
+        try:
+            aposta = int(request.form.get("aposta", 0))
+        except ValueError:
+            flash("Aposta inválida!")
+            return redirect(url_for("slot5"))
+
         if aposta <= 0 or aposta > saldo:
             flash("Aposta inválida!")
             return redirect(url_for("slot5"))
@@ -1336,7 +1350,7 @@ def slot5():
         # Gira 5 quadrados
         resultado = [random.choice(emojis) for _ in range(5)]
 
-        # Contagem de iguais
+        # Conta quantos iguais saíram
         counts = {e: resultado.count(e) for e in set(resultado)}
         max_count = max(counts.values())
 
@@ -1375,9 +1389,9 @@ def slot5():
 
 
 
-
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
