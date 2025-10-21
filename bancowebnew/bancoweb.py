@@ -535,87 +535,90 @@ def jogos():
         data = request.get_json()
         tipo = data.get("tipo")
 
-        # -------- CAÇA-NÍQUEL --------
+        # -------- CAÇA-NÍQUEL (5 rolos) --------
         if tipo == "caca":
             try:
                 aposta = float(data.get("aposta", 0))
                 lote = int(data.get("lote", 1))
             except:
-                return jsonify({"erro":"Aposta inválida"}), 400
+                return jsonify({"erro": "Aposta inválida"}), 400
 
             rodadas_gratis_usuario = dados["clientes"][usuario].get("rodadas_gratis", 0)
             saldo_real = saldo
 
             if aposta <= 0 and rodadas_gratis_usuario <= 0:
                 resultado = "Digite um valor válido de aposta!"
-                rolos = ["❔","❔","❔"]
+                rolos = ["❔"] * 5
             elif aposta > saldo_real and rodadas_gratis_usuario <= 0:
                 resultado = "Saldo insuficiente!"
-                rolos = ["❔","❔","❔"]
+                rolos = ["❔"] * 5
             else:
-                rolos = [random.choice(simbolos) for _ in range(3)]
+                # novo: 5 colunas de rolos
+                rolos = random.choices(simbolos, k=5)
                 ganho = 0
                 resultado = ""
 
-                # --- novas regras especiais ---
-                if rolos.count("💸") == 3:  # TRIO de dinheiro
-                    ganho = aposta * 160
-                    saldo_real += ganho
-                    resultado = f"💸💸💸 TRIPLO DINHEIRO! {rolos} Você ganhou R$ {ganho:.2f}!"
-                    registrar_historico(usuario, f"Caça-níquel (3 Dinheiro {rolos})", ganho)
+                # contagem dos símbolos
+                contagens = {simbolo: rolos.count(simbolo) for simbolo in set(rolos)}
+                maior_combo = max(contagens.values())
 
-                elif rolos.count("💸") == 2:  # PAR de dinheiro
-                    ganho = aposta * 70
+                # --- regras especiais ---
+                if rolos.count("💸") >= 3:  # 3 ou mais dinheiros
+                    mult = {3: 160, 4: 300, 5: 600}[rolos.count("💸")]
+                    ganho = aposta * mult
                     saldo_real += ganho
-                    resultado = f"💸💸 Dois Dinheiros! {rolos} Você ganhou R$ {ganho:.2f}!"
-                    registrar_historico(usuario, f"Caça-níquel (2 Dinheiro {rolos})", ganho)
+                    resultado = f"💸💸💸 Dinheiro em cascata! {rolos} Você ganhou R$ {ganho:.2f}!"
+                    registrar_historico(usuario, f"Caça-níquel ({rolos.count('💸')} Dinheiros {rolos})", ganho)
 
-                elif rolos.count("🍀") == 2:  # Dois trevos
-                    rodadas_gratis_usuario += 10
-                    resultado = f"🍀🍀 Sorte Grande! {rolos} Você ganhou 10 rodadas grátis!"
-                    registrar_historico(usuario, f"Caça-níquel (2 Trevos {rolos})", 0)
+                elif rolos.count("🍀") >= 3:  # 3 ou mais trevos
+                    bonus = 5 * rolos.count("🍀")
+                    rodadas_gratis_usuario += bonus
+                    resultado = f"🍀 Sorte tripla! {rolos} Você ganhou {bonus} rodadas grátis!"
+                    registrar_historico(usuario, f"Caça-níquel ({rolos.count('🍀')} Trevos {rolos})", 0)
 
-                # --- regras padrão já existentes ---
-                elif rolos.count("⭐") == 3:
-                    ganho = aposta * 250
+                elif rolos.count("⭐") >= 3:  # estrelas
+                    mult = {3: 250, 4: 400, 5: 800}[rolos.count("⭐")]
+                    ganho = aposta * mult
                     saldo_real += ganho
-                    resultado = f"🌟🌟🌟 JACKPOT SUPREMO! {rolos} Você ganhou R$ {ganho:.2f}!"
-                    registrar_historico(usuario, f"Caça-níquel (Jackpot Estrelas {rolos})", ganho)
+                    resultado = f"🌟 JACKPOT SUPREMO! {rolos} Você ganhou R$ {ganho:.2f}!"
+                    registrar_historico(usuario, f"Caça-níquel ({rolos.count('⭐')} Estrelas {rolos})", ganho)
 
-                elif rolos.count("⭐") == 2:
-                    ganho = aposta * 80
+                elif rolos.count("🎲") >= 3:  # dados
+                    mult = {3: 130, 4: 200, 5: 400}[rolos.count("🎲")]
+                    ganho = aposta * mult
                     saldo_real += ganho
-                    resultado = f"🌟 Duas estrelas! {rolos} Você ganhou R$ {ganho:.2f}!"
-                    registrar_historico(usuario, f"Caça-níquel (2 Estrelas {rolos})", ganho)
+                    resultado = f"🎲 Dados da fortuna! {rolos} Você ganhou R$ {ganho:.2f}!"
+                    registrar_historico(usuario, f"Caça-níquel ({rolos.count('🎲')} Dados {rolos})", ganho)
 
-                elif rolos.count("🎲") == 3:
-                    ganho = aposta * 130
+                # --- regras gerais ---
+                elif maior_combo == 5:
+                    ganho = aposta * 60
                     saldo_real += ganho
-                    resultado = f"🎲🎲🎲 TRIPLO DADOS! {rolos} Você ganhou R$ {ganho:.2f}!"
-                    registrar_historico(usuario, f"Caça-níquel (3 Dados {rolos})", ganho)
+                    resultado = f"💥 QUINA! {rolos} Você ganhou R$ {ganho:.2f}!"
+                    registrar_historico(usuario, f"Caça-níquel (5 iguais {rolos})", ganho)
 
-                elif rolos.count("🎲") == 2:
-                    ganho = aposta * 50
+                elif maior_combo == 4:
+                    ganho = aposta * 25
                     saldo_real += ganho
-                    resultado = f"🎲🎲 Dois dados! {rolos} Você ganhou R$ {ganho:.2f}!"
-                    registrar_historico(usuario, f"Caça-níquel (2 Dados {rolos})", ganho)
+                    resultado = f"🔥 QUADRA! {rolos} Você ganhou R$ {ganho:.2f}!"
+                    registrar_historico(usuario, f"Caça-níquel (4 iguais {rolos})", ganho)
 
-                elif rolos[0] == rolos[1] == rolos[2]:
-                    ganho = aposta * 30
+                elif maior_combo == 3:
+                    ganho = aposta * 10
                     saldo_real += ganho
-                    resultado = f"🎉 Jackpot! {rolos} Você ganhou R$ {ganho:.2f}!"
-                    registrar_historico(usuario, f"Caça-níquel (Jackpot {rolos})", ganho)
+                    resultado = f"🎉 TRINCA! {rolos} Você ganhou R$ {ganho:.2f}!"
+                    registrar_historico(usuario, f"Caça-níquel (3 iguais {rolos})", ganho)
 
-                elif rolos[0] == rolos[1] or rolos[1] == rolos[2] or rolos[0] == rolos[2]:
-                    ganho = aposta * 8
+                elif maior_combo == 2:
+                    ganho = aposta * 4
                     saldo_real += ganho
-                    resultado = f"✨ Par! {rolos} Você ganhou R$ {ganho:.2f}!"
+                    resultado = f"✨ Parzinho sortudo! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (Par {rolos})", ganho)
 
                 else:
                     if rodadas_gratis_usuario > 0:
                         rodadas_gratis_usuario -= 1
-                        resultado = f"❌ {rolos} Você perdeu uma rodada grátis, saldo não foi descontado."
+                        resultado = f"❌ {rolos} Você perdeu uma rodada grátis."
                     else:
                         saldo_real -= aposta
                         resultado = f"❌ {rolos} Você perdeu R$ {aposta:.2f}."
@@ -631,6 +634,7 @@ def jogos():
                 "saldo": saldo,
                 "rodadas_gratis": rodadas_gratis_usuario
             })
+
                   # -------- ROLETA --------
         elif tipo == "roleta":
             try:
@@ -1306,6 +1310,7 @@ def admin_dashboard():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
