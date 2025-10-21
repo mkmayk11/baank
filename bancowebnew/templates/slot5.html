@@ -45,9 +45,8 @@
             font-size: 1em;
         }
         .resultado {
-            font-size: 3em;
+            font-size: 2.5em;
             margin-top: 20px;
-            letter-spacing: 10px;
         }
         a {
             display: inline-block;
@@ -81,47 +80,18 @@
       {% endif %}
     {% endwith %}
 
-    <form id="slotForm" method="POST">
+    <form method="POST">
         <label>Aposta:</label>
         <input type="number" name="aposta" min="1" required>
         <button type="submit">Girar</button>
     </form>
 
-    <div class="resultado" id="slotResultado">
-        {% if resultado %}
+    {% if resultado %}
+        <div class="resultado">
             {{ ' '.join(resultado) }}
-        {% endif %}
-    </div>
+        </div>
+    {% endif %}
 
-    <a href="{{ url_for('dashboard') }}">🔙 Voltar</a>
-
-    <script>
-        const form = document.getElementById('slotForm');
-        const resultadoDiv = document.getElementById('slotResultado');
-        const emojis = ["🕷️","🐶","🐸","🐓","🦑","🦈","🐇","🦞","🐷","🦄"];
-
-        form.addEventListener('submit', function(e){
-            e.preventDefault();
-
-            let aposta = parseInt(form.aposta.value);
-            if(isNaN(aposta) || aposta < 1) return;
-
-            // animação de giro
-            let giro = 20; // quantas trocas
-            let atual = 0;
-            let anim = setInterval(() => {
-                let fakeResultado = [];
-                for(let i=0;i<5;i++){
-                    fakeResultado.push(emojis[Math.floor(Math.random()*emojis.length)]);
-                }
-                resultadoDiv.textContent = fakeResultado.join(' ');
-                atual++;
-                if(atual >= giro){
-                    clearInterval(anim);
-                    form.submit(); // envia de verdade pro backend
-                }
-            }, 100);
-        });
-    </script>
+    <a href="{{ url_for('slot5') }}">🔙 Voltar</a>
 </body>
 </html>
