@@ -207,48 +207,52 @@
   }
 
   async function startSlot(rolos, resultado, saldoFinal, rodadasRestantes){
-    document.getElementById("slotResultado").style.display="none";
-    await spinReel("reel1", rolos[0]);
-    await spinReel("reel2", rolos[1]);
-    await spinReel("reel3", rolos[2]);
-    document.getElementById("slotResultado").style.display="block";
-    document.getElementById("slotResultado").innerText = resultado;
-    document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
-    document.getElementById("rodadasRestantes").innerText = rodadasRestantes > 0 ? `Jogadas restantes: ${rodadasRestantes}` : "";
+  document.getElementById("slotResultado").style.display="none";
 
-    atualizarHistorico(resultado, rolos);
-
-    if(resultado.includes("Ganhou") || resultado.includes("🎉")){
-      playSound(sounds.win);
-    } else if(resultado.includes("Perdeu")){
-      playSound(sounds.lose);
-    }
-
-    setTimeout(() => {
-      document.getElementById("reel1").textContent = "❔";
-      document.getElementById("reel2").textContent = "❔";
-      document.getElementById("reel3").textContent = "❔";
-      document.getElementById("slotResultado").style.display = "none";
-    }, 3000);
+  // Gira todos os rolos dinamicamente
+  for(let i = 0; i < rolos.length; i++){
+    await spinReel("reel" + (i + 1), rolos[i]);
   }
 
-  async function runSlots(aposta, lote){
-    let totalLote = lote + rodadasGratis;
-    for(let i = 0; i < totalLote; i++){
-        const resp = await fetch("{{ url_for('jogos') }}", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({tipo: "caca", aposta, lote: 1})
-        });
-        const data = await resp.json();
-        if(data.rodadas_gratis && data.rodadas_gratis > 0){
-            rodadasGratis += data.rodadas_gratis;
-            totalLote = (totalLote - i - 1) + data.rodadas_gratis;
-        }
-        await startSlot(data.rolos, data.resultado, data.saldo, totalLote - i - 1);
-        await new Promise(res => setTimeout(res, 4000));
-    }
+  document.getElementById("slotResultado").style.display="block";
+  document.getElementById("slotResultado").innerText = resultado;
+  document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
+  document.getElementById("rodadasRestantes").innerText = rodadasRestantes > 0 ? `Jogadas restantes: ${rodadasRestantes}` : "";
+
+  atualizarHistorico(resultado, rolos);
+
+  if(resultado.includes("Ganhou") || resultado.includes("🎉")){
+    playSound(sounds.win);
+  } else if(resultado.includes("Perdeu")){
+    playSound(sounds.lose);
   }
+
+  // Reseta os rolos depois de alguns segundos
+  setTimeout(() => {
+    for(let i=0; i<rolos.length; i++){
+      document.getElementById("reel"+(i+1)).textContent = "❔";
+    }
+    document.getElementById("slotResultado").style.display = "none";
+  }, 3000);
+}
+
+async function runSlots(aposta, lote){
+  let totalLote = lote + rodadasGratis;
+  for(let i = 0; i < totalLote; i++){
+      const resp = await fetch("{{ url_for('jogos') }}", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({tipo: "caca", aposta, lote: 1})
+      });
+      const data = await resp.json();
+      if(data.rodadas_gratis && data.rodadas_gratis > 0){
+          rodadasGratis += data.rodadas_gratis;
+          totalLote = (totalLote - i - 1) + data.rodadas_gratis;
+      }
+      await startSlot(data.rolos, data.resultado, data.saldo, totalLote - i - 1);
+      await new Promise(res => setTimeout(res, 4000));
+  }
+}
 
   document.getElementById("formCaca").addEventListener("submit", async e => {
     e.preventDefault();
@@ -356,6 +360,7 @@
   });
 </script>
 {% endblock %}
+
 
 
 
