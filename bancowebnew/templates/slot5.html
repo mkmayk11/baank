@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="casino-background py-5 text-center">
+  <h2 class="text-white mb-4">🎰 Slot 5 Emojis</h2>
+  
+  <div id="roleta5" class="d-flex justify-content-center gap-3 mb-3 fs-1">
+    <span>🎲</span><span>🎲</span><span>🎲</span><span>🎲</span><span>🎲</span>
+  </div>
+
+  <button id="btnGirar5" class="btn btn-warning mb-3">Girar Slot 5</button>
+
+  <div id="mensagem5" class="text-white fs-5"></div>
+</div>
+
+<script>
+document.getElementById("btnGirar5").addEventListener("click", async () => {
+  const res = await fetch("/slot5", { method: "POST" });
+  const data = await res.json();
+  const slots = document.querySelectorAll("#roleta5 span");
+
+  // Mostra o resultado
+  data.resultado.forEach((emoji, i) => {
+    slots[i].textContent = emoji;
+  });
+
+  document.getElementById("mensagem5").innerHTML = `${data.msg} <br>💰 Prêmio: ${data.premio}`;
+});
+</script>
+{% endblock %}
