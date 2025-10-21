@@ -1293,96 +1293,6 @@ def admin_dashboard():
 
 
 
-# ---------------- imports ----------------
-from flask import Flask, render_template, request, redirect, url_for, session, flash
-import os
-import psycopg2
-import random
-
-app = Flask(__name__)
-app.secret_key = "supersecretkey"  # troque em produção
-
-# ---------------- Conexão com o banco ----------------
-def get_conn():
-    DB_URL = os.getenv(
-        "DATABASE_URL",
-        "postgresql://neondb_owner:npg_DsJetaU27Llx@ep-orange-base-ahmxop1e-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require"
-    )
-    return psycopg2.connect(DB_URL)
-
-# ---------------- Função para carregar dados do usuário ----------------
-def carregar_dados():
-    conn = get_conn()
-    c = conn.cursor()
-    c.execute("SELECT usuario, senha, saldo FROM clientes")
-    clientes = {}
-    for u, s, sal in c.fetchall():
-        clientes[u] = {"senha": s, "saldo": sal}
-    conn.close()
-    return {"clientes": clientes}
-
-# ---------------- Rota Login ----------------
-@app.route("/slot5", methods=["GET", "POST"])
-def slot5():
-    if "usuario" not in session:
-        return redirect(url_for("login"))
-
-    usuario = session["usuario"]
-    conn = get_conn()
-    c = conn.cursor()
-
-    # pega saldo atual do usuário
-    c.execute("SELECT saldo FROM clientes WHERE usuario = %s", (usuario,))
-    row = c.fetchone()
-    if not row:
-        flash("Usuário não encontrado no banco!")
-        return redirect(url_for("login"))
-    saldo = row[0]
-
-    emojis = ["🕷️", "🐶", "🐸", "🐓", "🦑", "🦈", "🐇", "🦞", "🐷", "🦄"]
-    resultado = []
-    premio = 0
-
-    if request.method == "POST":
-        try:
-            aposta = int(request.form.get("aposta", 0))
-        except ValueError:
-            flash("Aposta inválida!")
-            return render_template("slot5.html", saldo=saldo, resultado=resultado)
-
-        if aposta <= 0 or aposta > saldo:
-            flash("Aposta inválida!")
-        else:
-            # Gira 5 quadrados
-            resultado = [random.choice(emojis) for _ in range(5)]
-
-            # Contagem de iguais
-            counts = {e: resultado.count(e) for e in set(resultado)}
-            max_count = max(counts.values())
-
-            # Regras de premiação
-            if max_count == 5:
-                premio = aposta * 10
-            elif max_count == 4:
-                premio = aposta * 5
-            elif max_count == 3:
-                premio = aposta * 2
-            else:
-                premio = -aposta
-
-            # Atualiza saldo no banco
-            saldo += premio
-            c.execute("UPDATE clientes SET saldo = %s WHERE usuario = %s", (saldo, usuario))
-            conn.commit()
-
-            flash(f"Resultado: {' '.join(resultado)} | {'Ganhou' if premio>0 else 'Perdeu'} {abs(premio)}!")
-
-    conn.close()
-    # Renderiza direto sem redirect
-    return render_template("slot5.html", saldo=saldo, resultado=resultado)
-
-
-
 
 
 
@@ -1396,6 +1306,7 @@ def slot5():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
