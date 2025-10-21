@@ -1293,49 +1293,69 @@ def admin_dashboard():
 
 
 
-from flask import Flask, render_template, request, session, redirect, url_for, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 import random
+import psycopg2
+import os
 
+app = Flask(__name__)
+app.secret_key = "supersecretkey"
+
+# ---------------- Conexão com o banco ----------------
+def get_conn():
+    DB_URL = os.getenv(
+        "DATABASE_URL",
+        "postgresql://neondb_owner:npg_DsJetaU27Llx@ep-orange-base-ahmxop1e-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require"
+    )
+    return psycopg2.connect(DB_URL)
+
+# ---------------- Rota do Slot 5 ----------------
 @app.route("/slot5", methods=["GET", "POST"])
 def slot5():
     if "usuario" not in session:
         return redirect(url_for("login"))
 
     usuario = session["usuario"]
-    simbolos = ["🕷️", "🐶", "🐸", "🐓", "🦑", "🦈", "🐇", "🦞", "🐷", "🦄"]
+    conn = get_conn()
+    c = conn.cursor()
+
+    # Pega saldo do usuário
+    c.execute("SELECT saldo FROM clientes WHERE usuario = %s", (usuario,))
+    saldo = c.fetchone()[0]
+
+    emojis =["🕷️", "🐶", "🐸", "🐓", "🦑", "🦈", "🐇", "🦞", "🐷", "🦄"]
+    resultado = []
+    premio = 0
 
     if request.method == "POST":
-        # Gira 5 símbolos
-        resultado = random.choices(simbolos, k=5)
-        premio = 0
+        aposta = int(request.form.get("aposta", 0))
+        if aposta <= 0 or aposta > saldo:
+            flash("Aposta inválida!")
+            return redirect(url_for("slot5"))
 
-        # Conta quantos iguais
-        repeticoes = {s: resultado.count(s) for s in set(resultado)}
-        maior_repeticao = max(repeticoes.values())
+        # Gira os 5 quadrados
+        resultado = [random.choice(emojis) for _ in range(5)]
 
-        if maior_repeticao == 5:
-            premio = 100  # jackpot
-            msg = "🦄 JACKPOT! 5 iguais!"
-        elif maior_repeticao == 4:
-            premio = 50
-            msg = "🐇 Quase lá! 4 iguais!"
-        elif maior_repeticao == 3:
-            premio = 20
-            msg = "🐷 Ganhou com 3 iguais!"
+        # Regras simples: se 3 ou mais iguais, multiplica a aposta
+        counts = {e: resultado.count(e) for e in set(resultado)}
+        max_count = max(counts.values())
+        if max_count >= 5:
+            premio = aposta * 10
+        elif max_count == 4:
+            premio = aposta * 5
+        elif max_count == 3:
+            premio = aposta * 2
         else:
-            premio = -10
-            msg = "Nada dessa vez 😢"
+            premio = -aposta
 
-        # Atualiza saldo (ajusta conforme tua lógica de DB)
-        conn = get_conn()
-        c = conn.cursor()
-        c.execute("UPDATE clientes SET saldo = saldo + ? WHERE nome = ?", (premio, usuario))
+        # Atualiza saldo
+        saldo += premio
+        c.execute("UPDATE clientes SET saldo = %s WHERE usuario = %s", (saldo, usuario))
         conn.commit()
-        conn.close()
+        flash(f"Resultado: {' '.join(resultado)} | {'Ganhou' if premio>0 else 'Perdeu'} {abs(premio)}!")
 
-        return jsonify({"resultado": resultado, "msg": msg, "premio": premio})
-
-    return render_template("slot5.html")
+    conn.close()
+    return render_template("slot5.html", saldo=saldo, resultado=resultado)
 
 
 
@@ -1353,6 +1373,7 @@ def slot5():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
