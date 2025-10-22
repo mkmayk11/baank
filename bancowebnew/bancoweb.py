@@ -529,7 +529,7 @@ def jogos():
     saldo = dados["clientes"][usuario]["saldo"]
 
     # símbolos do caça-níquel
-    simbolos = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲","🏺","💸","☀️","🚀","🌶️","🥕","🎃"]
+    simbolos = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲","🏺","💸","☀️","🚀","🌶️","🥕","🎃","🎅","👼","♻️","💲"]
 
     if request.method == "POST":
         data = request.get_json()
@@ -564,7 +564,7 @@ def jogos():
 
                 # --- regras especiais ---
                 if rolos.count("💸") >= 3:  # 3 ou mais dinheiros
-                    mult = {3: 160, 4: 300, 5: 600}[rolos.count("💸")]
+                    mult = {2:40,3: 160, 4: 300, 5: 600}[rolos.count("💸")]
                     ganho = aposta * mult
                     saldo_real += ganho
                     resultado = f"💸💸💸 Dinheiro em cascata! {rolos} Você ganhou R$ {ganho:.2f}!"
@@ -577,14 +577,14 @@ def jogos():
                     registrar_historico(usuario, f"Caça-níquel ({rolos.count('🍀')} Trevos {rolos})", 0)
 
                 elif rolos.count("⭐") >= 3:  # estrelas
-                    mult = {3: 250, 4: 400, 5: 800}[rolos.count("⭐")]
+                    mult = {2:100,3: 250, 4: 400, 5: 800}[rolos.count("⭐")]
                     ganho = aposta * mult
                     saldo_real += ganho
                     resultado = f"🌟 JACKPOT SUPREMO! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel ({rolos.count('⭐')} Estrelas {rolos})", ganho)
 
                 elif rolos.count("🎲") >= 3:  # dados
-                    mult = {3: 130, 4: 200, 5: 400}[rolos.count("🎲")]
+                    mult = {2:30,3: 130, 4: 200, 5: 400}[rolos.count("🎲")]
                     ganho = aposta * mult
                     saldo_real += ganho
                     resultado = f"🎲 Dados da fortuna! {rolos} Você ganhou R$ {ganho:.2f}!"
@@ -1310,6 +1310,7 @@ def admin_dashboard():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
