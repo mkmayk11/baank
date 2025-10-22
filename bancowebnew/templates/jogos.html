@@ -215,7 +215,16 @@
     z-index: 100000; pointer-events:none;
     animation: coinDrop linear forwards;
   }
+  .confetti {
+    position: fixed;
+    width: 10px; height: 14px;
+    z-index: 100000;
+    pointer-events: none;
+    opacity: 0.95;
+    transform-origin: center;
+  }
   @keyframes coinDrop { to { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
+  @keyframes confettiFall { to { transform: translateY(110vh) rotate(360deg); opacity: 0; } }
 
 </style>
 
@@ -266,9 +275,12 @@
 
   // helper: formata número pt-BR com 2 decimais
   function formatBR(valor){
-    return valor.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+    // garante número
+    const n = Number(valor) || 0;
+    return n.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
   }
 
+  // 🔥 cria chuva de moedas (simples)
   function soltarMoedas(qtd = 18){
     const conf = [];
     for(let i=0;i<qtd;i++){
@@ -279,28 +291,53 @@
       c.style.fontSize = (18 + Math.random()*26) + "px";
       c.style.opacity = 1;
       c.style.animationDuration = (1.6 + Math.random()*1.6) + "s";
+      c.style.animationTimingFunction = "linear";
+      c.style.animationName = "coinDrop";
       c.textContent = ["💰","🪙","💸"][Math.floor(Math.random()*3)];
       document.body.appendChild(c);
       // auto remove
-      setTimeout(()=>{ c.remove(); }, 3000);
+      setTimeout(()=>{ if(c && c.remove) c.remove(); }, 3200);
       conf.push(c);
     }
     return conf;
   }
 
+  // 🔥 confete colorido (leve)
+  function soltarConfete(qtd = 30){
+    const colors = ["#ff4d4d","#ffd24d","#4dff88","#4dd0ff","#b84dff"];
+    for(let i=0;i<qtd;i++){
+      const f = document.createElement("div");
+      f.className = "confetti";
+      f.style.left = (Math.random()*100) + "vw";
+      f.style.top = (-5 - Math.random()*20) + "vh";
+      f.style.background = colors[Math.floor(Math.random()*colors.length)];
+      f.style.width = (6 + Math.random()*8) + "px";
+      f.style.height = (10 + Math.random()*12) + "px";
+      f.style.borderRadius = (Math.random()>0.5 ? "2px" : "50%"); // mix square/circle
+      f.style.transform = `rotate(${Math.random()*360}deg)`;
+      f.style.animationDuration = (1.8 + Math.random()*1.8) + "s";
+      f.style.animationName = "confettiFall";
+      document.body.appendChild(f);
+      setTimeout(()=>{ if(f && f.remove) f.remove(); }, 3500);
+    }
+  }
+
+  // 🔥 principal: exibe banner, anima valor exato, solta moedas/confete
   function mostrarWinn(valorGanho = 0, frase = null){
     const wb = document.getElementById("winnBanner");
     const title = document.getElementById("winTitle");
     const amount = document.getElementById("winAmount");
     if(!wb || !title || !amount) return;
+    // título variável
     title.textContent = frase || (valorGanho>0 ? "BIG WIN 💸" : "WINNNN!!!");
     amount.textContent = "R$ 0,00";
     wb.classList.add("active");
-    // som
+    // som - usa a função global playSound definida no topo do template
     playSound(sounds.win, 0.9);
-    // moedas
+    // efeitos visuais
     soltarMoedas(20);
-    // contagem animada
+    soltarConfete(28);
+    // anima contagem do valor exato
     animarValor(0, valorGanho, amount);
     // fecha depois
     setTimeout(()=>{ wb.classList.remove("active"); }, 3600);
@@ -336,30 +373,28 @@
 
   atualizarHistorico(resultado, rolos);
 
-  // 🔥 DETECÇÃO DE VITÓRIA ROBUSTA:
-  // considera:
-  //  - qualquer ocorrência de "ganhou" (case-insensitive)
-  //  - ou presença de "R$" com número (prêmio)
-  //  - ou emoji 🎉
-  const ganhouTexto = /ganhou/i.test(resultado);
-  const temRS = /R\$ ?[\d\.,]+/.test(resultado);
-  const temEmoji = resultado.includes("🎉");
-  if(ganhouTexto || temRS || temEmoji){
-    // extrai valor se houver
+  // 🔥 DETECÇÃO DE VITÓRIA APERFEIÇOADA:
+  // antes: considerava só "R$" → dava falso positivo quando a string dizia "Você perdeu R$ 5.00"
+  // agora: precisa haver indícios positivos (ganhou/recebeu/acertou/🎉/jackpot) e NÃO ter indícios negativos (perdeu/❌)
+  const texto = String(resultado || "");
+  const temNegativo = /(?:\bperdeu\b|(?:você|voce)\s+perdeu|❌| perdeu )/i.test(texto);
+  const temPositivo = /(?:\bganhou\b|\bvocê ganhou\b|\bvoce ganhou\b|\brecebeu\b|\bacertou\b|\bpr[eê]mio\b|\bpr[eê]mio\b|\bjackpot\b|🎉|\bJACKPOT\b|\bBIG WIN\b)/i.test(texto);
+
+  if(temPositivo && !temNegativo){
+    // extrai valor se houver (aceita milhar com ponto e decimal com vírgula ou ponto)
     let valorGanho = 0;
-    const m = resultado.match(/R\$ ?([\d\.,]+)/);
+    const m = texto.match(/R\$ ?([\d\.\,]+)/);
     if(m){
-      // aceita "1.234.56" ou "1234.56" ou "1234,56"
-      const raw = m[1].replace(/\./g, '').replace(',', '.'); // remove pontos milhares, troca vírgula por ponto
+      const raw = m[1].replace(/\./g, '').replace(',', '.'); // transforma "1.234,56" -> "1234.56"
       valorGanho = parseFloat(raw) || 0;
     }
-    // tenta pegar uma frase short para título
+    // tenta pegar uma frase curta para título (opcional)
     let frase = null;
-    const fmatch = resultado.match(/(JACKPOT|JACKPOT SUPREMO|BIG WIN|QUINA|QUADRA|TRINCA|Par|Dinheiro|Sorte)/i);
+    const fmatch = texto.match(/(JACKPOT SUPREMO|JACKPOT|BIG WIN|QUINA|QUADRA|TRINCA|Par|Dinheiro|Sorte|ACERTOU)/i);
     if(fmatch) frase = fmatch[0].toUpperCase();
     mostrarWinn(valorGanho, frase);
     playSound(sounds.win);
-  } else if(resultado.includes("Perdeu") || /perdeu/i.test(resultado) || resultado.startsWith("❌")){
+  } else if(/(?:\bperdeu\b|❌| perdeu )/i.test(texto) || texto.startsWith("❌")){
     playSound(sounds.lose);
   }
 
@@ -466,7 +501,7 @@
             const premio = aposta * 56;
             resultadoFinal += ` 🎉 Acertou! Prêmio x56 = R$ ${premio.toFixed(2)}`;
             playSound(sounds.win);
-            // extrai e mostra
+            // extrai e mostra (roleta usa o valor do prêmio calculado)
             mostrarWinn(premio, "ROULETTE WIN");
           } else {
             playSound(sounds.lose);
