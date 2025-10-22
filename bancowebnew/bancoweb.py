@@ -590,6 +590,24 @@ def jogos():
                     resultado = f"🎲 Dados da fortuna! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel ({rolos.count('🎲')} Dados {rolos})", ganho)
 
+                # --- NOVA REGRA: 💲 CIFRÃO ---
+                elif rolos.count("💲") >= 2:
+                    mult_map = {2:50,3:140,4:600,5:1000}
+                    ganho = aposta * mult_map.get(rolos.count("💲"), 0)
+                    saldo_real += ganho
+                    resultado = f"💲💲💲 Riqueza! {rolos} Você ganhou R$ {ganho:.2f}!"
+                    registrar_historico(usuario, f"Caça-níquel ({rolos.count('💲')} Cifrões {rolos})", ganho)
+
+                # --- NOVA REGRA: 👼 ANJINHO ---
+                elif rolos.count("👼") >= 2:
+                    rodadas_gratis_usuario += 0
+                    resultado = f"👼 Modo bônus ativado! {rolos} Um anjinho começou a voar!"
+                    registrar_historico(usuario, f"Caça-níquel (Modo Anjinho {rolos.count('👼')} {rolos})", 0)
+                    # Sinaliza para frontend ativar animação bônus
+                    bonus_anjinho_ativado = True
+                else:
+                    bonus_anjinho_ativado = False
+
                 # --- regras gerais ---
                 elif maior_combo == 5:
                     ganho = aposta * 200
@@ -632,10 +650,11 @@ def jogos():
                 "rolos": rolos,
                 "resultado": resultado,
                 "saldo": saldo,
-                "rodadas_gratis": rodadas_gratis_usuario
+                "rodadas_gratis": rodadas_gratis_usuario,
+                "bonus_anjinho": bonus_anjinho_ativado if 'bonus_anjinho_ativado' in locals() else False
             })
 
-                  # -------- ROLETA --------
+        # -------- ROLETA --------
         elif tipo == "roleta":
             try:
                 aposta = float(data.get("aposta", 0))
@@ -668,17 +687,6 @@ def jogos():
                 "saldo": saldo
             })
 
-    # -------- GET normal --------
-    rodadas_gratis = dados["clientes"][usuario].get("rodadas_gratis", 0)
-    return render_template(
-        "jogos.html",
-        saldo=saldo,
-        last_aposta_caca="",
-        last_aposta_roleta="",
-        last_lote="",
-        last_numero_aposta="",
-        rodadas_gratis=rodadas_gratis
-    )
   
 
 
@@ -1310,6 +1318,7 @@ def admin_dashboard():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
