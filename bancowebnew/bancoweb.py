@@ -610,7 +610,7 @@ def jogos():
                     registrar_historico(usuario, f"Caça-níquel (3 iguais {rolos})", ganho)
 
                 elif maior_combo == 2:
-                    ganho = aposta * 4
+                    ganho = aposta * 2
                     saldo_real += ganho
                     resultado = f"✅ Par! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (Par {rolos})", ganho)
@@ -1310,6 +1310,7 @@ def admin_dashboard():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
