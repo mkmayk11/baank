@@ -529,7 +529,7 @@ def jogos():
     saldo = dados["clientes"][usuario]["saldo"]
 
     # símbolos do caça-níquel
-    simbolos = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲","🏺","💸"]
+    simbolos = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲","🏺","💸","☀️","🚀","🌶️","🥕","🎃"]
 
     if request.method == "POST":
         data = request.get_json()
@@ -570,7 +570,7 @@ def jogos():
                     resultado = f"💸💸💸 Dinheiro em cascata! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel ({rolos.count('💸')} Dinheiros {rolos})", ganho)
 
-                elif rolos.count("🍀") >= 3:  # 3 ou mais trevos
+                elif rolos.count("🍀") >= 2:  # 3 ou mais trevos
                     bonus = 5 * rolos.count("🍀")
                     rodadas_gratis_usuario += bonus
                     resultado = f"🍀 Sorte tripla! {rolos} Você ganhou {bonus} rodadas grátis!"
@@ -598,7 +598,7 @@ def jogos():
                     registrar_historico(usuario, f"Caça-níquel (5 iguais {rolos})", ganho)
 
                 elif maior_combo == 4:
-                    ganho = aposta * 60
+                    ganho = aposta * 100
                     saldo_real += ganho
                     resultado = f"🌟 QUADRA! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (4 iguais {rolos})", ganho)
@@ -1310,6 +1310,7 @@ def admin_dashboard():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
