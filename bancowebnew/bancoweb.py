@@ -164,39 +164,22 @@ def carregar_dados():
     conn.close()
     return {"clientes": clientes, "historico": historico}
 
-def salvar_cliente(usuario, senha=None, saldo=None, rodadas_gratis=None):
+def salvar_cliente(usuario, senha=None, saldo=None):
     conn = get_connection()
     c = conn.cursor()
 
-    # Caso: inserir novo cliente ou atualizar tudo de uma vez
-    if senha is not None and saldo is not None and rodadas_gratis is not None:
+    if senha is not None and saldo is not None:
         c.execute("""
-            INSERT INTO clientes (usuario, senha, saldo, rodadas_gratis)
-            VALUES (%s, %s, %s, %s)
-            ON CONFLICT (usuario)
-            DO UPDATE SET senha = EXCLUDED.senha, saldo = EXCLUDED.saldo, rodadas_gratis = EXCLUDED.rodadas_gratis
-        """, (usuario, senha, saldo, rodadas_gratis))
-
-    # Caso: atualizar saldo e rodadas grátis
-    elif saldo is not None and rodadas_gratis is not None:
-        c.execute("UPDATE clientes SET saldo = %s, rodadas_gratis = %s WHERE usuario = %s",
-                  (saldo, rodadas_gratis, usuario))
-
-    # Caso: atualizar só o saldo
+            INSERT INTO clientes (usuario, senha, saldo) VALUES (%s, %s, %s)
+            ON CONFLICT (usuario) DO UPDATE SET senha = EXCLUDED.senha, saldo = EXCLUDED.saldo
+        """, (usuario, senha, saldo))
     elif saldo is not None:
         c.execute("UPDATE clientes SET saldo = %s WHERE usuario = %s", (saldo, usuario))
-
-    # Caso: atualizar só as rodadas grátis
-    elif rodadas_gratis is not None:
-        c.execute("UPDATE clientes SET rodadas_gratis = %s WHERE usuario = %s", (rodadas_gratis, usuario))
-
-    # Caso: atualizar só a senha
     elif senha is not None:
         c.execute("UPDATE clientes SET senha = %s WHERE usuario = %s", (senha, usuario))
 
     conn.commit()
     conn.close()
-
 
 def registrar_historico(usuario, acao, valor=0, destino=None):
     conn = get_connection()
@@ -627,7 +610,7 @@ def jogos():
                     registrar_historico(usuario, f"Caça-níquel (3 iguais {rolos})", ganho)
 
                 elif maior_combo == 2:
-                    ganho = aposta * 2
+                    ganho = aposta * 4
                     saldo_real += ganho
                     resultado = f"✅ Par! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel (Par {rolos})", ganho)
@@ -643,15 +626,14 @@ def jogos():
 
             dados["clientes"][usuario]["rodadas_gratis"] = rodadas_gratis_usuario
             saldo = saldo_real
-            salvar_cliente(usuario, saldo=saldo, rodadas_gratis=rodadas_gratis_usuario)
-            
+            salvar_cliente(usuario, saldo=saldo)
+
             return jsonify({
                 "rolos": rolos,
                 "resultado": resultado,
                 "saldo": saldo,
                 "rodadas_gratis": rodadas_gratis_usuario
             })
-
 
                   # -------- ROLETA --------
         elif tipo == "roleta":
@@ -1328,8 +1310,6 @@ def admin_dashboard():
 
 if __name__ == "__main__":
     app.run(debug=True)
-
-
 
 
 
