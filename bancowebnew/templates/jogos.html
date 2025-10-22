@@ -374,27 +374,45 @@
   atualizarHistorico(resultado, rolos);
 
   // 🔥 DETECÇÃO DE VITÓRIA APERFEIÇOADA:
-  // antes: considerava só "R$" → dava falso positivo quando a string dizia "Você perdeu R$ 5.00"
-  // agora: precisa haver indícios positivos (ganhou/recebeu/acertou/🎉/jackpot) e NÃO ter indícios negativos (perdeu/❌)
-  const texto = String(resultado || "");
-  const temNegativo = /(?:\bperdeu\b|(?:você|voce)\s+perdeu|❌| perdeu )/i.test(texto);
-  const temPositivo = /(?:\bganhou\b|\bvocê ganhou\b|\bvoce ganhou\b|\brecebeu\b|\bacertou\b|\bpr[eê]mio\b|\bpr[eê]mio\b|\bjackpot\b|🎉|\bJACKPOT\b|\bBIG WIN\b)/i.test(texto);
+  // agora detecta positivo vs negativo e converte formato BR/EN corretamente
 
-  if(temPositivo && !temNegativo){
-    // extrai valor se houver (aceita milhar com ponto e decimal com vírgula ou ponto)
-    let valorGanho = 0;
-    const m = texto.match(/R\$ ?([\d\.\,]+)/);
-    if(m){
-      const raw = m[1].replace(/\./g, '').replace(',', '.'); // transforma "1.234,56" -> "1234.56"
-      valorGanho = parseFloat(raw) || 0;
+  const texto = String(resultado || "");
+
+  // Detecta sinais negativos (perda) — se encontrar, NÃO mostramos o win
+  const temNegativo = /(?:\bperdeu\b|(?:você|voce)\s+perdeu|❌| perdeu )/i.test(texto);
+
+  // Detecta sinais positivos comuns (ganhou, recebeu, acertou, emoji de festa, jackpot, etc.)
+  const temPositivo = /(?:\bganhou\b|\bvocê ganhou\b|\bvoce ganhou\b|\brecebeu\b|\bacertou\b|\bpr[eê]mio\b|\bjackpot\b|🎉|\bJACKPOT\b|\bBIG WIN\b|\bACERTOU\b|QUINA|QUADRA|TRINCA)/i.test(texto);
+
+  let valorGanho = 0;
+  // Extrai valor bruto do texto (padrões como R$ 1.234,56 ou R$ 120.00 ou R$ 120,00)
+  const m = texto.match(/R\$ ?([\d\.\,]+)/);
+  if (m) {
+    let raw = m[1];
+    // DETECÇÃO INTELIGENTE DO FORMATO:
+    // se parecer formato BR (tem vírgula como decimal ou vírgula existe e é depois do último ponto)
+    const hasComma = raw.indexOf(',') !== -1;
+    const hasDot = raw.indexOf('.') !== -1;
+    const isBR = hasComma && (!hasDot || raw.lastIndexOf(',') > raw.lastIndexOf('.'));
+    if (isBR) {
+      // ex: "1.234,56" -> "1234.56"
+      raw = raw.replace(/\./g, '').replace(',', '.');
+    } else {
+      // ex: "120.00" or "120,00" (já sem milhar) -> "120.00"
+      raw = raw.replace(/,/g, '');
     }
-    // tenta pegar uma frase curta para título (opcional)
+    valorGanho = parseFloat(raw) || 0;
+  }
+
+  // Mostra win **somente** se houver indício positivo e não houver indício negativo
+  if (temPositivo && !temNegativo) {
+    // tenta extrair frase curta para título (opcional)
     let frase = null;
     const fmatch = texto.match(/(JACKPOT SUPREMO|JACKPOT|BIG WIN|QUINA|QUADRA|TRINCA|Par|Dinheiro|Sorte|ACERTOU)/i);
     if(fmatch) frase = fmatch[0].toUpperCase();
     mostrarWinn(valorGanho, frase);
     playSound(sounds.win);
-  } else if(/(?:\bperdeu\b|❌| perdeu )/i.test(texto) || texto.startsWith("❌")){
+  } else if (temNegativo) {
     playSound(sounds.lose);
   }
 
