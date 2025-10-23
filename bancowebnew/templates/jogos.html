@@ -226,6 +226,20 @@
   @keyframes coinDrop { to { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
   @keyframes confettiFall { to { transform: translateY(110vh) rotate(360deg); opacity: 0; } }
 
+  /* 🔥 NOVO: ANJINHO VOANDO */
+  .anjinho-voando {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    font-size: 2.8rem;
+    animation: voar 3s linear forwards;
+    z-index: 99999;
+    pointer-events: none;
+  }
+  @keyframes voar {
+    0% { bottom: 0; opacity: 1; }
+    100% { bottom: 80%; opacity: 0; transform: translateX(120px) rotate(360deg); }
+  }
 </style>
 
 <script>
@@ -259,8 +273,16 @@
     }
   }
 
-  // -------------------- WIN SYSTEM (definido ANTES do uso) 🔥
-  // cria elementos do banner só uma vez
+  // 🔥 NOVO: função ANJINHO
+  function mostrarAnjinho(){
+    const anjinho = document.createElement("div");
+    anjinho.innerText = "👼";
+    anjinho.classList.add("anjinho-voando");
+    document.body.appendChild(anjinho);
+    setTimeout(()=>{ anjinho.remove(); }, 3000);
+  }
+
+  // -------------------- WIN SYSTEM (mantido) --------------------
   (function initWinSystem(){
     if(document.getElementById("winnBanner")) return;
     const wb = document.createElement("div");
@@ -273,14 +295,11 @@
     document.body.appendChild(wb);
   })();
 
-  // helper: formata número pt-BR com 2 decimais
   function formatBR(valor){
-    // garante número
     const n = Number(valor) || 0;
     return n.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
   }
 
-  // 🔥 cria chuva de moedas (simples)
   function soltarMoedas(qtd = 18){
     const conf = [];
     for(let i=0;i<qtd;i++){
@@ -295,14 +314,12 @@
       c.style.animationName = "coinDrop";
       c.textContent = ["💰","🪙","💸"][Math.floor(Math.random()*3)];
       document.body.appendChild(c);
-      // auto remove
       setTimeout(()=>{ if(c && c.remove) c.remove(); }, 3200);
       conf.push(c);
     }
     return conf;
   }
 
-  // 🔥 confete colorido (leve)
   function soltarConfete(qtd = 30){
     const colors = ["#ff4d4d","#ffd24d","#4dff88","#4dd0ff","#b84dff"];
     for(let i=0;i<qtd;i++){
@@ -313,7 +330,7 @@
       f.style.background = colors[Math.floor(Math.random()*colors.length)];
       f.style.width = (6 + Math.random()*8) + "px";
       f.style.height = (10 + Math.random()*12) + "px";
-      f.style.borderRadius = (Math.random()>0.5 ? "2px" : "50%"); // mix square/circle
+      f.style.borderRadius = (Math.random()>0.5 ? "2px" : "50%");
       f.style.transform = `rotate(${Math.random()*360}deg)`;
       f.style.animationDuration = (1.8 + Math.random()*1.8) + "s";
       f.style.animationName = "confettiFall";
@@ -322,24 +339,18 @@
     }
   }
 
-  // 🔥 principal: exibe banner, anima valor exato, solta moedas/confete
   function mostrarWinn(valorGanho = 0, frase = null){
     const wb = document.getElementById("winnBanner");
     const title = document.getElementById("winTitle");
     const amount = document.getElementById("winAmount");
     if(!wb || !title || !amount) return;
-    // título variável
     title.textContent = frase || (valorGanho>0 ? "BIG WIN 💸" : "WINNNN!!!");
     amount.textContent = "R$ 0,00";
     wb.classList.add("active");
-    // som - usa a função global playSound definida no topo do template
     playSound(sounds.win, 0.9);
-    // efeitos visuais
     soltarMoedas(20);
     soltarConfete(28);
-    // anima contagem do valor exato
     animarValor(0, valorGanho, amount);
-    // fecha depois
     setTimeout(()=>{ wb.classList.remove("active"); }, 3600);
   }
 
@@ -356,74 +367,48 @@
   }
   function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
 
-  // -------------------- FIM WIN SYSTEM --------------------
+  // -------------------- SLOT PRINCIPAL --------------------
+  async function startSlot(rolos, resultado, saldoFinal, rodadasRestantes, bonusAnjinho=false){
+    document.getElementById("slotResultado").style.display="none";
 
-  async function startSlot(rolos, resultado, saldoFinal, rodadasRestantes){
-  document.getElementById("slotResultado").style.display="none";
-
-  // Gira todos os rolos dinamicamente
-  for(let i = 0; i < rolos.length; i++){
-    await spinReel("reel" + (i + 1), rolos[i]);
-  }
-
-  document.getElementById("slotResultado").style.display="block";
-  document.getElementById("slotResultado").innerText = resultado;
-  document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
-  document.getElementById("rodadasRestantes").innerText = rodadasRestantes > 0 ? `Jogadas restantes: ${rodadasRestantes}` : "";
-
-  atualizarHistorico(resultado, rolos);
-
-  // 🔥 DETECÇÃO DE VITÓRIA APERFEIÇOADA:
-  // agora detecta positivo vs negativo e converte formato BR/EN corretamente
-
-  const texto = String(resultado || "");
-
-  // Detecta sinais negativos (perda) — se encontrar, NÃO mostramos o win
-  const temNegativo = /(?:\bperdeu\b|(?:você|voce)\s+perdeu|❌| perdeu )/i.test(texto);
-
-  // Detecta sinais positivos comuns (ganhou, recebeu, acertou, emoji de festa, jackpot, etc.)
-  const temPositivo = /(?:\bganhou\b|\bvocê ganhou\b|\bvoce ganhou\b|\brecebeu\b|\bacertou\b|\bpr[eê]mio\b|\bjackpot\b|🎉|\bJACKPOT\b|\bBIG WIN\b|\bACERTOU\b|QUINA|QUADRA|TRINCA)/i.test(texto);
-
-  let valorGanho = 0;
-  // Extrai valor bruto do texto (padrões como R$ 1.234,56 ou R$ 120.00 ou R$ 120,00)
-  const m = texto.match(/R\$ ?([\d\.\,]+)/);
-  if (m) {
-    let raw = m[1];
-    // DETECÇÃO INTELIGENTE DO FORMATO:
-    // se parecer formato BR (tem vírgula como decimal ou vírgula existe e é depois do último ponto)
-    const hasComma = raw.indexOf(',') !== -1;
-    const hasDot = raw.indexOf('.') !== -1;
-    const isBR = hasComma && (!hasDot || raw.lastIndexOf(',') > raw.lastIndexOf('.'));
-    if (isBR) {
-      // ex: "1.234,56" -> "1234.56"
-      raw = raw.replace(/\./g, '').replace(',', '.');
-    } else {
-      // ex: "120.00" or "120,00" (já sem milhar) -> "120.00"
-      raw = raw.replace(/,/g, '');
+    for(let i = 0; i < rolos.length; i++){
+      await spinReel("reel" + (i + 1), rolos[i]);
     }
-    valorGanho = parseFloat(raw) || 0;
-  }
 
-  // Mostra win **somente** se houver indício positivo e não houver indício negativo
-  if (temPositivo && !temNegativo) {
-    // tenta extrair frase curta para título (opcional)
-    let frase = null;
-    const fmatch = texto.match(/(JACKPOT SUPREMO|JACKPOT|BIG WIN|QUINA|QUADRA|TRINCA|Par|Dinheiro|Sorte|ACERTOU)/i);
-    if(fmatch) frase = fmatch[0].toUpperCase();
-    mostrarWinn(valorGanho, frase);
-    playSound(sounds.win);
-  } else if (temNegativo) {
-    playSound(sounds.lose);
-  }
+    document.getElementById("slotResultado").style.display="block";
+    document.getElementById("slotResultado").innerText = resultado;
+    document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
+    document.getElementById("rodadasRestantes").innerText = rodadasRestantes > 0 ? `Jogadas restantes: ${rodadasRestantes}` : "";
 
-  // Reseta os rolos depois de alguns segundos
-  setTimeout(() => {
-    for(let i=0; i<rolos.length; i++){
-      document.getElementById("reel"+(i+1)).textContent = "❔";
+    atualizarHistorico(resultado, rolos);
+
+    if(bonusAnjinho) mostrarAnjinho();
+
+    const texto = String(resultado || "");
+    const temNegativo = /(?:\bperdeu\b|(?:você|voce)\s+perdeu|❌| perdeu )/i.test(texto);
+    const temPositivo = /(?:\bganhou\b|\bvocê ganhou\b|\bvoce ganhou\b|\brecebeu\b|\bacertou\b|\bpr[eê]mio\b|\bjackpot\b|🎉|\bJACKPOT\b|\bBIG WIN\b|\bACERTOU\b|QUINA|QUADRA|TRINCA)/i.test(texto);
+
+    let valorGanho = 0;
+    const m = texto.match(/R\$ ?([\d\.\,]+)/);
+    if (m) {
+      let raw = m[1];
+      const hasComma = raw.indexOf(',') !== -1;
+      const hasDot = raw.indexOf('.') !== -1;
+      const isBR = hasComma && (!hasDot || raw.lastIndexOf(',') > raw.lastIndexOf('.'));
+      if (isBR) raw = raw.replace(/\./g, '').replace(',', '.'); else raw = raw.replace(/,/g, '');
+      valorGanho = parseFloat(raw) || 0;
     }
-    document.getElementById("slotResultado").style.display = "none";
-  }, 3000);
-}
+
+    if (temPositivo && !temNegativo) mostrarWinn(valorGanho);
+    else if (temNegativo) playSound(sounds.lose);
+
+    setTimeout(() => {
+      for(let i=0; i<rolos.length; i++){
+        document.getElementById("reel"+(i+1)).textContent = "❔";
+      }
+      document.getElementById("slotResultado").style.display = "none";
+    }, 3000);
+  }
 
   async function runSlots(aposta, lote){
     let totalLote = lote + rodadasGratis;
@@ -438,7 +423,7 @@
             rodadasGratis += data.rodadas_gratis;
             totalLote = (totalLote - i - 1) + data.rodadas_gratis;
         }
-        await startSlot(data.rolos, data.resultado, data.saldo, totalLote - i - 1);
+        await startSlot(data.rolos, data.resultado, data.saldo, totalLote - i - 1, true);
         await new Promise(res => setTimeout(res, 4000));
     }
   }
@@ -450,106 +435,5 @@
     runSlots(aposta, lote);
   });
 
-  // -------------------- ROLETA --------------------
-  const canvas = document.getElementById("rouletteCanvas");
-  const ctx = canvas.getContext("2d");
-  const segments = Array.from({length:21},(_,i)=>i);
-  let angle=0, spinning=false;
-
-  function drawRoulette() {
-    const radius = canvas.width / 2;
-    const segmentAngle = (2 * Math.PI) / segments.length;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.save();
-    ctx.translate(radius, radius);
-    ctx.rotate(angle - segmentAngle/2 - Math.PI/2);
-    for (let i = 0; i < segments.length; i++) {
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.arc(0, 0, radius, i * segmentAngle, (i + 1) * segmentAngle);
-      ctx.fillStyle = "#111";
-      ctx.fill();
-      ctx.strokeStyle = "#0f0";
-      ctx.stroke();
-      ctx.save();
-      ctx.rotate(i * segmentAngle + segmentAngle / 2);
-      ctx.fillStyle = "#fff";
-      ctx.font = "16px Arial";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(segments[i].toString(), radius * 0.65, 0);
-      ctx.restore();
-    }
-    ctx.restore();
-  }
-
-  function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhido=null, aposta=null){
-    if(spinning) return;
-    spinning = true;
-    playSound(sounds.roulette);
-    const segmentAngle = (2*Math.PI)/segments.length;
-    const targetAngle = (2*Math.PI*6) + winningIndex * segmentAngle;
-    let currentAngle = angle;
-    let speed = 0.5;
-
-    function animate(){
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.save();
-      ctx.translate(canvas.width/2, canvas.height/2);
-      ctx.rotate(currentAngle - segmentAngle/2 - Math.PI/2);
-      ctx.translate(-canvas.width/2, -canvas.height/2);
-      drawRoulette();
-      ctx.restore();
-
-      if(currentAngle < targetAngle){
-        currentAngle += speed;
-        speed *= 0.995;
-        requestAnimationFrame(animate);
-      } else {
-        angle = targetAngle % (2*Math.PI);
-        spinning = false;
-        const normalizedAngle = (2*Math.PI - angle + segmentAngle/2 + Math.PI/2) % (2*Math.PI);
-        const indexUnderPointer = Math.floor(normalizedAngle / segmentAngle) % segments.length;
-        const numeroFinal = segments[indexUnderPointer];
-        let resultadoFinal = `Número: ${numeroFinal} → Caiu ${numeroFinal}.`;
-        let msgServidor = resultadoTexto.replace(/Caiu\s+\d+\.?/gi, "").trim();
-        if (msgServidor) resultadoFinal += " " + msgServidor;
-        if(numeroEscolhido !== null && aposta !== null){
-          if(numeroFinal === numeroEscolhido){
-            const premio = aposta * 56;
-            resultadoFinal += ` 🎉 Acertou! Prêmio x56 = R$ ${premio.toFixed(2)}`;
-            playSound(sounds.win);
-            // extrai e mostra (roleta usa o valor do prêmio calculado)
-            mostrarWinn(premio, "ROULETTE WIN");
-          } else {
-            playSound(sounds.lose);
-          }
-        }
-        document.getElementById("rouletteResult").innerText = resultadoFinal;
-        document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
-        setTimeout(() => {
-          angle = 0;
-          drawRoulette();
-        }, 3000);
-      }
-    }
-    animate();
-  }
-
-  drawRoulette();
-  document.getElementById("formRoleta").addEventListener("submit", async e => {
-    e.preventDefault();
-    const aposta = parseFloat(document.getElementById("apostaRoleta").value);
-    const numero = parseInt(document.getElementById("numeroAposta").value);
-    const resp = await fetch("{{ url_for('jogos') }}",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({tipo:"roleta", aposta, numero})
-    });
-    const data = await resp.json();
-    animateToIndex(data.numero, data.saldo, data.resultado, numero, aposta);
-  });
 </script>
 {% endblock %}
-
-
