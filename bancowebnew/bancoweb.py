@@ -489,12 +489,19 @@ def alterar_senha():
 def historico():
     if "usuario" not in session or session["usuario"] == "admin":
         return redirect(url_for("login"))
+
     usuario = session["usuario"]
+
+    # conexão com o banco
     conn = get_connection()
     c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    c.execute("SELECT * FROM historico WHERE usuario = %s", (usuario,))
+
+    # pega o histórico do usuário, do mais recente para o mais antigo
+    c.execute("SELECT * FROM historico WHERE usuario = %s ORDER BY id DESC", (usuario,))
     historico_user = [dict(row) for row in c.fetchall()]
+
     conn.close()
+
     return render_template("historico.html", historico=historico_user)
 
 @app.route("/exportar_csv")
@@ -1325,6 +1332,7 @@ def admin_dashboard():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
