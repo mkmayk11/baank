@@ -535,6 +535,10 @@ def jogos():
         data = request.get_json()
         tipo = data.get("tipo")
 
+        # inicializa variáveis de bônus/rodadas
+        bonus_anjinho_ativado = False
+        rodadas_gratis_usuario = dados["clientes"][usuario].get("rodadas_gratis", 0)
+
         # -------- CAÇA-NÍQUEL (5 rolos) --------
         if tipo == "caca":
             try:
@@ -543,7 +547,6 @@ def jogos():
             except:
                 return jsonify({"erro": "Aposta inválida"}), 400
 
-            rodadas_gratis_usuario = dados["clientes"][usuario].get("rodadas_gratis", 0)
             saldo_real = saldo
 
             if aposta <= 0 and rodadas_gratis_usuario <= 0:
@@ -553,7 +556,7 @@ def jogos():
                 resultado = "Saldo insuficiente!"
                 rolos = ["❔"] * 5
             else:
-                # novo: 5 colunas de rolos
+                # 5 colunas de rolos
                 rolos = random.choices(simbolos, k=5)
                 ganho = 0
                 resultado = ""
@@ -570,7 +573,7 @@ def jogos():
                     resultado = f"💸💸💸 Dinheiro em cascata! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel ({rolos.count('💸')} Dinheiros {rolos})", ganho)
 
-                elif rolos.count("🍀") >= 2:  # 3 ou mais trevos
+                elif rolos.count("🍀") >= 2:  # 2 ou mais trevos
                     bonus = 5 * rolos.count("🍀")
                     rodadas_gratis_usuario += bonus
                     resultado = f"🍀 Sorte tripla! {rolos} Você ganhou {bonus} rodadas grátis!"
@@ -590,23 +593,18 @@ def jogos():
                     resultado = f"🎲 Dados da fortuna! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel ({rolos.count('🎲')} Dados {rolos})", ganho)
 
-                # --- NOVA REGRA: 💲 CIFRÃO ---
-                elif rolos.count("💲") >= 2:
+                elif rolos.count("💲") >= 2:  # cifrão
                     mult_map = {2:50,3:140,4:600,5:1000}
                     ganho = aposta * mult_map.get(rolos.count("💲"), 0)
                     saldo_real += ganho
                     resultado = f"💲💲💲 Riqueza! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel ({rolos.count('💲')} Cifrões {rolos})", ganho)
 
-                # --- NOVA REGRA: 👼 ANJINHO ---
-                elif rolos.count("👼") >= 2:
+                elif rolos.count("👼") >= 2:  # anjinho
                     rodadas_gratis_usuario += 0
                     resultado = f"👼 Modo bônus ativado! {rolos} Um anjinho começou a voar!"
                     registrar_historico(usuario, f"Caça-níquel (Modo Anjinho {rolos.count('👼')} {rolos})", 0)
-                    # Sinaliza para frontend ativar animação bônus
                     bonus_anjinho_ativado = True
-                else:
-                    bonus_anjinho_ativado = False
 
                 # --- regras gerais ---
                 elif maior_combo == 5:
@@ -651,14 +649,14 @@ def jogos():
                 "resultado": resultado,
                 "saldo": saldo,
                 "rodadas_gratis": rodadas_gratis_usuario,
-                "bonus_anjinho": bonus_anjinho_ativado if 'bonus_anjinho_ativado' in locals() else False
+                "bonus_anjinho": bonus_anjinho_ativado
             })
 
         # -------- ROLETA --------
         elif tipo == "roleta":
             try:
                 aposta = float(data.get("aposta", 0))
-                numero = int(data.get("numero"))
+                numero = int(data.get("numero", 0))
             except:
                 return jsonify({"erro": "Aposta ou número inválido"}), 400
 
@@ -686,6 +684,7 @@ def jogos():
                 "resultado": resultado,
                 "saldo": saldo
             })
+
 
   
 
@@ -1318,6 +1317,7 @@ def admin_dashboard():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
