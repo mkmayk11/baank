@@ -652,6 +652,17 @@ def jogos():
                 "bonus_anjinho": bonus_anjinho_ativado
             })
 
+    # --------- ADICIONE ESTE ELSE PARA O GET ---------
+    else:
+        return render_template("jogos.html",
+                               saldo=saldo,
+                               last_aposta_caca=0,
+                               last_lote=1,
+                               last_aposta_roleta=0,
+                               last_numero_aposta=0,
+                               rodadas_gratis=dados["clientes"][usuario].get("rodadas_gratis",0))
+
+
         # -------- ROLETA --------
         elif tipo == "roleta":
             try:
@@ -1317,6 +1328,7 @@ def admin_dashboard():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
