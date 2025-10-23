@@ -563,8 +563,8 @@ def jogos():
                 maior_combo = max(contagens.values())
 
                 # --- regras especiais ---
-                if rolos.count("💸") >= 3:  # 3 ou mais dinheiros
-                    mult = {2:40,3: 160, 4: 300, 5: 600}[rolos.count("💸")]
+                if rolos.count("💸") >= 2:  # 3 ou mais dinheiros
+                    mult = {2:20,3: 160, 4: 300, 5: 600}[rolos.count("💸")]
                     ganho = aposta * mult
                     saldo_real += ganho
                     resultado = f"💸💸💸 Dinheiro em cascata! {rolos} Você ganhou R$ {ganho:.2f}!"
@@ -576,8 +576,8 @@ def jogos():
                     resultado = f"🍀 Sorte tripla! {rolos} Você ganhou {bonus} rodadas grátis!"
                     registrar_historico(usuario, f"Caça-níquel ({rolos.count('🍀')} Trevos {rolos})", 0)
 
-                elif rolos.count("⭐") >= 3:  # estrelas
-                    mult = {2:100,3: 250, 4: 400, 5: 800}[rolos.count("⭐")]
+                elif rolos.count("⭐") >= 2:  # estrelas
+                    mult = {2:60,3: 250, 4: 400, 5: 800}[rolos.count("⭐")]
                     ganho = aposta * mult
                     saldo_real += ganho
                     resultado = f"🌟 JACKPOT SUPREMO! {rolos} Você ganhou R$ {ganho:.2f}!"
@@ -1325,6 +1325,7 @@ def admin_dashboard():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
