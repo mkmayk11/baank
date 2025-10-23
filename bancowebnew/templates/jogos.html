@@ -426,130 +426,110 @@
 
 </script>
 
-<!-- 🔥 NOVO SCRIPT DA ROLETA DINÂMICA -->
-<script>
-  // Função para desenhar e girar a roleta
+// -------------------- ROLETA --------------------
   const canvas = document.getElementById("rouletteCanvas");
   const ctx = canvas.getContext("2d");
-  const options = ["💰", "⭐", "🍒", "💎", "🍀", "❌"];
-  let startAngle = 0;
-  const arc = Math.PI / (options.length / 2);
-  let spinTimeout = null;
-  let spinAngleStart = 0;
-  let spinTime = 0;
-  let spinTimeTotal = 0;
+  const segments = Array.from({length:21},(_,i)=>i);
+  let angle=0, spinning=false;
 
-  // Desenha os setores
-  function drawRouletteWheel() {
-    if (!canvas) return;
-    const outsideRadius = 140;
-    const textRadius = 100;
-    const insideRadius = 40;
-
+  function drawRoulette() {
+    const radius = canvas.width / 2;
+    const segmentAngle = (2 * Math.PI) / segments.length;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = "black";
-    ctx.lineWidth = 2;
-    ctx.font = "24px Arial";
-
-    for (let i = 0; i < options.length; i++) {
-      const angle = startAngle + i * arc;
-      ctx.fillStyle = i % 2 === 0 ? "#009900" : "#00cc00";
-
+    ctx.save();
+    ctx.translate(radius, radius);
+    ctx.rotate(angle - segmentAngle/2 - Math.PI/2);
+    for (let i = 0; i < segments.length; i++) {
       ctx.beginPath();
-      ctx.arc(150, 150, outsideRadius, angle, angle + arc, false);
-      ctx.arc(150, 150, insideRadius, angle + arc, angle, true);
-      ctx.stroke();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, radius, i * segmentAngle, (i + 1) * segmentAngle);
+      ctx.fillStyle = "#111";
       ctx.fill();
-
+      ctx.strokeStyle = "#0f0";
+      ctx.stroke();
       ctx.save();
-      ctx.fillStyle = "white";
-      ctx.translate(
-        150 + Math.cos(angle + arc / 2) * textRadius,
-        150 + Math.sin(angle + arc / 2) * textRadius
-      );
-      ctx.rotate(angle + arc / 2 + Math.PI / 2);
-      const text = options[i];
-      ctx.fillText(text, -ctx.measureText(text).width / 2, 0);
+      ctx.rotate(i * segmentAngle + segmentAngle / 2);
+      ctx.fillStyle = "#fff";
+      ctx.font = "16px Arial";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(segments[i].toString(), radius * 0.65, 0);
       ctx.restore();
     }
-
-    // Triângulo do marcador
-    ctx.fillStyle = "red";
-    ctx.beginPath();
-    ctx.moveTo(150 - 10, 10);
-    ctx.lineTo(150 + 10, 10);
-    ctx.lineTo(150, 40);
-    ctx.closePath();
-    ctx.fill();
+    ctx.restore();
   }
 
-  // Anima o giro
-  function rotateWheel() {
-    spinAngleStart *= 0.97;
-    if (spinAngleStart <= 0.2) {
-      clearTimeout(spinTimeout);
-      const degrees = (startAngle * 180) / Math.PI + 90;
-      const arcd = (arc * 180) / Math.PI;
-      const index = Math.floor((360 - (degrees % 360)) / arcd) % options.length;
-      const result = options[index];
-      mostrarResultadoRoleta(result);
-      return;
-    }
-    startAngle += (spinAngleStart * Math.PI) / 180;
-    drawRouletteWheel();
-    spinTimeout = setTimeout(rotateWheel, 30);
-  }
+  function animateToIndex(winningIndex, saldoFinal, resultadoTexto, numeroEscolhido=null, aposta=null){
+    if(spinning) return;
+    spinning = true;
+    playSound(sounds.roulette);
+    const segmentAngle = (2*Math.PI)/segments.length;
+    const targetAngle = (2*Math.PI*6) + winningIndex * segmentAngle;
+    let currentAngle = angle;
+    let speed = 0.5;
 
-  // Função para rodar
-  function spin() {
-    spinAngleStart = Math.random() * 10 + 20;
-    spinTime = 0;
-    spinTimeTotal = Math.random() * 3000 + 4000;
-    rotateWheel();
-    tocarSomRoleta();
-  }
+    function animate(){
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.translate(canvas.width/2, canvas.height/2);
+      ctx.rotate(currentAngle - segmentAngle/2 - Math.PI/2);
+      ctx.translate(-canvas.width/2, -canvas.height/2);
+      drawRoulette();
+      ctx.restore();
 
-  // Som da roleta
-  function tocarSomRoleta() {
-    const audio = new Audio("/static/som/roleta.mp3");
-    audio.volume = 0.3;
-    audio.play();
-  }
-
-  // Exibe o resultado e envia ao servidor
-  function mostrarResultadoRoleta(resultado) {
-    const resultadoBox = document.getElementById("resultadoBox");
-    resultadoBox.innerHTML = `<p class="mt-3 fs-4 text-light">Resultado: ${resultado}</p>`;
-    // Enviar para o backend
-    fetch("/jogos", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: `tipo=roleta&resultado=${encodeURIComponent(resultado)}`
-    })
-    .then(r => r.json())
-    .then(data => {
-      if (data.saldo !== undefined) {
-        document.getElementById("saldoBox").innerHTML = `💰 Saldo: R$ ${data.saldo.toFixed(2)}`;
+      if(currentAngle < targetAngle){
+        currentAngle += speed;
+        speed *= 0.995;
+        requestAnimationFrame(animate);
+      } else {
+        angle = targetAngle % (2*Math.PI);
+        spinning = false;
+        const normalizedAngle = (2*Math.PI - angle + segmentAngle/2 + Math.PI/2) % (2*Math.PI);
+        const indexUnderPointer = Math.floor(normalizedAngle / segmentAngle) % segments.length;
+        const numeroFinal = segments[indexUnderPointer];
+        let resultadoFinal = `Número: ${numeroFinal} → Caiu ${numeroFinal}.`;
+        let msgServidor = resultadoTexto.replace(/Caiu\s+\d+\.?/gi, "").trim();
+        if (msgServidor) resultadoFinal += " " + msgServidor;
+        if(numeroEscolhido !== null && aposta !== null){
+          if(numeroFinal === numeroEscolhido){
+            const premio = aposta * 56;
+            resultadoFinal += ` 🎉 Acertou! Prêmio x56 = R$ ${premio.toFixed(2)}`;
+            playSound(sounds.win);
+            // extrai e mostra (roleta usa o valor do prêmio calculado)
+            mostrarWinn(premio, "ROULETTE WIN");
+          } else {
+            playSound(sounds.lose);
+          }
+        }
+        document.getElementById("rouletteResult").innerText = resultadoFinal;
+        document.getElementById("saldoBox").innerText = "R$ " + saldoFinal.toFixed(2);
+        setTimeout(() => {
+          angle = 0;
+          drawRoulette();
+        }, 3000);
       }
-    });
+    }
+    animate();
   }
 
-  // Evento do botão da roleta
-  const formRoleta = document.getElementById("formRoleta");
-  if (formRoleta) {
-    formRoleta.addEventListener("submit", function(e) {
-      e.preventDefault();
-      spin();
+  drawRoulette();
+  document.getElementById("formRoleta").addEventListener("submit", async e => {
+    e.preventDefault();
+    const aposta = parseFloat(document.getElementById("apostaRoleta").value);
+    const numero = parseInt(document.getElementById("numeroAposta").value);
+    const resp = await fetch("{{ url_for('jogos') }}",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({tipo:"roleta", aposta, numero})
     });
-  }
-
-  // Desenha inicialmente
-  drawRouletteWheel();
+    const data = await resp.json();
+    animateToIndex(data.numero, data.saldo, data.resultado, numero, aposta);
+  });
 </script>
-<!-- 🔥 FIM DO NOVO SCRIPT DA ROLETA -->
 
 
 {% endblock %}
+
 
 
 
