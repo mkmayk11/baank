@@ -539,7 +539,6 @@ def jogos():
         bonus_anjinho_ativado = False
         rodadas_gratis_usuario = dados["clientes"][usuario].get("rodadas_gratis", 0)
 
-        # -------- CAÇA-NÍQUEL (5 rolos) --------
         if tipo == "caca":
             try:
                 aposta = float(data.get("aposta", 0))
@@ -556,57 +555,53 @@ def jogos():
                 resultado = "Saldo insuficiente!"
                 rolos = ["❔"] * 5
             else:
-                # 5 colunas de rolos
                 rolos = random.choices(simbolos, k=5)
                 ganho = 0
                 resultado = ""
 
-                # contagem dos símbolos
                 contagens = {simbolo: rolos.count(simbolo) for simbolo in set(rolos)}
                 maior_combo = max(contagens.values())
 
-                # --- regras especiais ---
-                if rolos.count("💸") >= 3:  # 3 ou mais dinheiros
-                    mult = {2:40,3: 160, 4: 300, 5: 600}[rolos.count("💸")]
+                if rolos.count("💸") >= 3:
+                    mult = {2:40,3:160,4:300,5:600}[rolos.count("💸")]
                     ganho = aposta * mult
                     saldo_real += ganho
                     resultado = f"💸💸💸 Dinheiro em cascata! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel ({rolos.count('💸')} Dinheiros {rolos})", ganho)
 
-                elif rolos.count("🍀") >= 2:  # 2 ou mais trevos
+                elif rolos.count("🍀") >= 2:
                     bonus = 5 * rolos.count("🍀")
                     rodadas_gratis_usuario += bonus
                     resultado = f"🍀 Sorte tripla! {rolos} Você ganhou {bonus} rodadas grátis!"
                     registrar_historico(usuario, f"Caça-níquel ({rolos.count('🍀')} Trevos {rolos})", 0)
 
-                elif rolos.count("⭐") >= 3:  # estrelas
-                    mult = {2:100,3: 250, 4: 400, 5: 800}[rolos.count("⭐")]
+                elif rolos.count("⭐") >= 3:
+                    mult = {2:100,3:250,4:400,5:800}[rolos.count("⭐")]
                     ganho = aposta * mult
                     saldo_real += ganho
                     resultado = f"🌟 JACKPOT SUPREMO! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel ({rolos.count('⭐')} Estrelas {rolos})", ganho)
 
-                elif rolos.count("🎲") >= 3:  # dados
-                    mult = {2:30,3: 130, 4: 200, 5: 400}[rolos.count("🎲")]
+                elif rolos.count("🎲") >= 3:
+                    mult = {2:30,3:130,4:200,5:400}[rolos.count("🎲")]
                     ganho = aposta * mult
                     saldo_real += ganho
                     resultado = f"🎲 Dados da fortuna! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel ({rolos.count('🎲')} Dados {rolos})", ganho)
 
-                elif rolos.count("💲") >= 2:  # cifrão
+                elif rolos.count("💲") >= 2:
                     mult_map = {2:50,3:140,4:600,5:1000}
                     ganho = aposta * mult_map.get(rolos.count("💲"), 0)
                     saldo_real += ganho
                     resultado = f"💲💲💲 Riqueza! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel ({rolos.count('💲')} Cifrões {rolos})", ganho)
 
-                elif rolos.count("👼") >= 2:  # anjinho
+                elif rolos.count("👼") >= 2:
                     rodadas_gratis_usuario += 0
                     resultado = f"👼 Modo bônus ativado! {rolos} Um anjinho começou a voar!"
                     registrar_historico(usuario, f"Caça-níquel (Modo Anjinho {rolos.count('👼')} {rolos})", 0)
                     bonus_anjinho_ativado = True
 
-                # --- regras gerais ---
                 elif maior_combo == 5:
                     ganho = aposta * 200
                     saldo_real += ganho
@@ -652,49 +647,36 @@ def jogos():
                 "bonus_anjinho": bonus_anjinho_ativado
             })
 
-    # --------- ADICIONE ESTE ELSE PARA O GET ---------
-    else:
-        return render_template("jogos.html",
-                               saldo=saldo,
-                               last_aposta_caca=0,
-                               last_lote=1,
-                               last_aposta_roleta=0,
-                               last_numero_aposta=0,
-                               rodadas_gratis=dados["clientes"][usuario].get("rodadas_gratis",0))
-
-
-        # -------- ROLETA --------
-        elif tipo == "roleta":
+        # --- ROTA DA ROLETA ---
+        if tipo == "roleta":
             try:
                 aposta = float(data.get("aposta", 0))
-                numero = int(data.get("numero", 0))
             except:
-                return jsonify({"erro": "Aposta ou número inválido"}), 400
+                return jsonify({"erro": "Aposta inválida"}), 400
 
-            if aposta <= 0 or aposta > saldo:
-                return jsonify({"erro": "Aposta inválida ou saldo insuficiente"}), 400
-
-            numero_sorteado = random.randint(0, 20)
             saldo_real = saldo
-            resultado = f"Caiu {numero_sorteado}."
-
-            if numero == numero_sorteado:
-                premio = aposta * 56
-                saldo_real += premio
-                resultado += f" 🎉 Acertou! Prêmio x56 = R$ {premio:.2f}"
-                registrar_historico(usuario, f"Roleta acerto {numero_sorteado}", premio)
+            if aposta <= 0:
+                resultado = "Digite um valor válido de aposta!"
+            elif aposta > saldo_real:
+                resultado = "Saldo insuficiente!"
             else:
-                saldo_real -= aposta
-                registrar_historico(usuario, f"Roleta erro {numero_sorteado}", -aposta)
-
+                numeros = list(range(0, 37))  # 0 a 36
+                resultado_numero = random.choice(numeros)
+                if resultado_numero % 2 == 0:
+                    ganho = aposta * 2
+                    saldo_real += ganho
+                    resultado = f"🎰 Roleta caiu no {resultado_numero}! Você ganhou R$ {ganho:.2f}!"
+                else:
+                    saldo_real -= aposta
+                    resultado = f"🎰 Roleta caiu no {resultado_numero}! Você perdeu R$ {aposta:.2f}."
             saldo = saldo_real
             salvar_cliente(usuario, saldo=saldo)
 
             return jsonify({
-                "numero": numero_sorteado,
                 "resultado": resultado,
                 "saldo": saldo
             })
+
 
 
   
@@ -1328,6 +1310,7 @@ def admin_dashboard():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
