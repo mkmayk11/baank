@@ -4,9 +4,11 @@
   <div class="container">
     <div class="d-flex justify-content-between align-items-start mb-3">
       <h2 class="text-white">MasterKassino</h2>
-      <div id="saldoBox" class="px-3 py-2" style="background: rgba(0,0,0,0.4); border-radius:12px; border:1px solid #2f2">
+      <!-- 💰 SALDO FIXO FLUTUANTE -->
+      <div id="saldoFlutuante">
         <strong>Saldo:</strong> R$ {{ '%.2f' % saldo }}
       </div>
+
     </div>
 
     <div class="row justify-content-center g-4">
@@ -568,8 +570,67 @@
   });
 </script>
 
+<style>
+  #saldoFlutuante {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 9999;
+    padding: 10px 16px;
+    background: rgba(0,0,0,0.6);
+    border: 2px solid #0f0;
+    border-radius: 10px;
+    color: #0f0;
+    font-weight: bold;
+    font-size: 1rem;
+    box-shadow: 0 0 12px #0f0;
+    backdrop-filter: blur(4px);
+    transition: all 0.3s ease;
+  }
+
+  /* 💥 Efeitos de ganho/perda */
+  .saldo-ganhou {
+    color: #0f0 !important;
+    border-color: #0f0 !important;
+    box-shadow: 0 0 18px #0f0 !important;
+    transform: scale(1.1);
+  }
+  .saldo-perdeu {
+    color: #f33 !important;
+    border-color: #f33 !important;
+    box-shadow: 0 0 18px #f33 !important;
+    transform: scale(0.95);
+  }
+</style>
+
+<script>
+  let saldoAtual = {{ saldo | tojson }};
+
+  function atualizarSaldoFlutuante(novoSaldo) {
+    const saldoBox = document.getElementById("saldoFlutuante");
+    const diferenca = novoSaldo - saldoAtual;
+
+    saldoBox.innerHTML = `<strong>Saldo:</strong> R$ ${novoSaldo.toFixed(2)}`;
+
+    if (diferenca > 0) {
+      saldoBox.classList.add("saldo-ganhou");
+      setTimeout(() => saldoBox.classList.remove("saldo-ganhou"), 800);
+    } else if (diferenca < 0) {
+      saldoBox.classList.add("saldo-perdeu");
+      setTimeout(() => saldoBox.classList.remove("saldo-perdeu"), 800);
+    }
+
+    saldoAtual = novoSaldo;
+  }
+
+  // Substitui a função antiga de atualização de saldo (se existir)
+  const oldUpdateSaldo = (valor) => {
+    atualizarSaldoFlutuante(valor);
+  };
+</script>
 
 {% endblock %}
+
 
 
 
