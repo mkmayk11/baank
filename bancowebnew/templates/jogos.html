@@ -13,25 +13,66 @@
       <!-- 🎰 CAÇA-NÍQUEL -->
       <div class="col-md-6 position-relative text-center">
 
-        <!-- TABELA DE PRÊMIOS - AGORA CENTRALIZADA E RESPONSIVA -->
-        <div class="card p-3 mb-3 shadow-lg mx-auto" style="background: rgba(0,0,0,0.8); border:1px solid #0f0; border-radius:12px; max-width: 300px;">
-          <h5 class="text-white mb-2">🏆 Premiação dos Emojis</h5>
-          <table class="table table-sm text-white mb-0">
-            <thead>
-              <tr>
-                <th>Emoji</th>
-                <th>Prêmio</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td>🍒</td><td>par = x6, trio = x30</td></tr>
-              <tr><td>🍀</td><td>par = 10 rodadas, trio = x50 + 20 rodadas</td></tr>
-              <tr><td>🎲</td><td>par = x50, trio = x130</td></tr>
-              <tr><td>⭐</td><td>par = x80, trio = x250</td></tr>
-              <tr><td>💸</td><td>par = x70, trio = x160</td></tr>
-            </tbody>
-          </table>
-        </div>
+        <!-- TABELA DE PRÊMIOS - CORRIGIDA E FIEL AO CÓDIGO -->
+<div class="card p-3 mb-3 shadow-lg mx-auto" 
+     style="background: rgba(0,0,0,0.85); border:1px solid #0f0; border-radius:12px; max-width: 420px;">
+  <h5 class="text-white mb-3 text-center">🏆 Premiação dos Emojis</h5>
+  <table class="table table-sm table-dark table-bordered text-white align-middle mb-0 text-center"
+         style="font-size: 0.9rem;">
+    <thead class="table-success text-dark">
+      <tr>
+        <th style="width: 80px;">Emoji</th>
+        <th>Combinação</th>
+        <th>Recompensa</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>💸</td><td>2 iguais</td><td>x20</td></tr>
+      <tr><td>💸</td><td>3 iguais</td><td>x160</td></tr>
+      <tr><td>💸</td><td>4 iguais</td><td>x300</td></tr>
+      <tr><td>💸</td><td>5 iguais</td><td>x600</td></tr>
+
+      <tr><td>🍀</td><td>2 ou +</td><td>+5 rodadas grátis por 🍀</td></tr>
+
+      <tr><td>⭐</td><td>2 iguais</td><td>x60</td></tr>
+      <tr><td>⭐</td><td>3 iguais</td><td>x250</td></tr>
+      <tr><td>⭐</td><td>4 iguais</td><td>x400</td></tr>
+      <tr><td>⭐</td><td>5 iguais</td><td>x800</td></tr>
+
+      <tr><td>🎲</td><td>3 iguais</td><td>x130</td></tr>
+      <tr><td>🎲</td><td>4 iguais</td><td>x200</td></tr>
+      <tr><td>🎲</td><td>5 iguais</td><td>x400</td></tr>
+
+      <tr><td>💲</td><td>2 iguais</td><td>x50</td></tr>
+      <tr><td>💲</td><td>3 iguais</td><td>x140</td></tr>
+      <tr><td>💲</td><td>4 iguais</td><td>x600</td></tr>
+      <tr><td>💲</td><td>5 iguais</td><td>x1000</td></tr>
+
+      <tr><td>👼</td><td>2 ou +</td><td>Ativa modo bônus</td></tr>
+
+      <tr class="table-secondary text-dark fw-bold">
+        <td>✨ Qualquer símbolo</td><td>5 iguais</td><td>x200</td>
+      </tr>
+      <tr class="table-secondary text-dark fw-bold">
+        <td>✨ Qualquer símbolo</td><td>4 iguais</td><td>x100</td>
+      </tr>
+      <tr class="table-secondary text-dark fw-bold">
+        <td>✨ Qualquer símbolo</td><td>3 iguais</td><td>x20</td>
+      </tr>
+      <tr class="table-secondary text-dark fw-bold">
+        <td>✨ Qualquer símbolo</td><td>2 iguais</td><td>x4</td>
+      </tr>
+
+      <tr class="text-danger">
+        <td>❌ Derrota</td><td>Nenhum par</td><td>Perde aposta</td>
+      </tr>
+      <tr class="text-info">
+        <td>🎁 Rodada Grátis</td><td>Perda no bônus</td><td>-1 rodada grátis</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
 
         <!-- MÁQUINA DE SLOT -->
 <div class="card p-4 text-center shadow-lg slot-card">
@@ -530,6 +571,7 @@
 
 
 {% endblock %}
+
 
 
 
