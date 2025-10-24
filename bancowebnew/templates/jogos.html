@@ -28,8 +28,8 @@
 
 <script>
   function atualizarSaldoFlutuante(valor) {
-    document.getElementById("saldoFlutuante").innerHTML =
-      `<strong>Saldo:</strong> R$ ${valor.toFixed(2)}`;
+    atualizarSaldoFlutuante(saldoFinal);
+
   }
 
   const oldUpdateSaldo = (valor) => {
@@ -601,6 +601,7 @@
 
 
 {% endblock %}
+
 
 
 
