@@ -4,47 +4,17 @@
   <div class="container">
     <div class="d-flex justify-content-between align-items-start mb-3">
       <h2 class="text-white">MasterKassino</h2>
-      <div id="saldoFlutuante">
-  <strong>Saldo:</strong> R$ {{ '%.2f' % saldo }}
-</div>
-
-<style>
-  #saldoFlutuante {
-    position: fixed;
-    top: 15px;
-    left: 15px;
-    z-index: 9999;
-    padding: 10px 16px;
-    background: rgba(0,0,0,0.6);
-    border: 2px solid #0f0;
-    border-radius: 10px;
-    color: #0f0;
-    font-weight: bold;
-    font-size: 1rem;
-    box-shadow: 0 0 12px #0f0;
-    backdrop-filter: blur(4px);
-  }
-</style>
-
-<script>
-  function atualizarSaldoFlutuante(valor) {
-    atualizarSaldoFlutuante(saldoFinal);
-
-  }
-
-  const oldUpdateSaldo = (valor) => {
-    document.getElementById("saldoBox")?.remove();
-    atualizarSaldoFlutuante(valor);
-  };
-</script>
+      <div id="saldoBox" class="px-3 py-2" style="background: rgba(0,0,0,0.4); border-radius:12px; border:1px solid #2f2">
+        <strong>Saldo:</strong> R$ {{ '%.2f' % saldo }}
+      </div>
     </div>
 
     <div class="row justify-content-center g-4">
       <!-- 🎰 CAÇA-NÍQUEL -->
       <div class="col-md-6 position-relative text-center">
 
-        <!-- TABELA DE PRÊMIOS - CORRIGIDA E FIEL AO CÓDIGO -->
-<div class="card p-3 mb-3 shadow-lg mx-auto" 
+        <!-- TABELA DE PRÊMIOS - AGORA CENTRALIZADA E RESPONSIVA -->
+        <div class="card p-3 mb-3 shadow-lg mx-auto" 
      style="background: rgba(0,0,0,0.85); border:1px solid #0f0; border-radius:12px; max-width: 420px;">
   <h5 class="text-white mb-3 text-center">🏆 Premiação dos Emojis</h5>
   <table class="table table-sm table-dark table-bordered text-white align-middle mb-0 text-center"
@@ -102,7 +72,6 @@
     </tbody>
   </table>
 </div>
-
 
         <!-- MÁQUINA DE SLOT -->
 <div class="card p-4 text-center shadow-lg slot-card">
@@ -301,7 +270,7 @@
 </style>
 
 <script>
-  const symbols = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲","🏺","💸","☀️","🚀","🌶️","🥕","🎃","🎅","👼","♻️","💲","☢️","👣","💣","🦜","🍁","👹","☠️","🐮"];
+  const symbols = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲","🏺","💸","☀️","🚀","🌶️","🥕","🎃","🎅","👼","♻️","💲","☢️","👣","💣","🦜","🍁"];
   let rodadasGratis = {{ rodadas_gratis }};
 
   async function spinReel(reelId, finalSymbol) {
@@ -601,10 +570,6 @@
 
 
 {% endblock %}
-
-
-
-
 
 
 
