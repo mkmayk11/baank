@@ -565,6 +565,14 @@ def jogos():
                 ganho = 0
                 resultado = ""
 
+
+            # se tiver rodadas grátis, não desconta aposta
+                if rodadas_gratis_usuario > 0:
+                    usando_rodada_gratis = True
+                else:
+                    usando_rodada_gratis = False
+
+
                 # contagem dos símbolos
                 contagens = {simbolo: rolos.count(simbolo) for simbolo in set(rolos)}
                 maior_combo = max(contagens.values())
@@ -638,11 +646,13 @@ def jogos():
                 else:
                     if rodadas_gratis_usuario > 0:
                         rodadas_gratis_usuario -= 1
-                        resultado = f"❌ {rolos} Você perdeu uma rodada grátis."
+                        resultado = f"❌ {rolos} Rodada grátis usada. Você ainda tem {rodadas_gratis_usuario}."
+                        registrar_historico(usuario, f"Caça-níquel (Rodada grátis {rolos})", 0)
                     else:
                         saldo_real -= aposta
                         resultado = f"❌ {rolos} Você perdeu R$ {aposta:.2f}."
                         registrar_historico(usuario, f"Caça-níquel (Derrota {rolos})", -aposta)
+
 
             dados["clientes"][usuario]["rodadas_gratis"] = rodadas_gratis_usuario
             saldo = saldo_real
@@ -1332,6 +1342,7 @@ def admin_dashboard():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
