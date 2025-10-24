@@ -536,7 +536,7 @@ def jogos():
     saldo = dados["clientes"][usuario]["saldo"]
 
     # símbolos do caça-níquel
-    simbolos = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲","🏺","💸","☀️","🚀","🌶️","🥕","🎃","🎅","👼","♻️","💲","☢️","👣","💣","🦜","🍁","👹","☠️","🐮"]
+    simbolos = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈","🎲","🏺","💸","☀️","🚀","🌶️","🥕","🎃","🎅","👼","♻️","💲","☢️","👣","💣","🦜","🍁","👹","☠️","🐮","🌍","👽","💡"]
 
     if request.method == "POST":
         data = request.get_json()
@@ -598,7 +598,7 @@ def jogos():
                     resultado = f"🌟 JACKPOT SUPREMO! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel ({rolos.count('⭐')} Estrelas {rolos})", ganho)
 
-                elif rolos.count("🎲") >= 3:  # dados
+                elif rolos.count("🎲") >= 2:  # dados
                     mult = {2:30,3: 130, 4: 200, 5: 400}[rolos.count("🎲")]
                     ganho = aposta * mult
                     saldo_real += ganho
@@ -1342,6 +1342,7 @@ def admin_dashboard():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
 
 
