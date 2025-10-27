@@ -668,6 +668,117 @@
   }
 </style>
 
+<!-- 🎰 EFEITO VISUAL DA LUTA -->
+<div id="efeito-luta" style="display:none;">
+  <div id="anjo" class="lutador">👼</div>
+  <div id="fogo"></div>
+  <div id="demonio" class="lutador">👹</div>
+</div>
+
+<!-- 🔊 BOTÃO DE SOM -->
+<button id="ativarSom" style="position: fixed; top: 20px; right: 20px; z-index: 999; background: #111; color: white; padding: 10px 15px; border-radius: 10px; border: 1px solid #555; cursor: pointer;">
+  🔈 Ativar Som
+</button>
+
+<script>
+let soundEnabled = false;
+
+// 🎵 Sons revisados — usando fonte estável e leve
+const sounds = {
+  slot: "https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg",
+  roulette: "https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg",
+  win: "https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg",
+  lose: "https://actions.google.com/sounds/v1/cartoon/boing.ogg",
+  fight: "/static/som_luta.mp3" // pode trocar depois por outro som customizado
+};
+
+// 🧠 Função genérica pra tocar sons
+function playSound(url, volume = 0.6) {
+  if (!soundEnabled) return;
+  const audio = new Audio(url);
+  audio.volume = volume;
+  audio.play().catch(err => console.warn("Som bloqueado:", err));
+}
+
+// 🕹️ Botão para ativar sons (desbloqueia contexto de áudio)
+document.getElementById("ativarSom").addEventListener("click", () => {
+  soundEnabled = true;
+
+  // Desbloqueia o contexto de áudio do navegador
+  const context = new (window.AudioContext || window.webkitAudioContext)();
+  const source = context.createBufferSource();
+  source.connect(context.destination);
+  if (context.state === "suspended") context.resume();
+
+  playSound(sounds.win, 0.6);
+  document.getElementById("ativarSom").style.display = "none";
+  console.log("🎧 Sons ativados com sucesso!");
+});
+
+// ⚔️ Animação do confronto angel vs demônio
+function animarLutaAngelDemon() {
+  const luta = document.getElementById("efeito-luta");
+  luta.style.display = "flex";
+  luta.style.justifyContent = "space-between";
+  luta.style.alignItems = "center";
+  luta.style.position = "absolute";
+  luta.style.top = "50%";
+  luta.style.left = "50%";
+  luta.style.transform = "translate(-50%, -50%)";
+  luta.style.width = "60%";
+  luta.style.animation = "flashBG 1s infinite alternate";
+
+  document.getElementById("anjo").animate([
+    { transform: "translateX(0)" },
+    { transform: "translateX(100px)" },
+    { transform: "translateX(0)" }
+  ], { duration: 1500, iterations: Infinity });
+
+  document.getElementById("demonio").animate([
+    { transform: "translateX(0)" },
+    { transform: "translateX(-100px)" },
+    { transform: "translateX(0)" }
+  ], { duration: 1500, iterations: Infinity });
+
+  playSound(sounds.fight, 0.8);
+
+  // Some depois de 8 segundos
+  setTimeout(() => {
+    luta.style.display = "none";
+  }, 8000);
+}
+
+// 🧾 Exibe o resultado e chama efeitos conforme o evento
+function exibirResultado(json) {
+  const resultadoDiv = document.getElementById("resultado");
+  resultadoDiv.textContent = json.resultado;
+
+  // Efeitos sonoros
+  if (json.resultado.includes("ganhou")) {
+    playSound(sounds.win, 0.6);
+  } else if (json.resultado.includes("perdeu")) {
+    playSound(sounds.lose, 0.6);
+  } else {
+    playSound(sounds.slot, 0.4);
+  }
+
+  // Evento especial da luta
+  if (json.evento === "luta_angel_demon") {
+    animarLutaAngelDemon();
+  }
+}
+</script>
+
+<style>
+@keyframes flashBG {
+  from { background-color: rgba(255,255,255,0.1); }
+  to { background-color: rgba(255,0,0,0.3); }
+}
+.lutador {
+  font-size: 5rem;
+  filter: drop-shadow(0 0 10px white);
+}
+</style>
 
 
 {% endblock %}
