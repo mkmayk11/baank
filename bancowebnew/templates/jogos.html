@@ -191,32 +191,7 @@
   </div>
 </div>
 
-<!-- 🔊 BOTÃO DE ATIVAR SOM -->
-<button id="ativarSom" style="position:fixed; top:15px; right:15px; z-index:9999; padding:8px 14px; border:none; background:#0f0; color:#000; font-weight:bold; border-radius:8px; cursor:pointer; box-shadow:0 0 10px #0f0;">
-  🔊 Ativar Som
-</button>
 
-<!-- 🔊 SISTEMA DE ÁUDIO COM LINKS ONLINE -->
-<script>
-  const sounds = {
-    slot: "https://cdn.pixabay.com/audio/2022/03/15/audio_4c00a92f2a.mp3",
-    roulette: "https://cdn.pixabay.com/audio/2022/03/15/audio_4c00a92f2a.mp3",
-    win: "https://cdn.pixabay.com/audio/2022/03/15/audio_2e836e3a0c.mp3",
-    lose: "https://cdn.pixabay.com/audio/2022/03/15/audio_7b06f04342.mp3"
-  };
-  let soundEnabled = false;
-  function playSound(url, volume = 0.6) {
-    if (!soundEnabled) return;
-    const audio = new Audio(url);
-    audio.volume = volume;
-    audio.play().catch(()=>{});
-  }
-  document.getElementById("ativarSom").addEventListener("click", () => {
-    soundEnabled = true;
-    playSound(sounds.win, 0.1);
-    document.getElementById("ativarSom").style.display = "none";
-  });
-</script>
 
 <style>
   body {
@@ -782,6 +757,7 @@ function exibirResultado(json) {
 
 
 {% endblock %}
+
 
 
 
