@@ -11,7 +11,7 @@
 
 <style>
   /* Caixa flutuante, mas mantendo o id saldoBox */
-  #saldobox {
+  #saldoBox {
     position: fixed;
     top: 15px;
     left: 15px;
@@ -611,7 +611,7 @@
 </script>
 
 <style>
-   #saldobox {
+  #saldoBox {
     position: fixed;
     top: 15px;
     left: 15px;
@@ -643,12 +643,7 @@
   }
 </style>
 
-<!-- 🎰 EFEITO VISUAL DA LUTA -->
-<div id="efeito-luta" style="display:none;">
-  <div id="anjo" class="lutador">👼</div>
-  <div id="fogo"></div>
-  <div id="demonio" class="lutador">👹</div>
-</div>
+
 
 <!-- 🔊 BOTÃO DE SOM -->
 <button id="ativarSom" style="position: fixed; top: 20px; right: 20px; z-index: 999; background: #111; color: white; padding: 10px 15px; border-radius: 10px; border: 1px solid #555; cursor: pointer;">
@@ -841,95 +836,12 @@ function exibirResultado(json) {
 
 
 
-<!-- ============================
-     ⚔️ ANJINHO VS DEMÔNIO
-============================ -->
-<style>
-  .battle-scene {
-    position: fixed;
-    bottom: 50px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 400px;
-    height: 250px;
-    pointer-events: none;
-    z-index: 9999;
-  }
-
-  .angel, .demon {
-    position: absolute;
-    width: 120px;
-    height: 120px;
-    background-size: contain;
-    background-repeat: no-repeat;
-  }
-
-  .angel {
-    left: 0;
-    background-image: url('/static/angel.png');
-    animation: flyLeft 3s ease-in-out forwards;
-  }
-
-  .demon {
-    right: 0;
-    background-image: url('/static/demon.png');
-    animation: flyRight 3s ease-in-out forwards;
-  }
-
-  @keyframes flyLeft {
-    0% { left: -150px; transform: rotate(0deg); }
-    50% { left: 120px; transform: rotate(20deg); }
-    100% { left: 100px; opacity: 0; }
-  }
-
-  @keyframes flyRight {
-    0% { right: -150px; transform: rotate(0deg); }
-    50% { right: 120px; transform: rotate(-20deg); }
-    100% { right: 100px; opacity: 0; }
-  }
-</style>
-
-<div id="battle-container" class="battle-scene" style="display:none;">
-  <div class="angel"></div>
-  <div class="demon"></div>
-</div>
-
-<audio id="battle-sound" src="/static/som_luta.mp3"></audio>
-
-<script>
-  function startBattle() {
-    const container = document.getElementById('battle-container');
-    const sound = document.getElementById('battle-sound');
-    
-    container.style.display = 'block';
-    sound.currentTime = 0;
-    sound.play().catch(() => {}); // ignora se som estiver bloqueado
-
-    setTimeout(() => {
-      container.style.display = 'none';
-    }, 4000);
-  }
-
-  // Exemplo: quando cair anjinho ou demônio no jogo
-  function verificarResultado(resultado) {
-    if (resultado === 'anjinho' || resultado === 'demonio') {
-      startBattle();
-    }
-  }
-
-  // Simulação temporária — remove depois
-  // Chama o efeito a cada 8s só pra testar
-  setInterval(() => {
-    const teste = Math.random() > 0.5 ? 'anjinho' : 'demonio';
-    verificarResultado(teste);
-  }, 8000);
-</script>
-
 
 
   
 
 {% endblock %}
+
 
 
 
