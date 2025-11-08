@@ -4,18 +4,18 @@
 
   <!-- Sidebar -->
   <div class="d-flex">
-    <nav class="sidebar shadow-lg p-4">
-      <h3 class="logo mb-4">⚛︎ MH Bank</h3>
+    <nav class="sidebar shadow-sm p-4">
+      <h3 class="logo mb-4">MH Bank</h3>
       <ul class="nav flex-column">
-        <li class="nav-item mb-2"><a href="{{ url_for('dashboard') }}" class="nav-link">📊 Dashboard</a></li>
-        <li class="nav-item mb-2"><a href="{{ url_for('deposito') }}" class="nav-link">💰 Depositar</a></li>
-        <li class="nav-item mb-2"><a href="{{ url_for('saque') }}" class="nav-link">💸 Sacar</a></li>
-        <li class="nav-item mb-2"><a href="{{ url_for('transferencia') }}" class="nav-link">🔄 Transferir</a></li>
-        <li class="nav-item mb-2"><a href="{{ url_for('jogos') }}" class="nav-link">🎮 Jogos</a></li>
-        <li class="nav-item mb-2"><a href="{{ url_for('historico') }}" class="nav-link">📜 Histórico</a></li>
-        <li class="nav-item mb-2"><a href="{{ url_for('alterar_senha') }}" class="nav-link">🔒 Alterar Senha</a></li>
+        <li class="nav-item mb-2"><a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a></li>
+        <li class="nav-item mb-2"><a href="{{ url_for('deposito') }}" class="nav-link">Depósito</a></li>
+        <li class="nav-item mb-2"><a href="{{ url_for('saque') }}" class="nav-link">Saque</a></li>
+        <li class="nav-item mb-2"><a href="{{ url_for('transferencia') }}" class="nav-link">Transferência</a></li>
+        <li class="nav-item mb-2"><a href="{{ url_for('jogos') }}" class="nav-link">Jogos</a></li>
+        <li class="nav-item mb-2"><a href="{{ url_for('historico') }}" class="nav-link">Histórico</a></li>
+        <li class="nav-item mb-2"><a href="{{ url_for('alterar_senha') }}" class="nav-link">Alterar Senha</a></li>
         <li class="nav-item mt-4">
-          <a href="{{ url_for('logout') }}" class="btn btn-logout w-100">🚪 Sair</a>
+          <a href="{{ url_for('logout') }}" class="btn btn-logout w-100">Sair</a>
         </li>
       </ul>
     </nav>
@@ -24,9 +24,9 @@
     <div class="flex-grow-1 p-4 main-content">
 
       <!-- Header -->
-      <div class="mb-4">
-        <h2 class="fw-bold text-highlight">👤 Painel do Usuário</h2>
-        <p class="text-secondary">Bem-vindo, <strong>{{ session['usuario'] }}</strong>!</p>
+      <div class="mb-4 border-bottom pb-2">
+        <h2 class="fw-semibold text-title">Painel do Usuário</h2>
+        <p class="text-muted mb-0">Bem-vindo, <strong>{{ session['usuario'] }}</strong></p>
       </div>
 
       <!-- Cards superiores -->
@@ -35,8 +35,8 @@
         <!-- Saldo -->
         <div class="col-md-6 col-lg-4">
           <div class="card dashboard-card">
-            <h5 class="fw-bold mb-2">Saldo Atual</h5>
-            <p class="fs-3 saldo-text">💵 R$ {{ saldo }}</p>
+            <h6 class="fw-semibold mb-2 text-secondary">Saldo Atual</h6>
+            <p class="fs-3 fw-bold text-balance">R$ {{ saldo }}</p>
             <small class="text-muted">Última atualização: {{ ultimo_update }}</small>
           </div>
         </div>
@@ -44,11 +44,11 @@
         <!-- Próximas transações -->
         <div class="col-md-6 col-lg-4">
           <div class="card dashboard-card">
-            <h5 class="fw-bold mb-3">Próximas Transações</h5>
+            <h6 class="fw-semibold mb-3 text-secondary">Próximas Transações</h6>
             <ul class="list-unstyled mt-2">
               {% for t in proximas_transacoes %}
-              <li class="mb-2">
-                <span class="text-warning">{{ t.descricao }}</span> - 
+              <li class="mb-2 d-flex justify-content-between">
+                <span class="text-light">{{ t.descricao }}</span> 
                 <strong class="text-info">R$ {{ t.valor }}</strong>
               </li>
               {% else %}
@@ -61,36 +61,36 @@
         <!-- Gráfico resumo -->
         <div class="col-md-12 col-lg-4">
           <div class="card dashboard-card">
-            <h5 class="fw-bold mb-3">Resumo Mensal</h5>
+            <h6 class="fw-semibold mb-3 text-secondary">Resumo Mensal</h6>
             <canvas id="graficoResumo" height="150"></canvas>
           </div>
         </div>
       </div>
 
       <!-- Atalhos principais -->
-      <div class="row g-4 mb-5">
+      <div class="row g-3 mb-5">
         <div class="col-md-3 col-6">
-          <a href="{{ url_for('deposito') }}" class="btn btn-action btn-deposito w-100 py-3 rounded-3">💰 Depositar</a>
+          <a href="{{ url_for('deposito') }}" class="btn btn-action w-100">Depósito</a>
         </div>
         <div class="col-md-3 col-6">
-          <a href="{{ url_for('saque') }}" class="btn btn-action btn-saque w-100 py-3 rounded-3">💸 Sacar</a>
+          <a href="{{ url_for('saque') }}" class="btn btn-action w-100">Saque</a>
         </div>
         <div class="col-md-3 col-6">
-          <a href="{{ url_for('transferencia') }}" class="btn btn-action btn-transferencia w-100 py-3 rounded-3">🔄 Transferir</a>
+          <a href="{{ url_for('transferencia') }}" class="btn btn-action w-100">Transferência</a>
         </div>
         <div class="col-md-3 col-6">
-          <a href="{{ url_for('jogos') }}" class="btn btn-action btn-jogos w-100 py-3 rounded-3">🎮 Jogos</a>
+          <a href="{{ url_for('jogos') }}" class="btn btn-action w-100">Jogos</a>
         </div>
       </div>
 
       <!-- Rodapé com notificações -->
       <div class="card dashboard-card">
-        <h5 class="fw-bold">Notificações Recentes</h5>
+        <h6 class="fw-semibold mb-3 text-secondary">Notificações Recentes</h6>
         <ul class="list-unstyled mt-2">
           {% for n in notificacoes %}
-          <li class="mb-2">
+          <li class="mb-2 d-flex justify-content-between align-items-center">
             <span class="text-light">{{ n.mensagem }}</span>
-            <small class="text-muted ms-2">{{ n.data }}</small>
+            <small class="text-muted">{{ n.data }}</small>
           </li>
           {% else %}
           <li class="text-muted">Nenhuma notificação</li>
@@ -105,9 +105,9 @@
 <!-- Estilos -->
 <style>
   body {
-    background: #0b0e12;
+    background: #f3f4f7;
     font-family: 'Poppins', sans-serif;
-    color: #fff;
+    color: #222;
   }
 
   .dashboard-container {
@@ -116,109 +116,101 @@
 
   /* Sidebar */
   .sidebar {
-    width: 250px;
-    background: linear-gradient(180deg, #12161d 0%, #0b0e12 100%);
+    width: 240px;
+    background: #162030;
     border-right: 1px solid rgba(255,255,255,0.05);
   }
 
   .logo {
     font-weight: 700;
-    font-size: 1.5rem;
-    background: linear-gradient(90deg, #00e5ff, #00ff88);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    font-size: 1.6rem;
+    color: #f0f0f0;
+    letter-spacing: 1px;
   }
 
   .nav-link {
-    color: #bbb;
+    color: #cfd3da;
     font-weight: 500;
-    transition: all 0.2s;
-    border-radius: 8px;
     padding: 10px 14px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
   }
 
-  .nav-link:hover {
-    background: rgba(0, 255, 200, 0.08);
-    color: #00ffc8;
+  .nav-link:hover,
+  .nav-link.active {
+    background: #24344e;
+    color: #ffffff;
     transform: translateX(4px);
   }
 
   .btn-logout {
-    background: transparent;
-    color: #ff4b4b;
-    border: 1px solid #ff4b4b;
-    font-weight: bold;
+    background: #2b364a;
+    color: #e4e4e4;
+    border: none;
+    font-weight: 600;
     transition: all 0.3s;
+    border-radius: 6px;
+    font-size: 0.9rem;
   }
 
   .btn-logout:hover {
-    background: #ff4b4b;
+    background: #c0392b;
     color: #fff;
-    transform: scale(1.03);
   }
 
   /* Main content */
   .main-content {
-    background: radial-gradient(circle at top left, #131820 0%, #0b0e12 100%);
+    background: #f9fafb;
     min-height: 100vh;
   }
 
-  .text-highlight {
-    background: linear-gradient(90deg, #00ffc8, #0077ff);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+  .text-title {
+    color: #1f2b3e;
+    letter-spacing: 0.5px;
   }
 
   /* Cards */
   .dashboard-card {
-    background: linear-gradient(145deg, #181d25, #101418);
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 20px;
+    background: #ffffff;
+    border: 1px solid #e2e5ea;
+    border-radius: 12px;
     padding: 1.5rem;
-    box-shadow: 0 0 20px rgba(0,0,0,0.3);
-    transition: all 0.3s ease;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.05);
+    transition: all 0.2s ease;
   }
 
   .dashboard-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 0 30px rgba(0, 255, 180, 0.2);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
   }
 
-  .saldo-text {
-    color: #00ffb3;
-    font-weight: 600;
+  .text-balance {
+    color: #0e6655;
   }
 
-  /* Botões principais */
+  /* Botões */
   .btn-action {
-    font-size: 1.05rem;
-    font-weight: 600;
-    transition: all 0.3s ease-in-out;
+    background: #23395b;
+    color: #ffffff;
+    font-size: 0.9rem;
+    font-weight: 500;
     border: none;
-    color: #fff;
-    letter-spacing: 0.5px;
-  }
-
-  .btn-deposito {
-    background: linear-gradient(90deg, #00c6ff, #0072ff);
-  }
-
-  .btn-saque {
-    background: linear-gradient(90deg, #ff5f6d, #ffc371);
-  }
-
-  .btn-transferencia {
-    background: linear-gradient(90deg, #f7971e, #ffd200);
-  }
-
-  .btn-jogos {
-    background: linear-gradient(90deg, #8e2de2, #4a00e0);
+    padding: 10px 0;
+    border-radius: 6px;
+    transition: all 0.2s ease;
   }
 
   .btn-action:hover {
-    transform: scale(1.07);
-    filter: brightness(1.2);
-    box-shadow: 0 0 15px rgba(255,255,255,0.2);
+    background: #1b2f4a;
+    color: #f1f1f1;
+    transform: scale(1.03);
+  }
+
+  /* Responsividade */
+  @media (max-width: 768px) {
+    .sidebar {
+      display: none;
+    }
   }
 </style>
 
@@ -233,9 +225,9 @@
       datasets: [{
         label: 'Resumo',
         data: [{{ gastos }}, {{ depositos }}, {{ transferencias }}],
-        backgroundColor: ['#ff5f6d', '#00c6ff', '#ffd200'],
+        backgroundColor: ['#b33939', '#2980b9', '#16a085'],
         borderWidth: 2,
-        borderColor: '#0b0e12'
+        borderColor: '#fff'
       }]
     },
     options: {
@@ -243,7 +235,7 @@
       plugins: {
         legend: { 
           position: 'bottom', 
-          labels: { color: 'white', font: {size:14} } 
+          labels: { color: '#333', font: {size:14} } 
         },
       }
     }
