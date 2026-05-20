@@ -535,15 +535,26 @@ def jogos():
     dados = carregar_dados()
     saldo = dados["clientes"][usuario]["saldo"]
 
-    # símbolos do caça-níquel
+    # 🟢 CORREÇÃO 3: SE FOR GET, VERIFICA QUAL JOGO DEVE EXIBIR NA TELA
+    if request.method == "GET":
+        jogo_escolhido = request.args.get("g") # Lê o ?g=linhas na URL
+        if jogo_escolhido == "linhas":
+            return render_template("caca_linhas.html", saldo=saldo)
+        
+        # Se não tiver '?g=linhas', abre o caça-níquel antigo normal
+        return render_template("caca.html", saldo=saldo)
+
+    # Símbolos do caça-níquel
     simbolos = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈",
                 "🎲","🏺","💸","☀️","🚀","🌶️","🥕","🎃","🎅","👼","♻️","💲","☢️","👣","💣","🦜",
                 "🍁","👹","☠️","🐮","🌍","👽","💡","🧛🏻","🔑","🔍","🎵","🐳","🐡","🍄","🎰","🧠","🍺","👑","🐧","🦄","🐁","🦉","🦅"]
 
+    # SE FOR POST (Processamento das jogadas via JavaScript fetch)
     if request.method == "POST":
         data = request.get_json()
         tipo = data.get("tipo")
 
+        # -------- CAÇA-NÍQUEL ANTIGO --------
         if tipo == "caca":
             try:
                 aposta = float(data.get("aposta", 0))
@@ -553,93 +564,76 @@ def jogos():
 
             rodadas_gratis_usuario = dados["clientes"][usuario].get("rodadas_gratis", 0)
             saldo_real = saldo
-            evento = None  # ✅ inicializa no começo, evita erro depois
+            evento = None  
 
             if aposta <= 0 and rodadas_gratis_usuario <= 0:
                 resultado = "Digite um valor válido de aposta!"
                 rolos = ["❔"] * 5
-
             elif aposta > saldo_real and rodadas_gratis_usuario <= 0:
                 resultado = "Saldo insuficiente!"
                 rolos = ["❔"] * 5
-
             else:
-                # Sorteia 5 rolos
                 rolos = random.choices(simbolos, k=5)
                 ganho = 0
                 resultado = ""
+                using_rodada_gratis = rodadas_gratis_usuario > 0
 
-                # se tiver rodadas grátis, não desconta aposta
-                usando_rodada_gratis = rodadas_gratis_usuario > 0
-
-                # força luta se aposta for exatamente 13.33
                 if round(aposta, 2) == 13.33:
                     rolos = ["👼", "👹", random.choice(simbolos), random.choice(simbolos), random.choice(simbolos)]
 
-                # verifica se há anjo e demônio no resultado
                 if "👼" in rolos and "👹" in rolos:
                     resultado = f"⚔️ Confronto celestial! {rolos} O Anjo e o Demônio estão em combate!"
                     registrar_historico(usuario, f"Luta Celestial {rolos}", 0)
                     evento = "luta_angel_demon"
 
-                # contagem dos símbolos
                 contagens = {simbolo: rolos.count(simbolo) for simbolo in set(rolos)}
                 maior_combo = max(contagens.values())
 
-                # --- regras especiais ---
-                if evento != "luta_angel_demon":  # ✅ não sobrescreve o resultado da luta
+                if evento != "luta_angel_demon":  
                     if rolos.count("💸") >= 2:
                         mult = {2:20, 3:160, 4:300, 5:600}[rolos.count("💸")]
                         ganho = aposta * mult
                         saldo_real += ganho
                         resultado = f"💸 Dinheiro em cascata! {rolos} Você ganhou R$ {ganho:.2f}!"
                         registrar_historico(usuario, f"Caça-níquel ({rolos.count('💸')} Dinheiros {rolos})", ganho)
-
                     elif rolos.count("🍀") >= 2:
                         bonus = 5 * rolos.count("🍀")
                         rodadas_gratis_usuario += bonus
                         resultado = f"🍀 Sorte tripla! {rolos} Você ganhou {bonus} rodadas grátis!"
                         registrar_historico(usuario, f"Caça-níquel ({rolos.count('🍀')} Trevos {rolos})", 0)
-
                     elif rolos.count("⭐") >= 2:
                         mult = {2:60, 3:250, 4:400, 5:800}[rolos.count("⭐")]
                         ganho = aposta * mult
                         saldo_real += ganho
                         resultado = f"🌟 JACKPOT SUPREMO! {rolos} Você ganhou R$ {ganho:.2f}!"
                         registrar_historico(usuario, f"Caça-níquel ({rolos.count('⭐')} Estrelas {rolos})", ganho)
-
                     elif rolos.count("🎲") >= 2:
                         mult = {2:30, 3:130, 4:200, 5:400}[rolos.count("🎲")]
                         ganho = aposta * mult
                         saldo_real += ganho
                         resultado = f"🎲 Dados da fortuna! {rolos} Você ganhou R$ {ganho:.2f}!"
                         registrar_historico(usuario, f"Caça-níquel ({rolos.count('🎲')} Dados {rolos})", ganho)
-
                     elif rolos.count("💲") >= 2:
                         mult_map = {2:50, 3:140, 4:600, 5:1000}
                         ganho = aposta * mult_map.get(rolos.count("💲"), 0)
                         saldo_real += ganho
                         resultado = f"💲 Riqueza! {rolos} Você ganhou R$ {ganho:.2f}!"
                         registrar_historico(usuario, f"Caça-níquel ({rolos.count('💲')} Cifrões {rolos})", ganho)
-
                     elif maior_combo == 5:
                         ganho = aposta * 200
                         saldo_real += ganho
                         resultado = f"🌟 QUINA! {rolos} Você ganhou R$ {ganho:.2f}!"
                         registrar_historico(usuario, f"Caça-níquel (5 iguais {rolos})", ganho)
-
                     elif maior_combo == 4:
                         ganho = aposta * 100
                         saldo_real += ganho
                         resultado = f"🌟 QUADRA! {rolos} Você ganhou R$ {ganho:.2f}!"
                         registrar_historico(usuario, f"Caça-níquel (4 iguais {rolos})", ganho)
-
                     elif maior_combo == 3:
                         ganho = aposta * 20
                         saldo_real += ganho
                         resultado = f"✅ TRINCA! {rolos} Você ganhou R$ {ganho:.2f}!"
                         registrar_historico(usuario, f"Caça-níquel (3 iguais {rolos})", ganho)
-
                     elif maior_combo == 2:
                         ganho = aposta * 3
                         saldo_real += ganho
@@ -655,7 +649,6 @@ def jogos():
                             resultado = f"❌ {rolos} Você perdeu R$ {aposta:.2f}."
                             registrar_historico(usuario, f"Caça-níquel (Derrota {rolos})", -aposta)
 
-            # atualiza e salva
             dados["clientes"][usuario]["rodadas_gratis"] = rodadas_gratis_usuario
             saldo = saldo_real
             salvar_cliente(usuario, saldo=saldo)
@@ -668,9 +661,7 @@ def jogos():
                 "evento": evento
             })
 
-
-
-                  # -------- ROLETA --------
+        # -------- ROLETA --------
         elif tipo == "roleta":
             try:
                 aposta = float(data.get("aposta", 0))
@@ -703,8 +694,7 @@ def jogos():
                 "saldo": saldo
             })
 
-
-# -------- NOVO JOGO: CAÇA-NÍQUEL 12 QUADRADOS (LINHAS) --------
+        # 🟢 CORREÇÃO 1 e 2: NOVO JOGO IDENTADO CORRETAMENTE E COM VARIÁVEL CORRIGIDA
         elif tipo == "caca_linhas":
             try:
                 aposta = float(data.get("aposta", 0))
@@ -714,18 +704,14 @@ def jogos():
             if aposta <= 0 or aposta > saldo:
                 return jsonify({"erro": "Aposta inválida ou saldo insuficiente"}), 400
 
-            # Sorteia 12 símbolos para preencher a grade de 3 linhas x 4 colunas
-            # Usando uma lista menor e selecionada de símbolos para aumentar as chances de formar linhas
             simbolos_jogo = ["🍒", "🍋", "🔔", "⭐", "💎", "🍀", "🍉", "🍇", "🎰"]
             quadrados = random.choices(simbolos_jogo, k=12)
 
-            # Dividindo os 12 quadrados em 3 linhas horizontais (cada uma com 4 colunas)
             linha1 = quadrados[0:4]
             linha2 = quadrados[4:8]
             linha3 = quadrados[8:12]
 
             linhas_ganhas = 0
-            # Regra: Se todos os 4 símbolos da linha forem iguais, ou se houver pelo menos 3 iguais na mesma linha
             for linha in [linha1, linha2, linha3]:
                 contagem = {s: linha.count(s) for s in set(linha)}
                 maior_combinacao = max(contagem.values())
@@ -735,9 +721,8 @@ def jogos():
             saldo_real = saldo
             ganho = 0
 
-            if lines_ganhas > 0:
-                # Multiplicadores baseados na quantidade de linhas completadas
-                # 1 linha = 3x aposta | 2 linhas = 10x aposta | 3 linhas = 50x aposta (JACKPOT)
+            # Corrigido aqui de lines_ganhas para linhas_ganhas
+            if linhas_ganhas > 0:
                 mult_linhas = {1: 3, 2: 10, 3: 50}
                 mult = mult_linhas.get(linhas_ganhas, 3)
                 ganho = aposta * mult
@@ -749,7 +734,6 @@ def jogos():
                 resultado_txt = f"❌ Não foi dessa vez! Nenhuma linha formada. Você perdeu R$ {aposta:.2f}."
                 registrar_historico(usuario, f"Caça-Níquel Linhas: Derrota - Grade: {quadrados}", -aposta)
 
-            # Atualiza o saldo no banco de dados usando suas funções nativas
             saldo = saldo_real
             salvar_cliente(usuario, saldo=saldo)
 
@@ -757,8 +741,11 @@ def jogos():
                 "quadrados": quadrados,
                 "resultado": resultado_txt,
                 "saldo": saldo,
-                "linhas_ganhas": lines_ganhas
+                "linhas_ganhas": linhas_ganhas
             })
+
+    # Se por acaso passar por tudo sem retornar (o que não deve acontecer), volta padrão
+    return render_template("caca.html", saldo=saldo)
     
     # -------- GET normal --------
     rodadas_gratis = dados["clientes"][usuario].get("rodadas_gratis", 0)
