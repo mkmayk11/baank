@@ -567,17 +567,17 @@ def jogos():
             else:
                 # Validação normal para quando NÃO há rodadas grátis
                 if aposta <= 0:
-                    return jsonify({"resultado": "Digite um valor válido de aposta!", "rolos": ["❔"] * 5})
+                    return jsonify({"resultado": "Digite um valor válido de aposta!", "rolos": ["❔"] * 6})
                 if aposta > saldo_real:
-                    return jsonify({"resultado": "Saldo insuficiente!", "rolos": ["❔"] * 5})
+                    return jsonify({"resultado": "Saldo insuficiente!", "rolos": ["❔"] * 6})
 
-            # Sorteia 5 rolos
-            rolos = random.choices(simbolos, k=5)
+            # Sorteia 6 rolos
+            rolos = random.choices(simbolos, k=6)
             ganho = 0
             resultado = ""
 
             # força luta se aposta for exatamente 13.33
-            if round(aposta, 2) == 13.33:
+            if round(aposta, 2) == 66.06:
                 rolos = ["👼", "👹", random.choice(simbolos), random.choice(simbolos), random.choice(simbolos)]
 
             # verifica se há anjo e demônio no resultado
