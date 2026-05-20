@@ -558,27 +558,25 @@ def jogos():
             # Define se a rodada atual usará um bônus grátis
             usando_rodada_gratis = rodadas_gratis_usuario > 0
 
-            # 🛠️ CORREÇÃO DE VALIDAÇÃO: Se tiver rodada grátis, permite o clique com aposta zerada
+            # 🛠️ VALIDAÇÃO: Se tiver rodada grátis, permite o clique com aposta zerada
             if usando_rodada_gratis:
-                # Se o usuário não digitou um valor de aposta, define um valor base (ex: 1.00) 
-                # para que os multiplicadores de prêmio funcionem corretamente nas rodadas grátis
                 if aposta <= 0:
                     aposta = 1.00 
             else:
-                # Validação normal para quando NÃO há rodadas grátis
+                # Retorna 6 interrogações se houver erro de validação
                 if aposta <= 0:
                     return jsonify({"resultado": "Digite um valor válido de aposta!", "rolos": ["❔"] * 6})
                 if aposta > saldo_real:
                     return jsonify({"resultado": "Saldo insuficiente!", "rolos": ["❔"] * 6})
 
-            # Sorteia 6 rolos
+            # 🎰 Sorteia 6 rolos (Correto!)
             rolos = random.choices(simbolos, k=6)
             ganho = 0
             resultado = ""
 
-            # força luta se aposta for exatamente 13.33
+            # força luta se aposta for exatamente 66.06 (Adicionado +1 símbolo para fechar 6)
             if round(aposta, 2) == 66.06:
-                rolos = ["👼", "👹", random.choice(simbolos), random.choice(simbolos), random.choice(simbolos)]
+                rolos = ["👼", "👹", random.choice(simbolos), random.choice(simbolos), random.choice(simbolos), random.choice(simbolos)]
 
             # verifica se há anjo e demônio no resultado
             if "👼" in rolos and "👹" in rolos:
@@ -593,7 +591,8 @@ def jogos():
             # --- regras especiais ---
             if evento != "luta_angel_demon":  
                 if rolos.count("💸") >= 2:
-                    mult = {2:20, 3:160, 4:300, 5:600}[rolos.count("💸")]
+                    # Adaptado para até 6 símbolos
+                    mult = {2:20, 3:160, 4:300, 5:600, 6:1200}.get(rolos.count("💸"), 20)
                     ganho = aposta * mult
                     saldo_real += ganho
                     resultado = f"💸 Dinheiro em cascata! {rolos} Você ganhou R$ {ganho:.2f}!"
@@ -606,25 +605,35 @@ def jogos():
                     registrar_historico(usuario, f"Caça-níquel ({rolos.count('🍀')} Trevos {rolos})", 0)
 
                 elif rolos.count("⭐") >= 2:
-                    mult = {2:60, 3:250, 4:400, 5:800}[rolos.count("⭐")]
+                    # Adaptado para até 6 símbolos
+                    mult = {2:60, 3:250, 4:400, 5:800, 6:2000}.get(rolos.count("⭐"), 60)
                     ganho = aposta * mult
                     saldo_real += ganho
                     resultado = f"🌟 JACKPOT SUPREMO! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel ({rolos.count('⭐')} Estrelas {rolos})", ganho)
 
                 elif rolos.count("🎲") >= 2:
-                    mult = {2:30, 3:130, 4:200, 5:400}[rolos.count("🎲")]
+                    # Adaptado para até 6 símbolos
+                    mult = {2:30, 3:130, 4:200, 5:400, 6:1000}.get(rolos.count("🎲"), 30)
                     ganho = aposta * mult
                     saldo_real += ganho
                     resultado = f"🎲 Dados da fortuna! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel ({rolos.count('🎲')} Dados {rolos})", ganho)
 
                 elif rolos.count("💲") >= 2:
-                    mult_map = {2:50, 3:140, 4:600, 5:1000}
+                    # Adaptado para até 6 símbolos
+                    mult_map = {2:50, 3:140, 4:600, 5:1000, 6:3000}
                     ganho = aposta * mult_map.get(rolos.count("💲"), 0)
                     saldo_real += ganho
                     resultado = f"💲 Riqueza! {rolos} Você ganhou R$ {ganho:.2f}!"
                     registrar_historico(usuario, f"Caça-níquel ({rolos.count('💲')} Cifrões {rolos})", ganho)
+
+                # 🔥 NOVA REGRA: 6 SÍMBOLOS IGUAIS (SENA)
+                elif maior_combo == 6:
+                    ganho = aposta * 500
+                    saldo_real += ganho
+                    resultado = f"👑 SENA INCRÍVEL! {rolos} Você ganhou R$ {ganho:.2f}!"
+                    registrar_historico(usuario, f"Caça-níquel (6 iguais {rolos})", ganho)
 
                 elif maior_combo == 5:
                     ganho = aposta * 200
@@ -651,7 +660,6 @@ def jogos():
                     registrar_historico(usuario, f"Caça-níquel (Par {rolos})", ganho)
                 
                 else:
-                    # 🛠️ CORREÇÃO DA DERROTA: Se usou rodada grátis e não ganhou nada, desconta apenas 1 rodada
                     if usando_rodada_gratis:
                         rodadas_gratis_usuario -= 1
                         resultado = f"❌ {rolos} Nenhum combo formado. Rodada grátis usada! Restam {rodadas_gratis_usuario}."
@@ -661,7 +669,7 @@ def jogos():
                         resultado = f"❌ {rolos} Você perdeu R$ {aposta:.2f}."
                         registrar_historico(usuario, f"Caça-níquel (Derrota {rolos})", -aposta)
 
-            # 🛠️ SE GANHOU DURANTE RODADA GRÁTIS: Remove a rodada utilizada (regras de ganho acima somam saldo_real normalmente)
+            # SE GANHOU DURANTE RODADA GRÁTIS: Remove a rodada utilizada
             if usando_rodada_gratis and ganho > 0:
                 rodadas_gratis_usuario -= 1
                 resultado += f" (1 Rodada grátis consumida. Restam {rodadas_gratis_usuario})"
