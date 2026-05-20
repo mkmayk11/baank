@@ -703,6 +703,63 @@ def jogos():
                 "saldo": saldo
             })
 
+
+# -------- NOVO JOGO: CAÇA-NÍQUEL 12 QUADRADOS (LINHAS) --------
+        elif tipo == "caca_linhas":
+            try:
+                aposta = float(data.get("aposta", 0))
+            except:
+                return jsonify({"erro": "Aposta inválida"}), 400
+
+            if aposta <= 0 or aposta > saldo:
+                return jsonify({"erro": "Aposta inválida ou saldo insuficiente"}), 400
+
+            # Sorteia 12 símbolos para preencher a grade de 3 linhas x 4 colunas
+            # Usando uma lista menor e selecionada de símbolos para aumentar as chances de formar linhas
+            simbolos_jogo = ["🍒", "🍋", "🔔", "⭐", "💎", "🍀", "🍉", "🍇", "🎰"]
+            quadrados = random.choices(simbolos_jogo, k=12)
+
+            # Dividindo os 12 quadrados em 3 linhas horizontais (cada uma com 4 colunas)
+            linha1 = quadrados[0:4]
+            linha2 = quadrados[4:8]
+            linha3 = quadrados[8:12]
+
+            linhas_ganhas = 0
+            # Regra: Se todos os 4 símbolos da linha forem iguais, ou se houver pelo menos 3 iguais na mesma linha
+            for linha in [linha1, linha2, linha3]:
+                contagem = {s: linha.count(s) for s in set(linha)}
+                maior_combinacao = max(contagem.values())
+                if maior_combinacao >= 3:
+                    linhas_ganhas += 1
+
+            saldo_real = saldo
+            ganho = 0
+
+            if lines_ganhas > 0:
+                # Multiplicadores baseados na quantidade de linhas completadas
+                # 1 linha = 3x aposta | 2 linhas = 10x aposta | 3 linhas = 50x aposta (JACKPOT)
+                mult_linhas = {1: 3, 2: 10, 3: 50}
+                mult = mult_linhas.get(linhas_ganhas, 3)
+                ganho = aposta * mult
+                saldo_real += ganho
+                resultado_txt = f"🎉 PARABÉNS! Você formou {linhas_ganhas} linha(s) premiada(s) e ganhou R$ {ganho:.2f}!"
+                registrar_historico(usuario, f"Caça-Níquel Linhas: {linhas_ganhas} linha(s) ganha(s) - Grade: {quadrados}", ganho)
+            else:
+                saldo_real -= aposta
+                resultado_txt = f"❌ Não foi dessa vez! Nenhuma linha formada. Você perdeu R$ {aposta:.2f}."
+                registrar_historico(usuario, f"Caça-Níquel Linhas: Derrota - Grade: {quadrados}", -aposta)
+
+            # Atualiza o saldo no banco de dados usando suas funções nativas
+            saldo = saldo_real
+            salvar_cliente(usuario, saldo=saldo)
+
+            return jsonify({
+                "quadrados": quadrados,
+                "resultado": resultado_txt,
+                "saldo": saldo,
+                "linhas_ganhas": lines_ganhas
+            })
+    
     # -------- GET normal --------
     rodadas_gratis = dados["clientes"][usuario].get("rodadas_gratis", 0)
     return render_template(
