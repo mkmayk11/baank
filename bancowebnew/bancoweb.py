@@ -538,7 +538,7 @@ def jogos():
    
         
         # Se não tiver '?g=linhas', abre o caça-níquel antigo normal
-        return render_template("caca.html", saldo=saldo)
+    return render_template("caca.html", saldo=saldo)
 
     # Símbolos do caça-níquel
     simbolos = ["🍒","🍋","🔔","⭐","💎","🍀","🍉","🥭","🍇","🍌","🍓","🍑","🍍","🥝","🥥","🍈","🌈",
